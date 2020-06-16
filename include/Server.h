@@ -73,7 +73,7 @@ private:
     std::vector<TCPSocket> connectedClients;
 
     // Accepts a new client into the server
-    bool acceptClient(const TCPSocket& clientSocket);
+    void acceptClient(TCPSocket& clientSocket);
 };
 
 

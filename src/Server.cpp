@@ -21,19 +21,11 @@ Server::Server(float refreshRate, RSAKeyPair serverKey, RSAKeyPair serverSignatu
 }
 
 Server::~Server() {
-//    if (serverOpen) {
-//        // Only attempt to close the server if it was open.
-//        shutdown(serverSocketFd, SHUT_RDWR);
-//        close(serverSocketFd);
-//    }
     serverSocket.shutdownServerSocket();
     serverSocket.closeSocket();
 }
 
 void Server::initialiseServer(unsigned short serverPort) {
-//    if (serverOpen) {
-//        return;
-//    }
     if (serverSocket.bound()) {
         return;
     }
@@ -45,56 +37,12 @@ void Server::initialiseServer(unsigned short serverPort) {
 
     serverSocket.beginListen();
 
-    serverSocket.setAcceptCallback([this](const TCPSocket& s) { acceptClient(s); });
-
-//    this->port = serverPort;
-//
-//    // Create a TCP socket with the default protocol
-//    if ((serverSocketFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-//        ERROR("Failed to create TCP socket")
-//    }
-//
-//    // Set the TCP socket to reuse the port and address (if necessary)
-//    if ((setsockopt(serverSocketFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &tcpOptions, sizeof(tcpOptions))) < 0) {
-//        ERROR("Failed to set TCP socket to reuse address and port")
-//    }
-//
-//    unsigned int tcpSocketFdFlags;
-//
-//    // Get the current flags from the file descriptor
-//    if ((tcpSocketFdFlags = fcntl(serverSocketFd, F_GETFL)) < 0) {
-//        ERROR("Failed to get flags from TCP socket file descriptor")
-//    }
-//
-//    // Set the flags to the original flags with the O_NONBLOCK bit set to true, hence
-//    // making the socket non blocking
-//    if ((fcntl(serverSocketFd, F_SETFL, tcpSocketFdFlags | O_NONBLOCK)) < 0) {
-//        ERROR("Failed to set TCP socket to non blocking")
-//    }
-//
-//    // Set up the address
-//    // Flag that this is a TCP address
-//    address.sin_family = AF_INET;
-//    // Set the address to any address
-//    address.sin_addr.s_addr = INADDR_ANY;
-//    // Set the port to the function input port
-//    address.sin_port = htons(serverPort);
-//
-//    // Bind the socket to the address
-//    if ((bind(serverSocketFd, (struct sockaddr *) &address, sizeof(address))) < 0) {
-//        ERROR("Failed to bind socket")
-//    }
-//
-//    // Set the server to begin listening for clients
-//    if ((listen(serverSocketFd, BACKLOG_QUEUE_SIZE)) < 0) {
-//        ERROR("Failed to set server to listen")
-//    }
-//
-//    // Flag that the server is now open
-//    serverOpen = true;
+    serverSocket.setAcceptCallback([this](TCPSocket& s) { acceptClient(s); });
 }
 
 void Server::startServer() {
+    std::cout << "Server started successfully." << std::endl;
+
     // Asynchronous call to console read to make console inputs non-blocking
     std::future<std::string> nonBlockingInput = std::async(std::launch::async, getNonBlockingInput);
 
@@ -104,10 +52,6 @@ void Server::startServer() {
     while (true) {
         // Get the start time of this frame
         start = std::chrono::system_clock::now();
-
-//        if (acceptClient()) {
-//            printf("Accepted a new client!\n");
-//        }
 
         if (serverSocket.tryAccept()) {
             printf("Accepted a new client\n");
@@ -150,30 +94,11 @@ void Server::startServer() {
 }
 
 void Server::closeServer() {
-//    serverOpen = false;
-//
-//    if (shutdown(serverSocketFd, SHUT_RDWR) < 0 || close(serverSocketFd) < 0) {
-//        ERROR("Failed to close the server correctly")
-//    }
     serverSocket.closeSocket();
     serverSocket.shutdownServerSocket();
 }
 
-bool Server::acceptClient(const TCPSocket& clientSocket) {
-//    std::cout << "Attempting accept" << std::endl;
-//
-//    sockaddr_in clientAddress{};
-//    socklen_t clientAddressSize = sizeof(clientAddress);
-//
-//    int clientSocketFd = accept(serverSocketFd, (struct sockaddr *) &clientAddress, &clientAddressSize);
-//
-//    if (clientSocketFd == -1) {
-//        if (errno != EWOULDBLOCK) {
-//            ERROR("Failed to accept client")
-//        }
-//        return false;
-//    }
-
+void Server::acceptClient(TCPSocket& clientSocket) {
     // PROTOCOL:
     // Client and server send each other their respective public keys
     // Client sends a random challenge to the server, encrypted under the server's public key.
@@ -219,14 +144,33 @@ bool Server::acceptClient(const TCPSocket& clientSocket) {
 
     // 1: Receive client's public key
     PublicKey clientKey;
-    recv(clientSocketFd, &clientKey, sizeof(PublicKey), 0);
+    NetworkMessage clientKeyMessage;
+    clientSocket.receiveMessage(clientKeyMessage);
+
+    // If this message was in any way erroneous, close the connection and return
+    if (clientKeyMessage.error() || clientKeyMessage.protocol() != KEY_MESSAGE) {
+        clientSocket.closeSocket();
+        return;
+    }
+
+    memcpy(&clientKey, clientKeyMessage.getMessageData(), clientKeyMessage.getMessageSize());
 
     // 2: Send server's public key
-    send(clientSocketFd, &serverKey.publicKey, sizeof(PublicKey), 0);
+    clientSocket.sendMessage(NetworkMessage(&serverKey.publicKey, sizeof(PublicKey), KEY_MESSAGE));
 
     // 3: Receive the client's random challenge, encrypted under server's public key
     uint2048 encryptedChallenge;
-    recv(clientSocketFd, &encryptedChallenge, sizeof(uint2048), 0);
+    NetworkMessage challengeMessage;
+
+    clientSocket.receiveMessage(challengeMessage);
+
+    // If this message was in any way erroneous, close the connection and return
+    if (challengeMessage.error() || challengeMessage.protocol() != RSA_MESSAGE) {
+        clientSocket.closeSocket();
+        return;
+    }
+
+    memcpy(&encryptedChallenge, challengeMessage.getMessageData(), challengeMessage.getMessageSize());
 
     uint2048 decryptedChallenge = decrypt(encryptedChallenge, serverKey.privateKey);
 
@@ -235,32 +179,27 @@ bool Server::acceptClient(const TCPSocket& clientSocket) {
     uint2048 mask = 0xFFFFFFFFFFFFFFFFul;
 
     if ((decryptedChallenge & (~mask)) != 0) {
-        close(clientSocketFd);
-        return false;
+        clientSocket.closeSocket();
+        return;
     }
-
-    uint64 *challenge = (uint64 *) &decryptedChallenge;
-
-    std::cout << "Client challenge: " << *challenge << std::endl;
 
     // 4: Send signed challenge, session key and token
     AESKey clientSessionKey = generateAESKey();
     uint64 clientSessionToken;
     CryptoSafeRandom::random(&clientSessionToken, sizeof(uint64));
 
+    // TODO: Maybe supply the number used once for the client's JWT request
     uint2048 response;
     uint8 *responseBuffer = (uint8 *) &response;
-    memcpy(responseBuffer, challenge, sizeof(uint64));
+    memcpy(responseBuffer, &decryptedChallenge, sizeof(uint64));
     memcpy(&responseBuffer[sizeof(uint64)], &clientSessionKey, sizeof(AESKey));
     memcpy(&responseBuffer[sizeof(uint64) + sizeof(AESKey)], &clientSessionToken, sizeof(uint64));
 
     // TODO: This might not work if the signed message is greater than the client key's n value!
     uint2048 signedEncryptedResponse = encrypt(sign(response, serverSignature.privateKey), clientKey);
-    send(clientSocketFd, &signedEncryptedResponse, sizeof(uint2048), 0);
+    clientSocket.sendMessage(NetworkMessage(signedEncryptedResponse.rawData(), sizeof(uint2048), RSA_MESSAGE));
 
     connectedClients.push_back(clientSocket);
-
-    return true;
 }
 
 // Old protocol. See above for fixed protocol

@@ -137,14 +137,33 @@ bool TCPSocket::sendMessage(const NetworkMessage &message) const {
 bool TCPSocket::receiveMessage(NetworkMessage &message) const {
     unsigned char readBuffer[BUFFER_CHUNK_SIZE];
 
-    if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) < 0) {
+    if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
         return false;
     }
 
     message.clear();
 
-    while (!message.decode(readBuffer, BUFFER_CHUNK_SIZE)) {
-        recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0);
+    while (true) {
+        DecodeStatus status = message.decode(readBuffer, BUFFER_CHUNK_SIZE);
+
+        if (status == DECODED) {
+            break;
+        }
+        if (status == DECODE_ERROR) {
+            // If the decoding was erroneous, clear the message and set the error bit. We clear the message
+            // to avoid attacks which flood the server's memory by sending messages with large sized headers
+            // but no content
+            message.clear();
+            message.setError();
+            return false;
+        }
+
+        if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+            // If we are expecting to receive more data, but there is no more data, then there is an error.
+            message.clear();
+            message.setError();
+            return false;
+        }
     }
 
     return true;
@@ -170,6 +189,6 @@ bool TCPSocket::listening() const {
     return flags & SOCKET_LISTENING;
 }
 
-void TCPSocket::setAcceptCallback(const std::function<void(const TCPSocket &)> &callback) {
+void TCPSocket::setAcceptCallback(const std::function<void(TCPSocket &)> &callback) {
     this->acceptCallback = callback;
 }

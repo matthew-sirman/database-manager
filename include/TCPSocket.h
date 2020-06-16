@@ -61,7 +61,9 @@ public:
 
     bool listening() const;
 
-    void setAcceptCallback(const std::function<void(const TCPSocket &)> &callback);
+    void setAcceptCallback(const std::function<void(TCPSocket &)> &callback);
+
+//    int TEST_getFd() const {return fd;}
 
 private:
     enum SocketFlags {
@@ -77,7 +79,7 @@ private:
     // FLAGS: UNUSED, UNUSED, UNUSED, Blocking, Listening, Connected, Bound, Socket Open
     unsigned char flags = SOCKET_BLOCKING;
 
-    std::function<void(const TCPSocket &)> acceptCallback;
+    std::function<void(TCPSocket &)> acceptCallback;
 };
 
 

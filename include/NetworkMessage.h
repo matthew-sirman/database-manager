@@ -9,46 +9,93 @@
 
 #include <encrypt.h>
 
-#define BUFFER_CHUNK_SIZE 128u
-
-#define PADDED_SIZE(s, p) (((s / p) + ((s % p) != 0)) * p)
-
+#define PADDED_SIZE(s, p) ((((s) / (p)) + (((s) % (p)) != 0)) * (p))
 #define BUFFER_PADDED_SIZE(s) PADDED_SIZE(s, BUFFER_CHUNK_SIZE)
 
+#define BUFFER_CHUNK_SIZE 128u
+#define AES_CHUNK_SIZE 16u
+#define MAX_MESSAGE_LENGTH 65532
+
+/* Message Structure:
+ * HEADER:
+ * Message Protocol (16 bit)
+ * Message Size (16 bit)
+ * PAYLOAD:
+ * Data of size Message Size
+ */
+
+enum MessageProtocol {
+    KEY_MESSAGE,
+    RSA_MESSAGE,
+    AES_MESSAGE,
+    RAW_MESSAGE
+};
+
+enum DecodeStatus {
+    DECODED,
+    DECODING,
+    DECODE_ERROR
+};
+
 struct NetworkMessage {
-    NetworkMessage(const void *messageData, size_t messageSize);
+    NetworkMessage() = default;
 
-    NetworkMessage(const void *messageData, size_t messageSize, AESKey encryptionKey);
+    NetworkMessage(const void *messageData, uint32 messageSize, MessageProtocol protocol);
 
-    NetworkMessage(const std::string &message);
-
-    NetworkMessage(const std::string &message, AESKey encryptionKey);
+    NetworkMessage(const std::string &message, MessageProtocol protocol);
 
     ~NetworkMessage();
 
-    static void *receiveMessage();
-
     // Returns a padded data stream containing the relevant header and payload. Padded to a multiple of BUFFER_CHUNK_SIZE
-    uint8 *dataStream() const;
+    const void *dataStream() const;
 
     // Returns the number of bytes used in the padded data stream
-    size_t dataStreamSize() const;
+    virtual uint32 dataStreamSize() const;
 
     void clear();
 
-    bool decode(uint8 *buffer, size_t bufferSize);
+    virtual DecodeStatus decode(uint8 *buffer, uint16 bufferSize);
 
-private:
+    const void *getMessageData() const;
+
+    uint32 getMessageSize() const;
+
+    bool error() const;
+
+    void setError();
+
+    MessageProtocol protocol() const;
+
+protected:
     enum NetworkMessageFlag {
-        MESSAGE_DIRTY,
-        MESSAGE_DECODING
+        MESSAGE_DIRTY = 0x01u,
+        MESSAGE_DECODING = 0x02u,
+        MESSAGE_ERROR = 0x04u
     };
 
-    // Flags: UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, Dirty, Decoding
+    // Flags: UNUSED, UNUSED, UNUSED, UNUSED, UNUSED, Error, Dirty, Decoding
     unsigned char messageStateFlags = 0x00u;
 
-    void *messageData;
-    size_t messageSize;
+    void *messageData = nullptr;
+    uint16 messageSize;
+    MessageProtocol _protocol;
+
+    uint16 readLeft = 0;
+};
+
+struct EncryptedNetworkMessage : public NetworkMessage {
+    EncryptedNetworkMessage(const void *messageData, uint32 messageSize, MessageProtocol protocol, AESKey encryptionKey);
+
+    EncryptedNetworkMessage(const std::string &message, MessageProtocol protocol, AESKey encryptionKey);
+
+    uint32 dataStreamSize() const override;
+
+    DecodeStatus decode(uint8 *buffer, uint16 bufferSize) override;
+
+    const void *decryptMessageData(AESKey decryptionKey) const;
+
+private:
+    uint64 initialisationVector = 0;
 };
 
 

@@ -36,20 +36,6 @@ void Client::initialiseClient() {
 }
 
 bool Client::connectToServer(const std::string& ipAddress, int port) {
-//    // Set the address family
-//    serverAddress.sin_family = AF_INET;
-//    // Set the port
-//    serverAddress.sin_port = htons(port);
-//
-//    // Set the address through converting the string to the correct format
-//    if (inet_pton(AF_INET, ipAddress.c_str(), &serverAddress.sin_addr.s_addr) < 0) {
-//        ERROR("Invalid IP address")
-//    }
-//
-//    // Connect to the server address
-//    if (connect(clientSocketFd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-//        ERROR("Failed to connect to server")
-//    }
     clientSocket.connectToServer(ipAddress, port);
 
     // Protocol description found in the server accept method.
@@ -68,11 +54,22 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     // Both communicate with AES key from here, with messages starting with token
 
     // 1: Send client's public key to server
-    send(clientSocketFd, &clientKey.publicKey, sizeof(PublicKey), 0);
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(PublicKey), KEY_MESSAGE));
 
     // 2: Receive server's public key
     PublicKey serverKey;
-    recv(clientSocketFd, &serverKey, sizeof(PublicKey), 0);
+    NetworkMessage serverKeyMessage;
+
+    clientSocket.receiveMessage(serverKeyMessage);
+
+    // If the received message was in any way erroneous, terminate the connection
+    if (serverKeyMessage.error() || serverKeyMessage.protocol() != KEY_MESSAGE) {
+        std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
+        clientSocket.closeSocket();
+        return false;
+    }
+
+    memcpy(&serverKey, serverKeyMessage.getMessageData(), serverKeyMessage.getMessageSize());
 
     // 3: Send random challenge to server encrypted under its public key
     uint2048 challengeMessage;
@@ -80,13 +77,22 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     // We only want a 64 bit challenge, so leave the rest as 0s
     CryptoSafeRandom::random(challenge, sizeof(uint64));
     uint2048 encryptedChallenge = encrypt(challengeMessage, serverKey);
-    send(clientSocketFd, &encryptedChallenge, sizeof(uint2048), 0);
-
-    std::cout << *challenge << std::endl;
+    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), RSA_MESSAGE));
 
     // 4: Receive signed challenge, session key and token, encrypted under client's public key
     uint2048 signedEncryptedResponse;
-    recv(clientSocketFd, &signedEncryptedResponse, sizeof(uint2048), 0);
+    NetworkMessage signedEncryptedResponseMessage;
+
+    clientSocket.receiveMessage(signedEncryptedResponseMessage);
+
+    // If the received message was in any way erroneous, terminate the connection
+    if (signedEncryptedResponseMessage.error() || signedEncryptedResponseMessage.protocol() != RSA_MESSAGE) {
+        std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
+        clientSocket.closeSocket();
+        return false;
+    }
+
+    memcpy(&signedEncryptedResponse, signedEncryptedResponseMessage.getMessageData(), signedEncryptedResponseMessage.getMessageSize());
 
     uint2048 responseValue = checkSignature(decrypt(signedEncryptedResponse, clientKey.privateKey), serverSignature);
     uint8 *responseData = (uint8 *) &responseValue;
@@ -99,10 +105,12 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     memcpy(&sessionToken, &responseData[sizeof(uint64) + sizeof(AESKey)], sizeof(uint64));
 
     if (responseChallenge != *challenge) {
-        close(clientSocketFd);
+        clientSocket.closeSocket();
         std::cerr << "ERROR::Client.cpp: Returned challenge from server incorrect. Server failed to authenticate itself." << std::endl;
         return false;
     }
+
+    std::cout << *challenge << std::endl;
 
     // 5: Client now has to gather and send a JWT to the server to authenticate themselves
 
@@ -111,24 +119,24 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
 
     std::cout << authUrl.url << std::endl;
 
-    // TODO: Probably open this in another thread - currently this will hang the application
-    std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000);
+//    // TODO: Probably open this in another thread - currently this will hang the application
+//    std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000);
 
-    // TODO: Create a separate messaging system that handles the details of prepending the token etc
-    size_t authTokenMessageSize = sizeof(uint64) + sizeof(uint32) + authToken.size();
-    uint8 *authTokenMessage = (uint8 *) alloca(authTokenMessageSize);
-    memcpy(authTokenMessage, &sessionToken, sizeof(uint64));
-    memcpy(authTokenMessage + sizeof(uint64), &authUrl.numberUsedOnce, sizeof(uint32));
-    memcpy(authTokenMessage + sizeof(uint64) + sizeof(uint32), authToken.c_str(), authToken.size());
-
-    uint64 initialisationVector;
-    CryptoSafeRandom::random(&initialisationVector, sizeof(uint64));
-
-    size_t encryptedResponseSize = (authTokenMessageSize / 16 + (authTokenMessageSize % 16 != 0)) * 16;
-    uint8 *tokenResponse = (uint8 *) alloca(sizeof(size_t) + sizeof(size_t) + sizeof(uint64) + encryptedResponseSize);
-    memcpy(tokenResponse, &encryptedResponseSize, sizeof(size_t));
-    memcpy(tokenResponse + sizeof(size_t), &initialisationVector, sizeof(uint64));
-    memcpy(tokenResponse + sizeof(size_t) + sizeof(uint64), encrypt(authTokenMessage, authTokenMessageSize, initialisationVector, sessionKey), encryptedResponseSize);
+//    // TODO: Create a separate messaging system that handles the details of prepending the token etc
+//    size_t authTokenMessageSize = sizeof(uint64) + sizeof(uint32) + authToken.size();
+//    uint8 *authTokenMessage = (uint8 *) alloca(authTokenMessageSize);
+//    memcpy(authTokenMessage, &sessionToken, sizeof(uint64));
+//    memcpy(authTokenMessage + sizeof(uint64), &authUrl.numberUsedOnce, sizeof(uint32));
+//    memcpy(authTokenMessage + sizeof(uint64) + sizeof(uint32), authToken.c_str(), authToken.size());
+//
+//    uint64 initialisationVector;
+//    CryptoSafeRandom::random(&initialisationVector, sizeof(uint64));
+//
+//    size_t encryptedResponseSize = (authTokenMessageSize / 16 + (authTokenMessageSize % 16 != 0)) * 16;
+//    uint8 *tokenResponse = (uint8 *) alloca(sizeof(size_t) + sizeof(size_t) + sizeof(uint64) + encryptedResponseSize);
+//    memcpy(tokenResponse, &encryptedResponseSize, sizeof(size_t));
+//    memcpy(tokenResponse + sizeof(size_t), &initialisationVector, sizeof(uint64));
+//    memcpy(tokenResponse + sizeof(size_t) + sizeof(uint64), encrypt(authTokenMessage, authTokenMessageSize, initialisationVector, sessionKey), encryptedResponseSize);
 
     return true;
 }

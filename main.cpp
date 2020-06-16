@@ -164,12 +164,15 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
         return;
     }
 
-    // Create the prompt
-    std::stringstream prompt;
-    prompt << "Enter the password for " << user << ": ";
+//    // Create the prompt
+//    std::stringstream prompt;
+//    prompt << "Enter the password for " << user << ": ";
+//
+//    // Hash the password to use as an AES key to secure the two keys
+//    uint256 pwHash = getPasswordHash(prompt.str());
 
-    // Hash the password to use as an AES key to secure the two keys
-    uint256 pwHash = getPasswordHash(prompt.str());
+    std::string tpw = "password";
+    uint256 pwHash = sha256(tpw.c_str(), tpw.size());
 
     RSAKeyPair serverKeyPair, digitalSignatureKeyPair;
 
