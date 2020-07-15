@@ -28,7 +28,8 @@ enum MessageProtocol {
     KEY_MESSAGE,
     RSA_MESSAGE,
     AES_MESSAGE,
-    RAW_MESSAGE
+    RAW_MESSAGE,
+    HEARTBEAT
 };
 
 enum DecodeStatus {
@@ -44,7 +45,7 @@ struct NetworkMessage {
 
     NetworkMessage(const std::string &message, MessageProtocol protocol);
 
-    ~NetworkMessage();
+    virtual ~NetworkMessage();
 
     // Returns a padded data stream containing the relevant header and payload. Padded to a multiple of BUFFER_CHUNK_SIZE
     const void *dataStream() const;
@@ -84,9 +85,13 @@ protected:
 };
 
 struct EncryptedNetworkMessage : public NetworkMessage {
-    EncryptedNetworkMessage(const void *messageData, uint32 messageSize, MessageProtocol protocol, AESKey encryptionKey);
+    EncryptedNetworkMessage() = default;
 
-    EncryptedNetworkMessage(const std::string &message, MessageProtocol protocol, AESKey encryptionKey);
+    EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey);
+
+    EncryptedNetworkMessage(const std::string &message, AESKey encryptionKey);
+
+    ~EncryptedNetworkMessage() = default;
 
     uint32 dataStreamSize() const override;
 

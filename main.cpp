@@ -1,17 +1,19 @@
 #include <iostream>
-#include <unistd.h>
-#include <sstream>
+//#include <unistd.h>
 #include <filesystem>
 #include <regex>
-#include <vector>
+
+#include <QApplication>
 
 #include <encrypt.h>
-#include "include/Server.h"
-#include "include/Client.h"
+#include "include/networking/Server.h"
+#include "include/networking/Client.h"
+#include "include/database/DatabaseRequestHandler.h"
+#include "ui/MainMenu.h"
 
 enum RunMode {
     NO_MODE,
-    NORMAL,
+    SERVER,
     CLIENT,
     SETUP,
     ADD_USER,
@@ -19,10 +21,6 @@ enum RunMode {
 };
 
 #define USERNAME_CHECK std::regex("^[a-z]+$")
-
-// TEMP ----------------------------------
-const std::string TEMP_pw = "password";
-// ---------------------------------------
 
 uint256 getPasswordHash(const std::string &prompt) {
     // Get the password from the terminal. This will hide the input
@@ -164,6 +162,7 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
         return;
     }
 
+    // TODO: Swap this over
 //    // Create the prompt
 //    std::stringstream prompt;
 //    prompt << "Enter the password for " << user << ": ";
@@ -187,34 +186,43 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
         return;
     }
 
-    // Initialise a server object with a refresh rate of 0.5Hz (refreshes every 2 seconds, low CPU usage)
-    Server s(0.5, serverKeyPair, digitalSignatureKeyPair);
+    // Initialise a server object with a refresh rate of 16Hz
+    Server s(16, serverKeyPair, digitalSignatureKeyPair);
 
-    // Start the server with the given port, TODO: fix which port rather than constant 10000
+    DatabaseRequestHandler handler;
+
+    // Start the server with the given port, TODO: fix which port rather than constant 10000, dynamic password
     s.initialiseServer(10000);
+
+    std::ifstream dbPasswordFile(keyPath / "db-manager-server-mysql-pw");
+    std::string dbPassword;
+    dbPasswordFile >> dbPassword;
+
+    s.connectToDatabaseServer("scs_drawings", "db-server-user", dbPassword);
+
+    s.setRequestHandler(handler);
+
+    // Send a heartbeat approximately every minute
+    s.setHeartBeatCycles(64);
 
     // Start running the server - this will enter a loop and return when the server is closed
     s.startServer();
 }
 
-void runClient() {
-    RSAKeyPair clientKey;
-    clientKey.privateKey = unlockPrivateKey("/home/matthew/database-manager/test_client_keys/client_key.pri", sha256(TEMP_pw.c_str(), TEMP_pw.size()));
-    clientKey.publicKey = readPublicKey("/home/matthew/database-manager/test_client_keys/client_key.pub");
+int runClient(int argc, char *argv[]) {
+    QApplication app(argc, argv);
 
-    PublicKey serverSignature = readPublicKey("/home/matthew/database-manager/keys/signature/signature.pub");
+    MainMenu mainMenu;
+    mainMenu.show();
 
-    Client client(1, clientKey, serverSignature);
-
-    client.initialiseClient();
-    client.connectToServer("192.168.68.120", 10000);
+    return QApplication::exec();
 }
 
 void printHelpMessage() {
     // Print a help message to the console
     std::cout << "Database Manager Help" << std::endl;
     std::cout << "Flags: " << std::endl;
-    std::cout << "  --run             - run the server." << std::endl;
+    std::cout << "  --server             - run the server." << std::endl;
     std::cout << "  --client          - run a client instance." << std::endl;
     std::cout << "  --setup           - set the server keys up and save them in key files." << std::endl;
     std::cout << "                      NOTE: This will not start the server." << std::endl;
@@ -260,9 +268,9 @@ int main(int argc, char *argv[]) {
             }
 
             // If they used the flag "--run" they want to run the server.
-            if (strcmp(argv[i], "--run") == 0) {
+            if (strcmp(argv[i], "--server") == 0) {
                 if (mode == NO_MODE) {
-                    mode = NORMAL;
+                    mode = SERVER;
                 } else {
                     std::cout << "Invalid arguments. Use --help for more information." << std::endl;
                     std::cerr << "ERROR: You can only use one mode at a time." << std::endl;
@@ -309,12 +317,11 @@ int main(int argc, char *argv[]) {
     }
 
     switch (mode) {
-        case NORMAL:
+        case SERVER:
             runServer(keyPath, user);
             break;
         case CLIENT:
-            runClient();
-            break;
+            return runClient(argc, argv);
         case SETUP:
             setupServerKeys(keyPath);
             break;

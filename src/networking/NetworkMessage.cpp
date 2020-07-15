@@ -2,7 +2,7 @@
 // Created by matthew on 12/06/2020.
 //
 
-#include "../include/NetworkMessage.h"
+#include "../../include/networking/NetworkMessage.h"
 
 NetworkMessage::NetworkMessage(const void *messageData, uint32 messageSize, MessageProtocol protocol) {
     if (messageSize > MAX_MESSAGE_LENGTH) {
@@ -23,7 +23,7 @@ NetworkMessage::NetworkMessage(const void *messageData, uint32 messageSize, Mess
 }
 
 NetworkMessage::NetworkMessage(const std::string &message, MessageProtocol protocol)
-    : NetworkMessage(message.c_str(), message.size(), protocol) {
+    : NetworkMessage(message.c_str(), message.size() + 1, protocol) {
 
 }
 
@@ -61,6 +61,7 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint16 bufferSize) {
     // by retrieving the size
     if (!(messageStateFlags & MESSAGE_DECODING)) {
         // Copy the first bytes into the messageSize and protocol variables
+        memset(&this->_protocol, 0, sizeof(MessageProtocol));
         memcpy(&this->_protocol, &buffer[readIndex], sizeof(uint16));
         readIndex += sizeof(uint16);
         memcpy(&this->messageSize, &buffer[readIndex], sizeof(uint16));
@@ -138,30 +139,36 @@ MessageProtocol NetworkMessage::protocol() const {
     return _protocol;
 }
 
-EncryptedNetworkMessage::EncryptedNetworkMessage(const void *messageData, uint32 messageSize, MessageProtocol protocol, AESKey encryptionKey) {
+EncryptedNetworkMessage::EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey) {
     if (messageSize > MAX_MESSAGE_LENGTH) {
         std::cerr << "ERROR: Attempted to create a message longer than the maximum allowable message length (65532)." << std::endl;
         return;
     }
 
+    // The protocol will always be AES for an encrypted message
+    this->_protocol = AES_MESSAGE;
+
     size_t encryptedMessageSize = PADDED_SIZE(messageSize, AES_CHUNK_SIZE);
     CryptoSafeRandom::random(&initialisationVector, sizeof(uint64));
 
-    this->messageData = malloc(BUFFER_PADDED_SIZE(sizeof(uint32) + sizeof(uint64) + encryptedMessageSize));
-    memcpy((uint8 *) this->messageData, &protocol, sizeof(uint16));
+    uint32 usedBufferSize = sizeof(uint32) + sizeof(uint64) + encryptedMessageSize;
+    uint32 paddedBufferSize = BUFFER_PADDED_SIZE(usedBufferSize);
+
+    this->messageData = malloc(paddedBufferSize);
+    memcpy((uint8 *) this->messageData, &this->_protocol, sizeof(uint16));
     memcpy((uint8 *) this->messageData + sizeof(uint16), &messageSize, sizeof(uint16));
     memcpy((uint8 *) this->messageData + sizeof(uint32), &initialisationVector, sizeof(uint64));
-    memcpy((uint8 *) this->messageData + sizeof(uint32) + sizeof(uint64), encrypt((uint8 *) messageData, messageSize, initialisationVector, encryptionKey), encryptedMessageSize);
+    encrypt((uint8 *) messageData, encryptedMessageSize, (uint8 *) this->messageData + sizeof(uint32) + sizeof(uint64), initialisationVector, encryptionKey);
+//    memset((uint8 *) this->messageData + usedBufferSize, 0, paddedBufferSize - usedBufferSize);
 
     this->messageSize = messageSize;
-    this->_protocol = protocol;
 
     // Set the dirty flag
     messageStateFlags |= MESSAGE_DIRTY;
 }
 
-EncryptedNetworkMessage::EncryptedNetworkMessage(const std::string &message, MessageProtocol protocol, AESKey encryptionKey)
-    : EncryptedNetworkMessage(message.c_str(), message.size(), protocol, encryptionKey) {
+EncryptedNetworkMessage::EncryptedNetworkMessage(const std::string &message, AESKey encryptionKey)
+    : EncryptedNetworkMessage(message.c_str(), message.size() + 1, encryptionKey) {
 
 }
 
@@ -178,6 +185,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint16 bufferSize) {
     // by retrieving the size
     if (!(messageStateFlags & MESSAGE_DECODING)) {
         // Copy the first bytes into the messageSize variable
+        memset(&this->_protocol, 0, sizeof(MessageProtocol));
         memcpy(&this->_protocol, &buffer[readIndex], sizeof(uint16));
         readIndex += sizeof(uint16);
         memcpy(&this->messageSize, &buffer[readIndex], sizeof(uint16));
@@ -206,7 +214,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint16 bufferSize) {
         // Set that we have the entire message left to read
         readLeft = PADDED_SIZE(messageSize, AES_CHUNK_SIZE);
         // Allocate enough memory in the message buffer to write into
-        messageData = malloc(messageSize);
+        messageData = malloc(readLeft);
 
         // Set the decoding flag
         messageStateFlags |= MESSAGE_DECODING;
@@ -218,7 +226,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint16 bufferSize) {
     // to read; whichever is smaller
     uint32 readAmount = MIN(bufferSize - readIndex, readLeft);
     // Copy into the data buffer from the buffer passed in
-    memcpy(((uint8 *) messageData) + messageSize - readLeft, &buffer[readIndex], readAmount);
+    memcpy(((uint8 *) messageData) + PADDED_SIZE(messageSize, AES_CHUNK_SIZE) - readLeft, &buffer[readIndex], readAmount);
 
     // Decrease the amount we have left to read
     readLeft -= readAmount;

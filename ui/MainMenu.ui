@@ -1,0 +1,1289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainMenu</class>
+ <widget class="QMainWindow" name="MainMenu">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1127</width>
+    <height>604</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Database Manager</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QTabWidget" name="mainTabs">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="searchTab">
+       <attribute name="title">
+        <string>Search</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QFrame" name="parametersAndQuery">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QTabWidget" name="searchConditionsTabs">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <widget class="QWidget" name="drawingSpecsSearchTab">
+              <attribute name="title">
+               <string>Drawing Specs</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_2">
+               <item>
+                <layout class="QGridLayout" name="drawingSpecsGridLayout">
+                 <item row="1" column="8">
+                  <widget class="ActivatorLabel" name="startDateLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>ArrowCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Start Date</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="ActivatorLabel" name="lengthLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>ArrowCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Length</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="9">
+                  <widget class="QDateEdit" name="startDateSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="5">
+                  <widget class="QSpinBox" name="numberOfBarsSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>12</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="7">
+                  <widget class="DynamicComboBox" name="thickness1SearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="1" column="4">
+                  <widget class="ActivatorLabel" name="numberOfBarsLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>ArrowCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Number of Bars</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QLabel" name="lengthToleranceLabel">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>±</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QSpinBox" name="widthToleranceSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="minimum">
+                    <number>0</number>
+                   </property>
+                   <property name="maximum">
+                    <number>5000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="9">
+                  <widget class="QDateEdit" name="endDateSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="ActivatorLabel" name="widthLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>ArrowCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Width</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="7">
+                  <widget class="DynamicComboBox" name="thickness2SearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QSpinBox" name="widthSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="6">
+                  <widget class="QLabel" name="thickness2SearchLabel">
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Thickness 2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QSpinBox" name="lengthToleranceSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>5000</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="6">
+                  <widget class="QLabel" name="thickness1SearchLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Thickness 1</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QSpinBox" name="lengthSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QLabel" name="widthToleranceLabel">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>±</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="0">
+                  <widget class="ActivatorLabel" name="drawingNumberLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>PointingHandCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Drawing Number</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QLineEdit" name="drawingNumberSearchInput">
+                   <property name="enabled">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="8">
+                  <widget class="ActivatorLabel" name="endDateLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="cursor">
+                    <cursorShape>ArrowCursor</cursorShape>
+                   </property>
+                   <property name="toolTip">
+                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click to enable/disable search field.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>End Date</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="4">
+                  <widget class="QLabel" name="apertureLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Aperture</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="5">
+                  <widget class="DynamicComboBox" name="apertureSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="0" column="4">
+                  <widget class="QLabel" name="productTypeLabel">
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Product Type</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="5">
+                  <widget class="DynamicComboBox" name="productTypeSearchInput">
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <property name="sizeAdjustPolicy">
+                    <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="overlapsSideIronsSearchTab">
+              <attribute name="title">
+               <string>Overlaps and Side Irons</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+               <item>
+                <layout class="QGridLayout" name="overlapsSideIronsGridLayout">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="sideIronTypeLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Side Iron Type</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QComboBox" name="sidelapsSearchInput">
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has no sidelaps</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has one sidelap</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has both sidelaps</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="sideIronTypeSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>None</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>A</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>B</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>C</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>D</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>E</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="sidelapsLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Sidelaps</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="3">
+                  <widget class="QSpinBox" name="sidelapWidthToleranceSearchInput">
+                   <property name="maximum">
+                    <number>255</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="4">
+                  <widget class="QLabel" name="overlapAttachmentLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Overlap Attachment</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="QComboBox" name="overlapsSearchInput">
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has no overlaps</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has one overlap</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Has both overlaps</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="5" column="3">
+                  <widget class="QSpinBox" name="overlapWidthToleranceSearchInput">
+                   <property name="maximum">
+                    <number>255</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="0">
+                  <widget class="ActivatorLabel" name="sidelapWidthLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Sidelap Width</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="5">
+                  <widget class="QComboBox" name="sidelapAttachmentSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Integral</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Bonded</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="5" column="0">
+                  <widget class="ActivatorLabel" name="overlapWidthLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Overlap Width</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="2">
+                  <widget class="QLabel" name="overlapWidthToleranceLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>±</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="overlapsLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Overlaps</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="4">
+                  <widget class="QLabel" name="sidelapAttachmentLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Sidelap Attachment</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="ActivatorLabel" name="sideIronLengthLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Side Iron Length</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="1">
+                  <widget class="QSpinBox" name="sidelapWidthSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="4" column="2">
+                  <widget class="QLabel" name="sidelapWidthToleranceLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="text">
+                    <string>±</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="1">
+                  <widget class="QSpinBox" name="overlapWidthSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="4" colspan="2">
+                  <widget class="QSpinBox" name="sideIronLengthSearchInput">
+                   <property name="maximum">
+                    <number>65535</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="5" column="5">
+                  <widget class="QComboBox" name="overlapAttachmentSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Integral</string>
+                    </property>
+                   </item>
+                   <item>
+                    <property name="text">
+                     <string>Bonded</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="1" column="0" colspan="6">
+                  <widget class="Line" name="overlapsSideIronsDividerLine">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="machineSearchTab">
+              <attribute name="title">
+               <string>Machine</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_4">
+               <item>
+                <layout class="QGridLayout" name="gridLayout">
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="machineLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Machine</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="0">
+                  <widget class="QLabel" name="DeckLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Deck</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QSpinBox" name="quantityOnDeckSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QLineEdit" name="positionSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="ActivatorLabel" name="positionLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Position</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="ActivatorLabel" name="quantityOnDeckLabel">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Quantity On Deck</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="3" column="1">
+                  <widget class="DynamicComboBox" name="deckSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                 <item row="1" column="4">
+                  <spacer name="machinePageSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="DynamicComboBox" name="machineSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                   <item>
+                    <property name="text">
+                     <string>Any</string>
+                    </property>
+                   </item>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="resultsLabelAndSearchButton">
+             <item>
+              <widget class="QLabel" name="searchResultsLabel">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Search Results</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="searchButton">
+               <property name="text">
+                <string>Search</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableView" name="searchResultsTable"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGraphicsView" name="graphicsView">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1127</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="fileMenu">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="fileMenu_exitAction"/>
+   </widget>
+   <widget class="QMenu" name="drawingMenu">
+    <property name="title">
+     <string>Drawing</string>
+    </property>
+    <addaction name="drawingMenu_addDrawingAction"/>
+   </widget>
+   <addaction name="fileMenu"/>
+   <addaction name="drawingMenu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="drawingMenu_addDrawingAction">
+   <property name="text">
+    <string>Add Drawing</string>
+   </property>
+  </action>
+  <action name="fileMenu_exitAction">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DynamicComboBox</class>
+   <extends>QComboBox</extends>
+   <header>../../../ui/widgets/DynamicComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ActivatorLabel</class>
+   <extends>QLabel</extends>
+   <header>../../../ui/widgets/ActivatorLabel.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>fileMenu_exitAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainMenu</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>563</x>
+     <y>301</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

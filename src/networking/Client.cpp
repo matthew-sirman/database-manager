@@ -4,20 +4,15 @@
 // Created by matthew on 12/05/2020.
 //
 
-#include "../include/Client.h"
+#include "../../include/networking/Client.h"
 
 Client::Client(float refreshRate, RSAKeyPair clientKey, PublicKey serverSignature) {
     this->refreshRate = refreshRate;
     this->clientKey = clientKey;
     this->serverSignature = serverSignature;
-
-    clientSocket = TCPSocket();
 }
 
 Client::~Client() {
-//    if (connected) {
-//        close(clientSocketFd);
-//    }
     clientSocket.closeSocket();
 }
 
@@ -26,24 +21,23 @@ void Client::initialiseClient() {
     if (clientSocket.open()) {
         return;
     }
-//    if (clientSocketFd != -1) {
-//        return;
-//    }
 
     // Create a TCP socket with the default protocol
-//    clientSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-    clientSocket.create();
+    guardTCPSocketCode(clientSocket.create());
 }
 
-bool Client::connectToServer(const std::string& ipAddress, int port) {
-    clientSocket.connectToServer(ipAddress, port);
+bool Client::connectToServer(const std::string& ipAddress, int port, const std::function<void(const std::string &)> &authStringCallback) {
+    if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
+        clientSocket.closeSocket();
+        return false;
+    }
 
     // Protocol description found in the server accept method.
     //
     // 1. C -> S: KC
     // 2. S -> C: KS
     // 3. C -> S: {NC}_KS
-    // 4. S -> C: {{NC, K, T}_SIG}_KC
+    // 4. S -> C: {{NC, NS, K, T}_SIG}_KC
     //    if NC invalid:
     //      client terminates connection
     //      end
@@ -60,10 +54,10 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     PublicKey serverKey;
     NetworkMessage serverKeyMessage;
 
-    clientSocket.receiveMessage(serverKeyMessage);
+    clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE);
 
     // If the received message was in any way erroneous, terminate the connection
-    if (serverKeyMessage.error() || serverKeyMessage.protocol() != KEY_MESSAGE) {
+    if (serverKeyMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
         clientSocket.closeSocket();
         return false;
@@ -79,14 +73,14 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     uint2048 encryptedChallenge = encrypt(challengeMessage, serverKey);
     clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), RSA_MESSAGE));
 
-    // 4: Receive signed challenge, session key and token, encrypted under client's public key
+    // 4: Receive signed challenge, nonce, session key and token, encrypted under client's public key
     uint2048 signedEncryptedResponse;
     NetworkMessage signedEncryptedResponseMessage;
 
-    clientSocket.receiveMessage(signedEncryptedResponseMessage);
+    clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE);
 
     // If the received message was in any way erroneous, terminate the connection
-    if (signedEncryptedResponseMessage.error() || signedEncryptedResponseMessage.protocol() != RSA_MESSAGE) {
+    if (signedEncryptedResponseMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
         clientSocket.closeSocket();
         return false;
@@ -97,12 +91,12 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
     uint2048 responseValue = checkSignature(decrypt(signedEncryptedResponse, clientKey.privateKey), serverSignature);
     uint8 *responseData = (uint8 *) &responseValue;
     uint64 responseChallenge;
-    AESKey sessionKey;
-    uint64 sessionToken;
+    uint32 nonce;
 
     memcpy(&responseChallenge, responseData, sizeof(uint64));
-    memcpy(&sessionKey, &responseData[sizeof(uint64)], sizeof(AESKey));
-    memcpy(&sessionToken, &responseData[sizeof(uint64) + sizeof(AESKey)], sizeof(uint64));
+    memcpy(&nonce, responseData + sizeof(uint64), sizeof(uint32));
+    memcpy(&sessionKey, responseData + sizeof(uint32) + sizeof(uint64), sizeof(AESKey));
+    memcpy(&sessionToken, responseData + sizeof(uint32) + sizeof(uint64) + sizeof(AESKey), sizeof(uint64));
 
     if (responseChallenge != *challenge) {
         clientSocket.closeSocket();
@@ -110,38 +104,30 @@ bool Client::connectToServer(const std::string& ipAddress, int port) {
         return false;
     }
 
-    std::cout << *challenge << std::endl;
-
     // 5: Client now has to gather and send a JWT to the server to authenticate themselves
+    QueryURL authUrl = getMicrosoftAccountIDQueryURL(CLIENT_APPLICATION_ID, REDIRECT_URL, nonce);
 
-    // TODO: Make this section more dynamic
-    QueryURL authUrl = getMicrosoftAccountIDQueryURL(CLIENT_APPLICATION_ID, REDIRECT_URL);
+    authStringCallback(authUrl.url);
 
-    std::cout << authUrl.url << std::endl;
+    // TODO: Probably open this in another thread - currently this will hang the application
+    std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000,
+            "<html><body><h1>Thank you</h1></body></html>");
 
-//    // TODO: Probably open this in another thread - currently this will hang the application
-//    std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000);
-
-//    // TODO: Create a separate messaging system that handles the details of prepending the token etc
-//    size_t authTokenMessageSize = sizeof(uint64) + sizeof(uint32) + authToken.size();
-//    uint8 *authTokenMessage = (uint8 *) alloca(authTokenMessageSize);
-//    memcpy(authTokenMessage, &sessionToken, sizeof(uint64));
-//    memcpy(authTokenMessage + sizeof(uint64), &authUrl.numberUsedOnce, sizeof(uint32));
-//    memcpy(authTokenMessage + sizeof(uint64) + sizeof(uint32), authToken.c_str(), authToken.size());
-//
-//    uint64 initialisationVector;
-//    CryptoSafeRandom::random(&initialisationVector, sizeof(uint64));
-//
-//    size_t encryptedResponseSize = (authTokenMessageSize / 16 + (authTokenMessageSize % 16 != 0)) * 16;
-//    uint8 *tokenResponse = (uint8 *) alloca(sizeof(size_t) + sizeof(size_t) + sizeof(uint64) + encryptedResponseSize);
-//    memcpy(tokenResponse, &encryptedResponseSize, sizeof(size_t));
-//    memcpy(tokenResponse + sizeof(size_t), &initialisationVector, sizeof(uint64));
-//    memcpy(tokenResponse + sizeof(size_t) + sizeof(uint64), encrypt(authTokenMessage, authTokenMessageSize, initialisationVector, sessionKey), encryptedResponseSize);
+    EncryptedNetworkMessage authMessage(authToken, sessionKey);
+    clientSocket.sendMessage(authMessage);
 
     return true;
 }
 
 void Client::startClientLoop() {
+    // If we are already running, simply return
+    if (clientLoopRunning) {
+        return;
+    }
+
+    // Set the socket to non blocking
+    guardTCPSocketCode(clientSocket.setNonBlocking());
+
     // Activate the loop thread - the loop will run for as long as this is true
     clientLoopRunning = true;
 
@@ -150,11 +136,34 @@ void Client::startClientLoop() {
 }
 
 void Client::stopClientLoop() {
+    // If we aren't running, don't attempt to stop, simply return
+    if (!clientLoopRunning) {
+        return;
+    }
+
     // Kill the loop - set this flag to false so the thread knows to exit
     clientLoopRunning = false;
 
     // Join and close the thread
     clientLoopThread.join();
+}
+
+void Client::addMessageToSendQueue(const void *message, unsigned short messageLength) {
+    uint8 *sendBuffer = (uint8 *) alloca(sizeof(uint64) + messageLength);
+    memcpy(sendBuffer, &sessionToken, sizeof(uint64));
+    memcpy(sendBuffer + sizeof(uint64), message, messageLength);
+
+    sendQueueMutex.lock();
+    sendQueue.push(new EncryptedNetworkMessage(sendBuffer, sizeof(uint64) + messageLength, sessionKey));
+    sendQueueMutex.unlock();
+}
+
+void Client::addMessageToSendQueue(const std::string &message) {
+    addMessageToSendQueue(message.c_str(), message.size());
+}
+
+void Client::setResponseHandler(ClientResponseHandler &handler) {
+    responseHandler = &handler;
 }
 
 void Client::clientLoop() {
@@ -165,12 +174,30 @@ void Client::clientLoop() {
         // Get the start time of this frame
         start = std::chrono::system_clock::now();
 
-        // do stuff!
+        sendQueueMutex.lock();
+        while (!sendQueue.empty()) {
+            NetworkMessage *message = sendQueue.front();
+            clientSocket.sendMessage(*message);
+            sendQueue.pop();
+            delete message;
+        }
+        sendQueueMutex.unlock();
+
+        EncryptedNetworkMessage rMessage;
+        if (clientSocket.receiveMessage(rMessage, AES_MESSAGE) == SOCKET_SUCCESS) {
+            if (!rMessage.error()) {
+                uint8 *decryptedMessage = (uint8 *) rMessage.decryptMessageData(sessionKey);
+
+                if (responseHandler) {
+                    responseHandler->onMessageReceived(decryptedMessage, rMessage.getMessageSize());
+                }
+            }
+        }
 
         // If the refresh rate is either negative or 0 it is invalid, so raise an error (otherwise there is the risk
         // of division by 0 or running a while loop at maximum speed causing the process to overload the CPU!)
         if (refreshRate <= 0) {
-            ERROR("Refresh rate is <= 0. This is not allowed")
+            STD_ERROR("Refresh rate is <= 0. This is not allowed")
         }
 
         // Get the end time of this frame
