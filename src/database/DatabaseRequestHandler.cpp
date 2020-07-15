@@ -86,6 +86,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<Product>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Product>::rawSourceData(),
@@ -135,6 +137,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<Aperture>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Aperture>::rawSourceData(),
@@ -181,6 +185,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<ApertureShape>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<ApertureShape>::rawSourceData(),
@@ -234,6 +240,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<Material>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Material>::rawSourceData(),
@@ -287,6 +295,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<SideIron>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIron>::rawSourceData(),
@@ -340,6 +350,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<Machine>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Machine>::rawSourceData(),
@@ -387,6 +399,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 }
 
                 DrawingComponentManager<MachineDeck>::sourceComponentTable(sourceBuffer, bufferSize);
+
+                delete sourceData;
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<MachineDeck>::rawSourceData(),
