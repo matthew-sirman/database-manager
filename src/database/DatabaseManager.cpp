@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 06/07/2020.
 //
@@ -106,6 +108,194 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
     }
 }
 
+Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const {
+    try {
+        if (conn == nullptr) {
+            ERROR_RAW("Attempted to execute query without connecting to database")
+        }
+
+        sql::Statement *statement = conn->createStatement();
+        sql::ResultSet *results = nullptr;
+
+        Drawing *drawing = new Drawing();
+
+        std::stringstream queryString;
+
+        queryString << "SELECT d.drawing_number AS drawing_number, d.product_id AS product_id, d.width AS width, " << std::endl;
+        queryString << "d.length AS length, d.tension_type AS tension_type, d.drawing_date AS drawing_date, " << std::endl;
+        queryString << "d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
+        queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, " << std::endl;
+        queryString << "mt.deck_id AS deck_id, " << std::endl;
+        queryString << "mal.aperture_id AS aperture_id" << std::endl;
+        queryString << "FROM drawings AS d " << std::endl;
+        queryString << "INNER JOIN machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
+        queryString << "INNER JOIN mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
+        queryString << "WHERE d.mat_id=" << query.matID << std::endl;
+
+        results = statement->executeQuery(queryString.str());
+        if (results->first()) {
+            drawing->setDrawingNumber(results->getString("drawing_number"));
+            drawing->setProduct(DrawingComponentManager<Product>::getComponentByID(results->getUInt("product_id")));
+            drawing->setWidth((float) results->getDouble("width"));
+            drawing->setLength((float) results->getDouble("length"));
+            drawing->setTensionType((results->getString("tension_type") == "Side") ? Drawing::TensionType::SIDE
+                                                                                   : Drawing::TensionType::END);
+            drawing->setDate(Date::parse(results->getString("drawing_date")));
+            drawing->setHyperlink(results->getString("hyperlink"));
+            drawing->setNotes(results->getString("notes"));
+            drawing->setMachineTemplate(
+                    DrawingComponentManager<Machine>::getComponentByID(results->getUInt("machine_id")),
+                    results->getUInt("quantity_on_deck"), results->getString("position"),
+                    DrawingComponentManager<MachineDeck>::getComponentByID(results->getUInt("deck_id")));
+            drawing->setAperture(DrawingComponentManager<Aperture>::getComponentByID(results->getUInt("aperture_id")));
+        } else {
+            ERROR_RAW_SAFE("Failed to load drawing with mat_id: " + std::to_string(query.matID))
+            drawing->setLoadWarning(Drawing::LoadWarning::LOAD_FAILED);
+            return drawing;
+        }
+
+        delete results;
+
+        queryString.str(std::string());
+
+        queryString << "SELECT material_thickness_id FROM thickness WHERE mat_id=" << query.matID << std::endl;
+
+        results = statement->executeQuery(queryString.str());
+        if (results->first()) {
+            drawing->setMaterial(Drawing::MaterialLayer::TOP,
+                                 DrawingComponentManager<Material>::getComponentByID(
+                                         results->getUInt("material_thickness_id")));
+
+            if (results->next()) {
+                drawing->setMaterial(Drawing::MaterialLayer::BOTTOM,
+                                     DrawingComponentManager<Material>::getComponentByID(
+                                             results->getUInt("material_thickness_id")));
+            }
+        } else {
+            ERROR_RAW_SAFE("Missing material for drawing: " + drawing->drawingNumber())
+            drawing->setLoadWarning(Drawing::LoadWarning::MISSING_MATERIAL_DETECTED);
+        }
+
+        delete results;
+
+        queryString.str(std::string());
+
+        queryString << "SELECT bar_spacing, bar_width FROM bar_spacings WHERE mat_id=" << query.matID << std::endl;
+        queryString << "ORDER BY bar_index ASC" << std::endl;
+
+        std::vector<float> barSpacings, barWidths;
+
+        results = statement->executeQuery(queryString.str());
+
+        while (results->next()) {
+            barSpacings.push_back((float) results->getDouble("bar_spacing"));
+            barWidths.push_back((float) results->getDouble("bar_width"));
+        }
+
+        delete results;
+
+        queryString.str(std::string());
+
+        queryString << "SELECT side_iron_id, bar_width, inverted FROM mat_side_iron_link" << std::endl;
+        queryString << "WHERE mat_id=" << query.matID << std::endl;
+        queryString << "ORDER BY side_iron_index ASC" << std::endl;
+
+        results = statement->executeQuery(queryString.str());
+        if (results->first()) {
+            // TODO: Add the inverted flag to the drawing data
+            barWidths.insert(barWidths.begin(), (float) results->getDouble("bar_width"));
+            drawing->setSideIron(Drawing::Side::LEFT,
+                    DrawingComponentManager<SideIron>::getComponentByID(results->getUInt("side_iron_id")));
+
+            if (results->next()) {
+                barWidths.push_back((float) results->getUInt("bar_width"));
+                drawing->setSideIron(Drawing::Side::RIGHT,
+                        DrawingComponentManager<SideIron>::getComponentByID(results->getUInt("side_iron_id")));
+            } else {
+                ERROR_RAW_SAFE("Missing right side iron for drawing: " + drawing->drawingNumber())
+                drawing->setLoadWarning(Drawing::LoadWarning::MISSING_SIDE_IRONS_DETECTED);
+            }
+        } else {
+            ERROR_RAW_SAFE("Missing side irons for drawing: " + drawing->drawingNumber())
+            drawing->setLoadWarning(Drawing::LoadWarning::MISSING_SIDE_IRONS_DETECTED);
+        }
+
+        barSpacings.push_back(drawing->width() - std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f));
+
+        drawing->setBars(barSpacings, barWidths);
+
+        delete results;
+
+        queryString.str(std::string());
+
+        queryString << "SELECT 'S' AS type, mat_side, width, attachment_type, material_id " << std::endl;
+        queryString << "FROM sidelaps WHERE mat_id=" << query.matID << std::endl;
+        queryString << "UNION SELECT 'O' AS type, mat_side, width, attachment_type, material_id " << std::endl;
+        queryString << "FROM overlaps WHERE mat_id=" << query.matID << std::endl;
+
+        results = statement->executeQuery(queryString.str());
+
+        while (results->next()) {
+            LapAttachment attachment;
+            std::string attachmentString = results->getString("attachment_type");
+            if (attachmentString == "Bonded") {
+                attachment = LapAttachment::BONDED;
+            } else if (attachmentString == "Integral") {
+                attachment = LapAttachment::INTEGRAL;
+            } else {
+                ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap attachment): " + drawing->drawingNumber())
+                drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
+                continue;
+            }
+
+            Drawing::Side side;
+            std::string sideString = results->getString("mat_side");
+            if (sideString == "Left") {
+                side = Drawing::Side::LEFT;
+            } else if (sideString == "Right") {
+                side = Drawing::Side::RIGHT;
+            } else {
+                ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap side): " + drawing->drawingNumber())
+                drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
+                continue;
+            }
+
+            if (results->getString("type") == "S") {
+                drawing->setSidelap(side, Drawing::Lap((float) results->getDouble("width"), attachment,
+                        DrawingComponentManager<Material>::getComponentByID(results->getUInt("material_id"))));
+            } else {
+                drawing->setOverlap(side, Drawing::Lap((float) results->getDouble("width"), attachment,
+                                                       DrawingComponentManager<Material>::getComponentByID(results->getUInt("material_id"))));
+            }
+        }
+
+        delete results;
+
+        queryString.str(std::string());
+
+        queryString << "SELECT hyperlink FROM punch_program_pdfs WHERE mat_id=" << query.matID << std::endl;
+
+        results = statement->executeQuery(queryString.str());
+
+        std::vector<std::string> pressPunchProgramPDFs;
+
+        while (results->next()) {
+            pressPunchProgramPDFs.push_back(results->getString("hyperlink"));
+        }
+
+        drawing->setPressDrawingHyperlinks(pressPunchProgramPDFs);
+
+        delete results;
+
+        delete statement;
+
+        return drawing;
+    } catch (sql::SQLException &e) {
+        SQL_ERROR_SAFE(e);
+        return nullptr;
+    }
+}
+
 sql::ResultSet *DatabaseManager::sourceTable(const std::string &tableName) {
     try {
         if (conn == nullptr) {
@@ -150,3 +340,5 @@ void DatabaseManager::closeConnection() {
         SQL_ERROR_SAFE(e)
     }
 }
+
+#pragma clang diagnostic pop

@@ -34,11 +34,20 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
         case RequestType::SOURCE_MACHINE_DECK_TABLE:
             DrawingComponentManager<MachineDeck>::sourceComponentTable(message, messageSize);
             break;
+        case RequestType::DRAWING_DETAILS:
+            if (drawingReceivedCallback) {
+                drawingReceivedCallback(DrawingRequest::deserialise(message));
+            }
+            break;
     }
 }
 
 void DatabaseResponseHandler::setSearchResultsModel(DrawingSearchResultsModel *model) {
     resultsModel = model;
+}
+
+void DatabaseResponseHandler::setDrawingReceivedHandler(const std::function<void(DrawingRequest &)> &callback) {
+    drawingReceivedCallback = callback;
 }
 
 RequestType DatabaseResponseHandler::getDeserialiseType(void *data) {

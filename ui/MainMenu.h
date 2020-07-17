@@ -34,6 +34,10 @@ public:
     ~MainMenu() override;
 
 private:
+    enum DrawingResponseMode {
+        OPEN_DRAWING_VIEW_TAB
+    };
+
     Ui::MainMenu *ui = nullptr;
 
     Client *client = nullptr;
@@ -53,6 +57,10 @@ private:
 
     void setupSearchResultsTable();
 
+    void onReceiveDrawing(DrawingRequest &drawingRequest);
+
+    unsigned getValidRequestCode() const;
+
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;
     ComboboxComponentDataSource<ApertureShape> apertureShapeSource;
@@ -63,6 +71,10 @@ private:
 
     DrawingSearchResultsModel *searchResultsModel = nullptr;
 
+    std::unordered_map<unsigned, DrawingResponseMode> drawingResponseActions;
+    std::queue<DrawingRequest *> drawingReceivedQueue;
+    std::mutex drawingReceivedQueueMutex;
+
 private slots:
     void searchButtonPressed();
 
@@ -70,11 +82,17 @@ private slots:
 
     void handleSearchElementContextMenu(const QPoint &pos);
 
-    void openDrawingViewTab();
+    void openDrawingView(unsigned matID);
 
     void closeTab(int index);
 
     void openAddDrawingTab();
+
+    void processDrawings();
+
+signals:
+    void itemAddedToDrawingQueue();
+
 };
 
 

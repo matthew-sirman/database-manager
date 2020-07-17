@@ -47,7 +47,7 @@ public:
     // Force close the client loop thread
     void stopClientLoop();
 
-    void addMessageToSendQueue(const void *message, unsigned short messageLength);
+    void addMessageToSendQueue(const void *message, unsigned messageLength);
 
     void addMessageToSendQueue(const std::string &message);
 

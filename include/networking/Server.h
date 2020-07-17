@@ -76,7 +76,7 @@ public:
     // Close the server
     void closeServer();
 
-    void addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned short messageLength);
+    void addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned messageLength);
 
     void addMessageToSendQueue(const ClientHandle &clientHandle, const std::string &message);
 

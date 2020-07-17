@@ -22,10 +22,17 @@ void ActivatorLabel::setActive(bool activeValue) {
     for (QWidget *target : targets) {
         target->setEnabled(isActive);
     }
+    for (const std::function<void(bool)> &callback : activationCallbacks) {
+        callback(isActive);
+    }
 }
 
 bool ActivatorLabel::active() const {
     return isActive;
+}
+
+void ActivatorLabel::addActivationCallback(const std::function<void(bool)> &callback) {
+    activationCallbacks.push_back(callback);
 }
 
 void ActivatorLabel::mouseReleaseEvent(QMouseEvent *ev) {
@@ -34,8 +41,10 @@ void ActivatorLabel::mouseReleaseEvent(QMouseEvent *ev) {
 }
 
 void ActivatorLabel::enterEvent(QEvent *ev) {
-    setProperty("hovering", true);
-    setStyle(style());
+    if (isEnabled()) {
+        setProperty("hovering", true);
+        setStyle(style());
+    }
     QWidget::enterEvent(ev);
 }
 

@@ -44,10 +44,12 @@ MainMenu::MainMenu(QWidget *parent) :
     ui->searchResultsTable->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->mainTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
     connect(ui->drawingMenu_addDrawingAction, SIGNAL(triggered()), this, SLOT(openAddDrawingTab()));
-//    connect(ui->fileMenu_exitAction, SIGNAL(triggered()), this, SLOT(close()));
+    connect(this, SIGNAL(itemAddedToDrawingQueue()), this, SLOT(processDrawings()));
 
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::LeftSide, nullptr);
+
+    handler->setDrawingReceivedHandler([this](DrawingRequest &drawingRequest) { onReceiveDrawing(drawingRequest); });
 
     setupComboboxSources();
     setupValidators();
@@ -151,8 +153,37 @@ void MainMenu::setupSearchResultsTable() {
     ui->searchResultsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
 }
 
+void MainMenu::onReceiveDrawing(DrawingRequest &drawingRequest) {
+    drawingReceivedQueueMutex.lock();
+    drawingReceivedQueue.push(&drawingRequest);
+    drawingReceivedQueueMutex.unlock();
+
+    emit itemAddedToDrawingQueue();
+}
+
+unsigned MainMenu::getValidRequestCode() const {
+    std::vector<unsigned> codes;
+
+    for (std::pair<unsigned, DrawingResponseMode> code : drawingResponseActions) {
+        codes.push_back(code.first);
+    }
+    for (unsigned i = 0; i < codes.size(); i++) {
+        unsigned target = codes[i];
+        while (target < codes.size() && target != codes[target]) {
+            unsigned temp = codes[target];
+            codes[target] = target;
+            target = temp;
+        }
+    }
+    for (unsigned i = 0; i < codes.size(); i++) {
+        if (codes[i] != i) {
+            return i;
+        }
+    }
+    return codes.size();
+}
+
 void MainMenu::searchButtonPressed() {
-    // TODO: Finish sourcing from UI
     DatabaseSearchQuery query;
 
     if (ui->drawingNumberLabel->active()) {
@@ -186,7 +217,7 @@ void MainMenu::searchButtonPressed() {
     if (ui->startDateLabel->active()) {
         QDate date = ui->startDateSearchInput->date();
         query.dateRange = { { (unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day() },
-                            { 65535, 12, 31 } };
+                            { 9999, 12, 31 } };
     }
     if (ui->endDateLabel->active()) {
         QDate date = ui->endDateSearchInput->date();
@@ -257,15 +288,24 @@ void MainMenu::handleSearchElementContextMenu(const QPoint &pos) {
     if (item.isValid()) {
         if (item.column() == 0) {
             QMenu *menu = new QMenu(this);
-            std::string drawingNumber = searchResultsModel->summaryAtRow(item.row()).drawingNumber;
-            menu->addAction(("Open drawing " + drawingNumber + " in new tab").c_str(), this, SLOT(openDrawingViewTab()), Qt::Key_Enter);
+            DrawingSummary summary = searchResultsModel->summaryAtRow(item.row());
+            menu->addAction(("Open drawing " + summary.drawingNumber + " in new tab").c_str(),
+                    [this, summary]() { openDrawingView(summary.matID); }, Qt::Key_Enter);
             menu->popup(ui->searchResultsTable->viewport()->mapToGlobal(pos));
         }
     }
 }
 
-void MainMenu::openDrawingViewTab() {
-    ui->mainTabs->addTab(new DrawingViewWidget(ui->mainTabs), tr("New Tab"));
+void MainMenu::openDrawingView(unsigned matID) {
+    unsigned responseEchoCode = getValidRequestCode();
+    drawingResponseActions[responseEchoCode] = OPEN_DRAWING_VIEW_TAB;
+
+    DrawingRequest request = DrawingRequest::makeRequest(matID, responseEchoCode);
+
+    unsigned bufferSize;
+    void *requestBuffer = request.createBuffer(bufferSize);
+    client->addMessageToSendQueue(requestBuffer, bufferSize);
+    free(requestBuffer);
 }
 
 void MainMenu::closeTab(int index) {
@@ -274,6 +314,31 @@ void MainMenu::closeTab(int index) {
 
 void MainMenu::openAddDrawingTab() {
     ui->mainTabs->addTab(new AddDrawingPageWidget(ui->mainTabs), tr("Add Drawing"));
+}
+
+void MainMenu::processDrawings() {
+    drawingReceivedQueueMutex.lock();
+    while (!drawingReceivedQueue.empty()) {
+        DrawingRequest *request = drawingReceivedQueue.front();
+        drawingReceivedQueue.pop();
+
+        switch (drawingResponseActions[request->responseEchoCode]) {
+            case OPEN_DRAWING_VIEW_TAB:
+                if (request->drawingData->loadWarning(Drawing::LoadWarning::LOAD_FAILED)) {
+                    QMessageBox::about(this, "Drawing Load Failed", "Attempt to load this drawing from "
+                                                                    "the database failed.");
+                } else {
+                    DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
+
+                    ui->mainTabs->addTab(drawingView, tr((request->drawingData->drawingNumber() + " Details").c_str()));
+                    ui->mainTabs->setCurrentWidget(drawingView);
+                }
+                break;
+        }
+
+        drawingResponseActions.erase(request->responseEchoCode);
+    }
+    drawingReceivedQueueMutex.unlock();
 }
 
 #pragma clang diagnostic pop

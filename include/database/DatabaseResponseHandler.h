@@ -14,10 +14,14 @@ public:
     void onMessageReceived(void *message, unsigned int messageSize) override;
 
     void setSearchResultsModel(DrawingSearchResultsModel *model);
+
+    void setDrawingReceivedHandler(const std::function<void(DrawingRequest &)> &callback);
 private:
     static RequestType getDeserialiseType(void *data);
 
     DrawingSearchResultsModel *resultsModel = nullptr;
+
+    std::function<void(DrawingRequest &)> drawingReceivedCallback = nullptr;
 };
 
 

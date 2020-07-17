@@ -148,7 +148,7 @@ void Client::stopClientLoop() {
     clientLoopThread.join();
 }
 
-void Client::addMessageToSendQueue(const void *message, unsigned short messageLength) {
+void Client::addMessageToSendQueue(const void *message, unsigned messageLength) {
     uint8 *sendBuffer = (uint8 *) alloca(sizeof(uint64) + messageLength);
     memcpy(sendBuffer, &sessionToken, sizeof(uint64));
     memcpy(sendBuffer + sizeof(uint64), message, messageLength);

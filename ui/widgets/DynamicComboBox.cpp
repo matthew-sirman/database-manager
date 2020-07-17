@@ -34,7 +34,9 @@ void DynamicComboBox::addExtraSourceItem(const ComboboxDataElement& element, boo
 bool DynamicComboBox::event(QEvent *event) {
     switch (event->type()) {
         case QEvent::MouseButtonRelease:
-            updateSourceList();
+            if (isEnabled()) {
+                updateSourceList();
+            }
             break;
         default:
             break;

@@ -64,19 +64,20 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
     unsigned recordCount = *((unsigned *)buff);
     buff += sizeof(unsigned);
 
-    beginRemoveRows(QModelIndex(), 0, summaries.size() - 1);
-    removeRows(0, summaries.size() - 1);
+    beginRemoveRows(QModelIndex(), 0, (int) summaries.size() - 1);
+    removeRows(0, (int) summaries.size() - 1);
     endRemoveRows();
 
     summaries.clear();
 
-    beginInsertRows(QModelIndex(), 0, recordCount - 1);
-    insertRows(0, recordCount - 1);
+    beginInsertRows(QModelIndex(), 0, (int) recordCount - 1);
+    insertRows(0, (int) recordCount - 1);
     endInsertRows();
 
     for (unsigned i = 0; i < recordCount; i++) {
         unsigned size;
         DrawingSummary summary = schema.uncompressSummary(buff, size);
+
         buff += size;
 
         summaries.push_back(summary);

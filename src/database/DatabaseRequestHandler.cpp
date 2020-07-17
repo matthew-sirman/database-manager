@@ -408,6 +408,20 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
             break;
         }
+        case RequestType::DRAWING_DETAILS: {
+            DrawingRequest request = DrawingRequest::deserialise(message);
+
+            request.drawingData = *caller.databaseManager().executeDrawingQuery(request);
+
+            unsigned bufferSize = request.serialisedSize();
+
+            void *responseBuffer = alloca(bufferSize);
+            request.serialise(responseBuffer);
+
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+
+            break;
+        }
     }
 }
 

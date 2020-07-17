@@ -53,13 +53,6 @@ unsigned ValueRange<T>::serialisedSize() const {
     return 2 * sizeof(T);
 }
 
-struct Date {
-    unsigned short year;
-    unsigned char month, day;
-
-    std::string toMySQLDateString() const;
-} __attribute__((packed));
-
 class DatabaseQuery {
 public:
     DatabaseQuery();
@@ -133,5 +126,21 @@ private:
     unsigned getSearchParameters() const;
 };
 
+class DrawingRequest : public DatabaseQuery {
+public:
+    static DrawingRequest &makeRequest(unsigned matID, unsigned responseEchoCode);
+
+    void serialise(void *target) const override;
+
+    unsigned int serialisedSize() const override;
+
+    static DrawingRequest &deserialise(void *data);
+
+    unsigned matID;
+
+    unsigned responseEchoCode;
+
+    std::optional<Drawing> drawingData;
+};
 
 #endif //DATABASE_MANAGER_DATABASEQUERY_H

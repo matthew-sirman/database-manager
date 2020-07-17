@@ -88,6 +88,8 @@ public:
     std::string materialName;
     unsigned short hardness{}, thickness{};
 
+    std::string material() const;
+
     ComboboxDataElement toDataElement() const override;
 
 private:
@@ -112,6 +114,10 @@ public:
     SideIronType type = SideIronType::A;
     unsigned short length{};
     std::string drawingNumber;
+    // TODO: Implement hyperlink string
+    std::string hyperlink;
+
+    std::string sideIronStr() const;
 
     ComboboxDataElement toDataElement() const override;
 
@@ -137,6 +143,8 @@ struct Machine : public DrawingComponent {
 
 public:
     std::string manufacturer, model;
+
+    std::string machineName() const;
 
     ComboboxDataElement toDataElement() const override;
 

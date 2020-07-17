@@ -1183,6 +1183,11 @@ QLabel[hovering=true] {
                  <pointsize>15</pointsize>
                 </font>
                </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {
+color: rgb(70, 70, 70);
+}</string>
+               </property>
                <property name="text">
                 <string>Search Results</string>
                </property>
@@ -1201,16 +1206,6 @@ QLabel[hovering=true] {
             <widget class="QTableView" name="searchResultsTable"/>
            </item>
           </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGraphicsView" name="graphicsView">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
          </widget>
         </item>
        </layout>

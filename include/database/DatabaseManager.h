@@ -31,6 +31,8 @@ public:
 
     std::vector<DrawingSummary> executeSearchQuery(const DatabaseSearchQuery &query) const;
 
+    Drawing *executeDrawingQuery(const DrawingRequest &query) const;
+
     sql::ResultSet *sourceTable(const std::string &tableName);
 
     void execute(const std::string &sqlQuery);

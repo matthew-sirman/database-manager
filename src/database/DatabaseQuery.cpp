@@ -6,12 +6,6 @@
 
 #include "../../include/database/DatabaseQuery.h"
 
-std::string Date::toMySQLDateString() const {
-    std::stringstream ss;
-    ss << year << "-" << (unsigned) month << "-" << (unsigned) day << " 00:00:00";
-    return ss.str();
-}
-
 DatabaseQuery::DatabaseQuery() = default;
 
 void *DatabaseQuery::createBuffer(unsigned &size) const {
@@ -493,7 +487,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition << "LEFT JOIN sidelaps AS s ON d_i.mat_id=s.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         if (sidelapWidth.has_value()) {
-            condition << "AND s.width BETWEEN " << sidelapWidth->lowerBound << " AND " << sidelapWidth->upperBound << std::endl;
+            condition << "AND s.width BETWEEN " << sidelapWidth->lowerBound << " AND " << sidelapWidth->upperBound
+                      << std::endl;
         }
         if (sidelapAttachment.has_value()) {
             condition << "AND attachment_type='";
@@ -531,7 +526,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition << "LEFT JOIN overlaps AS o ON d_i.mat_id=o.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         if (overlapWidth.has_value()) {
-            condition << "AND o.width BETWEEN " << overlapWidth->lowerBound << " AND " << overlapWidth->upperBound << std::endl;
+            condition << "AND o.width BETWEEN " << overlapWidth->lowerBound << " AND " << overlapWidth->upperBound
+                      << std::endl;
         }
         if (overlapAttachment.has_value()) {
             condition << "AND attachment_type='";
@@ -623,7 +619,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(sql::Re
         }
 
         for (const nlohmann::json &it : thicknessIDs) {
-            summary.thicknessIDs[index++] = it.get<unsigned >();
+            summary.thicknessIDs[index++] = it.get<unsigned>();
         }
 
         for (const nlohmann::json &it : lapSizes) {
@@ -639,6 +635,58 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(sql::Re
     }
 
     return summaries;
+}
+
+DrawingRequest &DrawingRequest::makeRequest(unsigned matID, unsigned responseEchoCode) {
+    DrawingRequest *request = new DrawingRequest();
+    request->matID = matID;
+    request->responseEchoCode = responseEchoCode;
+    request->drawingData = std::nullopt;
+    return *request;
+}
+
+void DrawingRequest::serialise(void *target) const {
+    unsigned char *buffer = (unsigned char *) target;
+    *((RequestType *) buffer) = RequestType::DRAWING_DETAILS;
+    buffer += sizeof(RequestType);
+
+    *((unsigned *) buffer) = matID;
+    buffer += sizeof(unsigned);
+
+    *((unsigned *) buffer) = responseEchoCode;
+    buffer += sizeof(unsigned);
+
+    bool hasDrawingData = drawingData.has_value();
+    *buffer++ = hasDrawingData;
+
+    if (hasDrawingData) {
+        DrawingSerialiser::serialise(drawingData.value(), buffer);
+    }
+}
+
+unsigned int DrawingRequest::serialisedSize() const {
+    return sizeof(RequestType) + sizeof(unsigned) + sizeof(unsigned) + sizeof(unsigned char) +
+           (drawingData.has_value() ? DrawingSerialiser::serialisedSize(drawingData.value()) : 0);
+}
+
+DrawingRequest &DrawingRequest::deserialise(void *data) {
+    DrawingRequest *drawingRequest = new DrawingRequest();
+
+    unsigned char *buffer = (unsigned char *) data + sizeof(RequestType);
+    drawingRequest->matID = *((unsigned *) buffer);
+    buffer += sizeof(unsigned);
+    drawingRequest->responseEchoCode = *((unsigned *) buffer);
+    buffer += sizeof(unsigned);
+
+    bool hasDrawingData = *buffer++;
+
+    if (hasDrawingData) {
+        drawingRequest->drawingData = DrawingSerialiser::deserialise(buffer);
+    } else {
+        drawingRequest->drawingData = std::nullopt;
+    }
+
+    return *drawingRequest;
 }
 
 #pragma clang diagnostic pop

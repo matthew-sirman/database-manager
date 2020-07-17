@@ -26,6 +26,8 @@ public:
 
     [[nodiscard]] bool active() const;
 
+    void addActivationCallback(const std::function<void(bool)> &callback);
+
 protected:
     void mouseReleaseEvent(QMouseEvent *ev) override;
 
@@ -35,6 +37,8 @@ protected:
 
 private:
     std::vector<QWidget *> targets;
+
+    std::vector<std::function<void(bool)>> activationCallbacks;
 
     bool isActive = false;
 };

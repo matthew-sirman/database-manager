@@ -58,6 +58,7 @@ bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
         case ERR_RECEIVE_FAILED: SAFE_ERROR_TO("Failed to receive data from socket", errorStream)
             return false;
     }
+    return false;
 }
 
 TCPSocket::TCPSocket() = default;

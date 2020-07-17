@@ -184,7 +184,7 @@ void Server::closeServer() {
 }
 
 void
-Server::addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned short messageLength) {
+Server::addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned messageLength) {
     sendQueueMutex.lock();
     sendQueue.emplace(clientHandle.clientID, new EncryptedNetworkMessage(message, sizeof(uint64) + messageLength,
                                                                          handleMap[clientHandle.clientID]->clientSessionKey));
@@ -351,9 +351,25 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     // After we have received all the protocol data, set this socket to be non blocking
     clientSocket.setNonBlocking();
 
-    unsigned handleID = 0;
-    while (handleMap.find(handleID) != handleMap.end()) {
-        handleID++;
+    std::vector<unsigned> handles;
+
+    for (std::pair<unsigned, ClientData *> handle : handleMap) {
+        handles.push_back(handle.first);
+    }
+    for (unsigned i = 0; i < handles.size(); i++) {
+        unsigned target = handles[i];
+        while (target < handles.size() && target != handles[target]) {
+            unsigned temp = handles[target];
+            handles[target] = target;
+            target = temp;
+        }
+    }
+    unsigned handleID = handles.size();
+    for (unsigned i = 0; i < handles.size(); i++) {
+        if (handles[i] != i) {
+            handleID = i;
+            break;
+        }
     }
 
     waitingClients.emplace_back(handleID, clientSocket, clientSessionKey, clientSessionToken, clientNonce);

@@ -88,19 +88,7 @@ std::string Aperture::apertureName() const {
 }
 
 ComboboxDataElement Aperture::toDataElement() const {
-    ApertureShape shape = DrawingComponentManager<ApertureShape>::getComponentByID(apertureShapeID);
-
-    std::stringstream shapeName;
-
-    if (shape.shape == "Blank") {
-        shapeName << "Blank";
-    } else if (shape.shape == "SQ" || shape.shape == "DIA") {
-        shapeName << width << shape.shape;
-    } else {
-        shapeName << width << shape.shape << length;
-    }
-
-    return { shapeName.str(), componentID };
+    return { apertureName(), componentID };
 }
 
 ApertureShape::ApertureShape(unsigned id) : DrawingComponent(id) {
@@ -150,12 +138,16 @@ Material *Material::fromSource(void *buffer, unsigned &elementSize) {
     return material;
 }
 
-ComboboxDataElement Material::toDataElement() const {
+std::string Material::material() const {
     std::stringstream name;
 
     name << thickness << "mm " << materialName << " " << hardness << " Shore Hardness";
 
-    return { name.str(), componentID };
+    return name.str();
+}
+
+ComboboxDataElement Material::toDataElement() const {
+    return { material(), componentID };
 }
 
 SideIron::SideIron(unsigned id) : DrawingComponent(id) {
@@ -182,8 +174,35 @@ SideIron *SideIron::fromSource(void *buffer, unsigned &elementSize) {
     return sideIron;
 }
 
+std::string SideIron::sideIronStr() const {
+    std::stringstream ss;
+    ss << length << "mm ";
+    ss << "Type ";
+    switch (type) {
+        case SideIronType::None:
+            return "None";
+        case SideIronType::A:
+            ss << "A";
+            break;
+        case SideIronType::B:
+            ss << "B";
+            break;
+        case SideIronType::C:
+            ss << "C";
+            break;
+        case SideIronType::D:
+            ss << "D";
+            break;
+        case SideIronType::E:
+            ss << "E";
+            break;
+    }
+    ss << " " << drawingNumber << " Side Iron";
+    return ss.str();
+}
+
 ComboboxDataElement SideIron::toDataElement() const {
-    return { drawingNumber, componentID };
+    return { sideIronStr(), componentID };
 }
 
 Machine::Machine(unsigned int id) : DrawingComponent(id) {
@@ -209,8 +228,12 @@ Machine *Machine::fromSource(void *buffer, unsigned int &elementSize) {
     return machine;
 }
 
+std::string Machine::machineName() const {
+    return manufacturer + " " + model;
+}
+
 ComboboxDataElement Machine::toDataElement() const {
-    return { manufacturer + " " + model, componentID };
+    return { machineName(), componentID };
 }
 
 MachineDeck::MachineDeck(unsigned int id) : DrawingComponent(id) {

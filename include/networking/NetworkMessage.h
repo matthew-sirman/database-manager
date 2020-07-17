@@ -14,7 +14,7 @@
 
 #define BUFFER_CHUNK_SIZE 128u
 #define AES_CHUNK_SIZE 16u
-#define MAX_MESSAGE_LENGTH 65532
+#define MAX_MESSAGE_LENGTH 16777216
 
 /* Message Structure:
  * HEADER:
@@ -55,7 +55,7 @@ struct NetworkMessage {
 
     void clear();
 
-    virtual DecodeStatus decode(uint8 *buffer, uint16 bufferSize);
+    virtual DecodeStatus decode(uint8 *buffer, uint32 bufferSize);
 
     const void *getMessageData() const;
 
@@ -78,10 +78,10 @@ protected:
     unsigned char messageStateFlags = 0x00u;
 
     void *messageData = nullptr;
-    uint16 messageSize;
+    uint32 messageSize;
     MessageProtocol _protocol;
 
-    uint16 readLeft = 0;
+    uint32 readLeft = 0;
 };
 
 struct EncryptedNetworkMessage : public NetworkMessage {
@@ -95,7 +95,7 @@ struct EncryptedNetworkMessage : public NetworkMessage {
 
     uint32 dataStreamSize() const override;
 
-    DecodeStatus decode(uint8 *buffer, uint16 bufferSize) override;
+    DecodeStatus decode(uint8 *buffer, uint32 bufferSize) override;
 
     const void *decryptMessageData(AESKey decryptionKey) const;
 

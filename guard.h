@@ -31,6 +31,10 @@
     exit(1); \
 }
 
+#define ERROR_RAW_SAFE(errorMessage) { \
+    std::cerr << "ERROR::" << __FILENAME__ << ": " << errorMessage << std::endl; \
+}
+
 #define SQL_ERROR(error) { \
     std::cerr << "SQL Error " << error.getErrorCode() << " (" << error.getSQLState() << "): " << error.what() << std::endl; \
     exit(1); \
