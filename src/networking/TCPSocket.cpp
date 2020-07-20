@@ -7,13 +7,17 @@
 #include "../../include/networking/TCPSocket.h"
 
 // Set the SIGPIPE signal to ignore
+#ifdef _WIN32
+
+#else
 void (*SIG_PIPE_HANDLER)(int) = signal(SIGPIPE, SIG_IGN);
+#endif
 
 void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
     switch (code) {
         case ERR_SOCKET_DEAD:
         case ERR_SEND_FAILED:
-        case NO_DATA:
+        case S_NO_DATA:
         case SOCKET_SUCCESS:
             return;
         case ERR_CREATE_SOCKET: ERROR_TO("Failed to create socket", errorStream)
@@ -33,7 +37,7 @@ bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
     switch (code) {
         case ERR_SOCKET_DEAD:
         case ERR_SEND_FAILED:
-        case NO_DATA:
+        case S_NO_DATA:
         case SOCKET_SUCCESS:
             return true;
         case ERR_CREATE_SOCKET: SAFE_ERROR_TO("Failed to create socket", errorStream)
@@ -70,6 +74,21 @@ TCPSocket::TCPSocket(float connectionTimeout) {
 TCPSocket::~TCPSocket() = default;
 
 TCPSocketCode TCPSocket::create() {
+#ifdef _WIN32
+    if ((socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        return ERR_CREATE_SOCKET;
+    }
+
+    BOOL reuseAddr = TRUE, reusePort = TRUE;
+
+    if ((setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char *) &reuseAddr, sizeof(BOOL))) != 0) {
+        return ERR_SET_SOCKET_OPTIONS;
+    }
+
+    if ((setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, (char *) &reusePort, sizeof(BOOL))) != 0) {
+        return ERR_SET_SOCKET_OPTIONS;
+    }
+#else
     // Create a TCP socket with the default protocol
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         return ERR_CREATE_SOCKET;
@@ -81,6 +100,7 @@ TCPSocketCode TCPSocket::create() {
     if ((setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &tcpOptions, sizeof(tcpOptions))) < 0) {
         return ERR_SET_SOCKET_OPTIONS;
     }
+#endif
 
     flags |= SOCKET_OPEN;
 
@@ -89,11 +109,28 @@ TCPSocketCode TCPSocket::create() {
 
 TCPSocketCode TCPSocket::bindToAddress(unsigned short port, const std::string &ip) {
     sockaddr_in address{};
+    address.sin_family = AF_INET;
+
+#ifdef _WIN32
+    address.sin_port = port;
+
+    if (ip.empty()) {
+        address.sin_addr.s_addr = INADDR_ANY;
+    }
+    else {
+        address.sin_addr.s_addr = inet_addr(ip.c_str());
+    }
+
+    if (bind(socket, (SOCKADDR *) &address, sizeof(address)) == SOCKET_ERROR) {
+        return ERR_BIND_SOCKET;
+    }
+#else
     address.sin_port = htons(port);
 
     if (ip.empty()) {
         address.sin_addr.s_addr = INADDR_ANY;
-    } else {
+    }
+    else {
         if (inet_pton(AF_INET, ip.c_str(), &address.sin_addr) < 0) {
             return ERR_PARSE_IP;
         }
@@ -102,6 +139,7 @@ TCPSocketCode TCPSocket::bindToAddress(unsigned short port, const std::string &i
     if (bind(fd, (struct sockaddr *) &address, (socklen_t) sizeof(sockaddr_in)) < 0) {
         return ERR_BIND_SOCKET;
     }
+#endif
 
     flags |= SOCKET_BOUND;
 
@@ -113,6 +151,17 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
 
     // Set the address family
     serverAddress.sin_family = AF_INET;
+
+#ifdef _WIN32
+
+    serverAddress.sin_port = port;
+    serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
+
+    if (connect(socket, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
+        return ERR_CONNECT;
+    }
+
+#else
     // Set the port
     serverAddress.sin_port = htons(port);
 
@@ -125,6 +174,7 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
     if (connect(fd, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
         return ERR_CONNECT;
     }
+#endif
 
     flags |= SOCKET_CONNECTED;
 
@@ -133,6 +183,16 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
 
 TCPSocketCode TCPSocket::setNonBlocking() {
     unsigned int socketFlags;
+
+#ifdef _WIN32
+
+    unsigned long nonBlocking = 1;
+
+    if (ioctlsocket(socket, FIONBIO, (unsigned long *) &nonBlocking) == SOCKET_ERROR) {
+        return ERR_SET_NON_BLOCKING;
+    }
+
+#else
 
     // Get the current flags from the file descriptor
     if ((socketFlags = fcntl(fd, F_GETFL)) < 0) {
@@ -145,6 +205,8 @@ TCPSocketCode TCPSocket::setNonBlocking() {
         return ERR_SET_NON_BLOCKING;
     }
 
+#endif
+
     flags &= (unsigned char) (~SOCKET_BLOCKING);
 
     return SOCKET_SUCCESS;
@@ -152,24 +214,31 @@ TCPSocketCode TCPSocket::setNonBlocking() {
 
 void TCPSocket::closeSocket() {
     if (open()) {
+
+#ifdef _WIN32
+        shutdown(socket, SD_BOTH);
+        closesocket(socket);
+#else
         shutdown(fd, SHUT_RDWR);
         close(fd);
+#endif
+
         flags &= (unsigned char) (~SOCKET_OPEN);
     }
 }
 
-//void TCPSocket::shutdownSocket() {
-//    if (open()) {
-//        shutdown(fd, SHUT_RDWR);
-//        flags &= (unsigned char) (~SOCKET_OPEN);
-//    }
-//}
-
 TCPSocketCode TCPSocket::beginListen() {
     // Set the server to begin listening for clients
+
+#ifdef _WIN32
+    if (listen(socket, BACKLOG_QUEUE_SIZE) == SOCKET_ERROR) {
+        return ERR_LISTEN;
+    }
+#else
     if ((listen(fd, BACKLOG_QUEUE_SIZE)) < 0) {
         return ERR_LISTEN;
     }
+#endif
 
     flags |= SOCKET_LISTENING;
 
@@ -180,32 +249,49 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
     sockaddr_in clientAddress{};
     socklen_t clientAddressSize = sizeof(clientAddress);
 
+    TCPSocket *acceptedSocket = new TCPSocket();
+
+
+#ifdef _WIN32
+    SOCKET clientSocket = INVALID_SOCKET;
+
+    if ((clientSocket = accept(socket, (SOCKADDR *) &clientAddress, &clientAddressSize)) == INVALID_SOCKET) {
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+            return ERR_ACCEPT;
+        }
+        return S_NO_DATA;
+    }
+
+    acceptedSocket->socket = clientSocket;
+
+    // There is no way to determine if windows sockets are non blocking.
+
+#else
     int clientSocketFd = accept(fd, (struct sockaddr *) &clientAddress, &clientAddressSize);
 
     if (clientSocketFd == -1) {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
             return ERR_ACCEPT;
         }
-        return NO_DATA;
+        return S_NO_DATA;
     }
 
-    TCPSocket *acceptedSocket = new TCPSocket();
     acceptedSocket->fd = clientSocketFd;
 
     unsigned int socketFlags;
 
     // Get the current flags from the file descriptor
     if ((socketFlags = fcntl(fd, F_GETFL)) < 0) {
-//        STD_ERROR("Failed to get flags from TCP socket file descriptor")
         return ERR_GET_FD_FLAGS;
     }
-
-    acceptedSocket->flags |= SOCKET_OPEN;
-    acceptedSocket->flags |= SOCKET_CONNECTED;
 
     if (socketFlags & O_NONBLOCK) {
         acceptedSocket->flags &= (unsigned char) (~SOCKET_BLOCKING);
     }
+#endif
+
+    acceptedSocket->flags |= SOCKET_OPEN;
+    acceptedSocket->flags |= SOCKET_CONNECTED;
 
     if (acceptCallback) {
         if (callbackAsync) {
@@ -223,7 +309,11 @@ TCPSocketCode TCPSocket::sendMessage(const NetworkMessage &message) {
         return ERR_SOCKET_DEAD;
     }
 
+#ifdef _WIN32
+    bool success = send(socket, (const char *) message.dataStream(), message.dataStreamSize(), 0) >= 0;
+#else
     bool success = send(fd, message.dataStream(), message.dataStreamSize(), 0) >= 0;
+#endif
 
     if (errno == EPIPE) {
         flags |= SOCKET_DEAD;
@@ -245,9 +335,15 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
         }
     }
 
-    if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
-        return NO_DATA;
+#ifdef _WIN32
+    if (recv(socket, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+        return S_NO_DATA;
     }
+#else
+    if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+        return S_NO_DATA;
+    }
+#endif
 
     message.clear();
 
@@ -266,12 +362,20 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
             return ERR_RECEIVE_FAILED;
         }
 
+#ifdef _WIN32
+        if (recv(socket, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+            message.clear();
+            message.setError();
+            return ERR_RECEIVE_FAILED;
+        }
+#else
         if (recv(fd, readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
             // If we are expecting to receive more data, but there is no more data, then there is an error.
             message.clear();
             message.setError();
             return ERR_RECEIVE_FAILED;
         }
+#endif
 
         if (message.protocol() != expectedProtocol) {
             // If the message we are receiving isn't using the correct protocol, then there is an error
@@ -289,9 +393,9 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
 }
 
 TCPSocketCode TCPSocket::waitForMessage(NetworkMessage &message, MessageProtocol expectedProtocol) {
-    TCPSocketCode code = NO_DATA;
+    TCPSocketCode code = S_NO_DATA;
 
-    while (code == NO_DATA) {
+    while (code == S_NO_DATA) {
         code = receiveMessage(message, expectedProtocol);
     }
 
@@ -331,5 +435,22 @@ bool TCPSocket::dead() const {
 void TCPSocket::setAcceptCallback(const std::function<void(TCPSocket &)> &callback) {
     this->acceptCallback = callback;
 }
+
+#ifdef _WIN32
+
+WSADATA TCPSocket::wsaData;
+
+int TCPSocket::initialiseWSA() {
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "Failed to intialise WSA." << std::endl;
+        return 1;
+    }
+}
+
+int TCPSocket::cleanupWSA() {
+    WSACleanup();
+}
+
+#endif
 
 #pragma clang diagnostic pop

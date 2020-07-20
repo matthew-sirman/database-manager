@@ -238,6 +238,13 @@ void printHelpMessage() {
 }
 
 int main(int argc, char *argv[]) {
+
+#ifdef _WIN32
+    if (TCPSocket::initialiseWSA()) {
+        return -1;
+    }
+#endif
+
     // The mode to run in. This changes depending on the arguments provided
     RunMode mode = NO_MODE;
     // The path to create the key files in
@@ -263,7 +270,7 @@ int main(int argc, char *argv[]) {
                 } else {
                     std::cout << "Invalid arguments. Use --help for more information." << std::endl;
                     std::cerr << "ERROR: You can only use one mode at a time." << std::endl;
-                    return -1;
+                    goto error;
                 }
             }
 
@@ -274,7 +281,7 @@ int main(int argc, char *argv[]) {
                 } else {
                     std::cout << "Invalid arguments. Use --help for more information." << std::endl;
                     std::cerr << "ERROR: You can only use one mode at a time." << std::endl;
-                    return -1;
+                    goto error;
                 }
             }
 
@@ -284,7 +291,8 @@ int main(int argc, char *argv[]) {
                     mode = CLIENT;
                 } else {
                     std::cout << "Invalid arguments. Use --help for more information." << std::endl;
-                    std::cerr << "ERRPR: You can only use one more at a time." << std::endl;
+                    std::cerr << "ERROR: You can only use one more at a time." << std::endl;
+                    goto error;
                 }
             }
 
@@ -295,12 +303,12 @@ int main(int argc, char *argv[]) {
 
                     if (!std::regex_match(newUser, USERNAME_CHECK)) {
                         std::cerr << "Invalid username for add user. Use lowercase letters only." << std::endl;
-                        return -1;
+                        goto error;
                     }
                 } else {
                     std::cout << "Invalid arguments. Use --help for more information." << std::endl;
                     std::cerr << "ERROR: You can only use one mode at a time." << std::endl;
-                    return -1;
+                    goto error;
                 }
             }
 
@@ -334,8 +342,18 @@ int main(int argc, char *argv[]) {
         case NO_MODE:
             std::cout << "Invalid arguments. Use --help for more information." << std::endl;
             std::cerr << "ERROR: No mode selected." << std::endl;
-            return -1;
+            goto error;
     }
 
     return 0;
+
+error:
+
+#ifdef _WIN32
+
+    TCPSocket::cleanupWSA();
+
+#endif
+
+    return -1;
 }

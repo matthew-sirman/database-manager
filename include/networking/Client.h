@@ -6,10 +6,6 @@
 #define DATABASE_CLIENT_CLIENT_H
 
 #include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <arpa/inet.h>
 #include <chrono>
 #include <thread>
 #include <mutex>

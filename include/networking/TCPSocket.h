@@ -6,10 +6,15 @@
 #define DATABASE_MANAGER_TCPSOCKET_H
 
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#include <ws2tcpip.h>
+#else
 #include <sys/socket.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#endif
 #include <functional>
 #include <chrono>
 #include <signal.h>
@@ -20,6 +25,10 @@
 #include "../../guard.h"
 
 #define BACKLOG_QUEUE_SIZE 8
+
+#ifdef _WIN32
+#define errno WSAGetLastError()
+#endif
 
 enum TCPSocketCode {
     SOCKET_SUCCESS,
@@ -35,7 +44,7 @@ enum TCPSocketCode {
     ERR_SOCKET_DEAD,
     ERR_SEND_FAILED,
     ERR_RECEIVE_FAILED,
-    NO_DATA
+    S_NO_DATA
 };
 
 void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream = std::cerr);
@@ -63,8 +72,6 @@ public:
     // Destruction Functions
 
     void closeSocket();
-
-//    void shutdownSocket();
 
     // Operation Functions
 
@@ -107,7 +114,11 @@ private:
         SOCKET_DEAD = 0x40u
     };
 
+#ifdef _WIN32
+    SOCKET socket;
+#else
     int fd = -1;
+#endif
 
     // FLAGS: UNUSED, Dead, Waiting, Blocking, Listening, Connected, Bound, Socket Open
     unsigned char flags = SOCKET_BLOCKING;
@@ -117,69 +128,20 @@ private:
     std::chrono::system_clock::time_point lastHeard;
 
     float connectionTimeout = 5.0f;
-};
 
-//template<typename Callable, typename DurationType = std::chrono::milliseconds>
-//class TimedFunctionCall {
-//public:
-//    TimedFunctionCall(DurationType duration, Callable func);
-//
-//    template<typename... Args>
-//    void launch(Args&&... args);
-//
-//    bool timedOut() const;
-//
-//    bool finished() const;
-//
-//private:
-//    DurationType duration;
-//
-//    Callable func;
-//
-//    template<typename... Args>
-//    void launch_internal(Args &&... args);
-//
-//    bool funcTimeout = false, funcFinished = false;
-//};
-//
-//template<typename Callable, typename DurationType>
-//TimedFunctionCall<Callable, DurationType>::TimedFunctionCall(DurationType duration,
-//                                                                        Callable func) {
-//    this->func = func;
-//    this->duration = duration;
-//}
-//
-//template<typename Callable, typename DurationType>
-//template<typename... Args>
-//void TimedFunctionCall<Callable, DurationType>::launch(Args&&... args) {
-//    std::thread([this, args...]() { launch_internal(args...); }).detach();
-//}
-//
-//template<typename Callable, typename DurationType>
-//bool TimedFunctionCall<Callable, DurationType>::timedOut() const {
-//    return funcTimeout;
-//}
-//
-//template<typename Callable, typename DurationType>
-//bool TimedFunctionCall<Callable, DurationType>::finished() const {
-//    return funcFinished;
-//}
-//
-//template<typename Callable, typename DurationType>
-//template<typename... Args>
-//void TimedFunctionCall<Callable, DurationType>::launch_internal(Args &&... args) {
-//    auto future = std::async(std::launch::async, func, std::forward<Args>(args)...);
-//
-//    switch (future.wait_for(duration)) {
-//        case std::future_status::timeout:
-//            funcTimeout = true;
-//            break;
-//        case std::future_status::ready:
-//            funcFinished = true;
-//            future.get();
-//            break;
-//    }
-//}
+#ifdef _WIN32
+    // Windows Specific
+
+public:
+    static int initialiseWSA();
+
+    static int cleanupWSA();
+
+private:
+    static WSADATA wsaData;
+
+#endif
+};
 
 
 #endif //DATABASE_MANAGER_TCPSOCKET_H

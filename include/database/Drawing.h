@@ -11,6 +11,7 @@
 #include <regex>
 
 #include "drawingComponents.h"
+#include "../../packer.h"
 
 #define MIN_COVERING_BYTES(x) (((x) / 8) + ((x) % 8 != 0))
 #define MIN_COVERING_BITS(x) (32u - __builtin_clz(x))
@@ -28,14 +29,14 @@ std::string to_str(const T &t) {
     return ss.str();
 }
 
-struct Date {
+PACK(struct Date {
     unsigned short year;
     unsigned char month, day;
 
     std::string toMySQLDateString() const;
 
     static Date parse(const std::string &dateString);
-} __attribute__((packed));
+});
 
 struct DrawingSerialiser;
 struct DrawingSummary;
@@ -353,11 +354,11 @@ private:
     unsigned __lapSizes[4];
 };
 
-struct DrawingSummaryCompressionSchema {
+PACK(struct DrawingSummaryCompressionSchema {
     DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessID,
-            float maxLapSize, unsigned maxApertureID, unsigned char maxDrawingLength);
+        float maxLapSize, unsigned maxApertureID, unsigned char maxDrawingLength);
 
-    unsigned compressedSize(const DrawingSummary& summary) const;
+    unsigned compressedSize(const DrawingSummary &summary) const;
 
     void compressSummary(const DrawingSummary &summary, void *target) const;
 
@@ -380,6 +381,6 @@ private:
     unsigned char thicknessIDBytes;
     unsigned char lapBytes;
     unsigned char apertureIDBytes;
-} __attribute__((packed));
+});
 
 #endif //DATABASE_MANAGER_DRAWING_H

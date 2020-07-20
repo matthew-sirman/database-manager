@@ -6,10 +6,6 @@
 #define DATABASE_SERVER_SERVER_H
 
 #include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <vector>
 #include <future>
 #include <chrono>
