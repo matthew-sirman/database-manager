@@ -5,10 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS -pthread)
 
-set(Qt5Pdf_DIR /home/matthew/Qt/5.14.2/modules/qtpdf/lib/cmake/Qt5Pdf)
-set(Qt5PdfWidgets_DIR /home/matthew/Qt/5.14.2/modules/qtpdf/lib/cmake/Qt5PdfWidgets)
-
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Pdf PdfWidgets)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 
 add_definitions(-DQT_NO_VERSION_TAGGING)
 
@@ -25,4 +22,4 @@ include_directories(${PROJECT_SOURCE_DIR}/../encrypt/include)
 
 add_executable(${PROJECT_NAME} ${WIDGETS} ${PROJECT_UI} main.cpp src/networking/Server.cpp include/networking/Server.h src/networking/Client.cpp include/networking/Client.h guard.h src/networking/NetworkMessage.cpp include/networking/NetworkMessage.h src/networking/TCPSocket.cpp include/networking/TCPSocket.h src/database/DatabaseManager.cpp include/database/DatabaseManager.h src/database/Drawing.cpp include/database/Drawing.h src/database/DatabaseRequestHandler.cpp include/database/DatabaseRequestHandler.h src/database/DatabaseQuery.cpp include/database/DatabaseQuery.h src/database/drawingComponents.cpp include/database/drawingComponents.h include/database/RequestType.h src/database/DatabaseResponseHandler.cpp include/database/DatabaseResponseHandler.h include/database/ComboboxDataSource.h src/database/ComboboxDataSource.cpp include/database/DataSource.h src/database/DrawingSearchResultsModel.cpp include/database/DrawingSearchResultsModel.h)
 
-target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets)
+target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets)
