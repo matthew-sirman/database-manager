@@ -28,7 +28,7 @@ MainMenu::MainMenu(QWidget *parent) :
     client->setResponseHandler(*handler);
 
     // TODO: Make connection interface and make non blocking (?)
-    if (!client->connectToServer("192.168.68.120", 10000, [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
+    if (!client->connectToServer("localhost", 10000, [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
         QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
                                                                 "The application cannot be used without a connection to the server. "
                                                                 "Is the server running?");
@@ -50,6 +50,13 @@ MainMenu::MainMenu(QWidget *parent) :
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::LeftSide, nullptr);
 
     handler->setDrawingReceivedHandler([this](DrawingRequest &drawingRequest) { onReceiveDrawing(drawingRequest); });
+
+    handler->setDrawingInsertResponseHandler([this](DrawingInsert::InsertResponseType responseType, unsigned responseCode) {
+        emit insertDrawingResponseReceived(responseType, responseCode);
+    });
+
+    connect(this, SIGNAL(insertDrawingResponseReceived(unsigned, unsigned)),
+            this, SLOT(insertDrawingResponse(unsigned, unsigned)));
 
     setupComboboxSources();
     setupValidators();
@@ -88,24 +95,29 @@ void MainMenu::setupComboboxSources() {
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
 
     ui->productTypeSearchInput->setDataSource(productSource);
-    ui->productTypeSearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->productTypeSearchInput->addExtraSourceItem({ "Any" });
     ui->apertureSearchInput->setDataSource(apertureSource);
-    ui->apertureSearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->apertureSearchInput->addExtraSourceItem({ "Any" });
     ui->thickness1SearchInput->setDataSource(materialSource);
-    ui->thickness1SearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->thickness1SearchInput->addExtraSourceItem({ "Any" });
     ui->thickness2SearchInput->setDataSource(materialSource);
-    ui->thickness2SearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->thickness2SearchInput->addExtraSourceItem({ "Any" });
     ui->machineSearchInput->setDataSource(machineSource);
-    ui->machineSearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->machineSearchInput->addExtraSourceItem({ "Any" });
     ui->deckSearchInput->setDataSource(machineDeckSource);
-    ui->deckSearchInput->addExtraSourceItem({ "Any", std::nullopt });
+    ui->deckSearchInput->addExtraSourceItem({ "Any" });
 }
 
 void MainMenu::setupValidators() {
     QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3}[a-zA-Z]?)$"));
 
     ui->drawingNumberSearchInput->setValidator(drawingNumberValidator);
-    connect(ui->drawingNumberSearchInput, SIGNAL(textEdited(const QString &)), SLOT(capitaliseLineEdit(const QString &)));
+    connect(ui->drawingNumberSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
+
+    QRegExpValidator *positionSearchValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
+
+    ui->positionSearchInput->setValidator(positionSearchValidator);
+    connect(ui->positionSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
 }
 
 void MainMenu::setupActivators() {
@@ -183,6 +195,28 @@ unsigned MainMenu::getValidRequestCode() const {
     return codes.size();
 }
 
+unsigned MainMenu::getValidInsertCode() const {
+    std::vector<unsigned> codes;
+
+    for (std::pair<unsigned, const Drawing *> code : drawingInserts) {
+        codes.push_back(code.first);
+    }
+    for (unsigned i = 0; i < codes.size(); i++) {
+        unsigned target = codes[i];
+        while (target < codes.size() && target != codes[target]) {
+            unsigned temp = codes[target];
+            codes[target] = target;
+            target = temp;
+        }
+    }
+    for (unsigned i = 0; i < codes.size(); i++) {
+        if (codes[i] != i) {
+            return i;
+        }
+    }
+    return codes.size();
+}
+
 void MainMenu::searchButtonPressed() {
     DatabaseSearchQuery query;
 
@@ -200,19 +234,19 @@ void MainMenu::searchButtonPressed() {
         query.length = { length - tolerance, length + tolerance };
     }
     if (ui->productTypeSearchInput->currentText() != "Any") {
-        query.productType = DrawingComponentManager<Product>::getComponentByID(ui->productTypeSearchInput->currentData().toInt());
+        query.productType = DrawingComponentManager<Product>::getComponentByID(ui->productTypeSearchInput->currentData().value<ElementIndex>());
     }
     if (ui->numberOfBarsLabel->active()) {
         query.numberOfBars = ui->numberOfBarsSearchInput->value();
     }
     if (ui->apertureSearchInput->currentText() != "Any") {
-        query.aperture = DrawingComponentManager<Aperture>::getComponentByID(ui->apertureSearchInput->currentData().toInt());
+        query.aperture = DrawingComponentManager<Aperture>::getComponentByID(ui->apertureSearchInput->currentData().value<ElementIndex>());
     }
     if (ui->thickness1SearchInput->currentText() != "Any") {
-        query.topThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness1SearchInput->currentData().toInt());
+        query.topThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness1SearchInput->currentData().value<ElementIndex>());
     }
     if (ui->thickness2SearchInput->currentText() != "Any") {
-        query.bottomThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness2SearchInput->currentData().toInt());
+        query.bottomThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness2SearchInput->currentData().value<ElementIndex>());
     }
     if (ui->startDateLabel->active()) {
         QDate date = ui->startDateSearchInput->date();
@@ -257,7 +291,7 @@ void MainMenu::searchButtonPressed() {
         query.overlapAttachment = (LapAttachment) (ui->overlapAttachmentSearchInput->currentIndex() - 1);
     }
     if (ui->machineSearchInput->currentText() != "Any") {
-        query.machine = DrawingComponentManager<Machine>::getComponentByID(ui->machineSearchInput->currentData().toInt());
+        query.machine = DrawingComponentManager<Machine>::getComponentByID(ui->machineSearchInput->currentData().value<ElementIndex>());
     }
     if (ui->quantityOnDeckLabel->active()) {
         query.quantityOnDeck = ui->quantityOnDeckSearchInput->value();
@@ -266,7 +300,7 @@ void MainMenu::searchButtonPressed() {
         query.position = ui->positionSearchInput->text().toStdString();
     }
     if (ui->deckSearchInput->currentText() != "Any") {
-        query.machineDeck = DrawingComponentManager<MachineDeck>::getComponentByID(ui->deckSearchInput->currentData().toInt());
+        query.machineDeck = DrawingComponentManager<MachineDeck>::getComponentByID(ui->deckSearchInput->currentData().value<ElementIndex>());
     }
 
     unsigned bufferSize;
@@ -313,7 +347,24 @@ void MainMenu::closeTab(int index) {
 }
 
 void MainMenu::openAddDrawingTab() {
-    ui->mainTabs->addTab(new AddDrawingPageWidget(ui->mainTabs), tr("Add Drawing"));
+    AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(ui->mainTabs);
+    addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
+        DrawingInsert insert;
+        insert.drawingData = drawing;
+
+        insert.setForce(force);
+
+        insert.responseEchoCode = getValidInsertCode();
+        drawingInserts[insert.responseEchoCode] = &drawing;
+
+        unsigned bufferSize = insert.serialisedSize();
+        void *buffer = alloca(bufferSize);
+        insert.serialise(buffer);
+
+        client->addMessageToSendQueue(buffer, bufferSize);
+    });
+    ui->mainTabs->addTab(addDrawingPage, tr("Add Drawing"));
+    ui->mainTabs->setCurrentWidget(addDrawingPage);
 }
 
 void MainMenu::processDrawings() {
@@ -339,6 +390,40 @@ void MainMenu::processDrawings() {
         drawingResponseActions.erase(request->responseEchoCode);
     }
     drawingReceivedQueueMutex.unlock();
+}
+
+void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCode) {
+    switch ((DrawingInsert::InsertResponseType) responseType) {
+        case DrawingInsert::NONE:
+            break;
+        case DrawingInsert::SUCCESS:
+            QMessageBox::about(this, "Insert Drawing", "Drawing successfully added to database.");
+            drawingInserts.erase(responseCode);
+            break;
+        case DrawingInsert::FAILED:
+            QMessageBox::about(this, "Insert Drawing", "The attempt to add the drawing to the database"
+                                                       "was unsuccessful.");
+            drawingInserts.erase(responseCode);
+            break;
+        case DrawingInsert::DRAWING_EXISTS:
+            QMessageBox::StandardButton questionResponse = QMessageBox::question(this, "Insert Drawing", "This drawing already exists in the database. Would you like "
+                                                                                                         "to update it?");
+            if (questionResponse == QMessageBox::Yes) {
+                DrawingInsert insert;
+                insert.responseEchoCode = responseCode;
+                insert.insertResponseType = DrawingInsert::NONE;
+                insert.drawingData = *drawingInserts[responseCode];
+                insert.setForce(true);
+
+                unsigned bufferSize = insert.serialisedSize();
+                void *buffer = alloca(bufferSize);
+                insert.serialise(buffer);
+
+                client->addMessageToSendQueue(buffer, bufferSize);
+
+            }
+            break;
+    }
 }
 
 #pragma clang diagnostic pop

@@ -93,6 +93,8 @@ public:
 
     DrawingSummaryCompressionSchema compressionSchema();
 
+    void setCompressionSchemaDirty();
+
 private:
     // The two keys this server has for communicating with clients and signing messages for authenticity
     RSAKeyPair serverKey, serverSignature;

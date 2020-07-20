@@ -61,6 +61,8 @@ private:
 
     unsigned getValidRequestCode() const;
 
+    unsigned getValidInsertCode() const;
+
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;
     ComboboxComponentDataSource<ApertureShape> apertureShapeSource;
@@ -74,6 +76,8 @@ private:
     std::unordered_map<unsigned, DrawingResponseMode> drawingResponseActions;
     std::queue<DrawingRequest *> drawingReceivedQueue;
     std::mutex drawingReceivedQueueMutex;
+
+    std::unordered_map<unsigned, const Drawing *> drawingInserts;
 
 private slots:
     void searchButtonPressed();
@@ -90,8 +94,12 @@ private slots:
 
     void processDrawings();
 
+    void insertDrawingResponse(unsigned responseType, unsigned responseCode);
+
 signals:
     void itemAddedToDrawingQueue();
+
+    void insertDrawingResponseReceived(unsigned responseType, unsigned responseCode);
 
 };
 

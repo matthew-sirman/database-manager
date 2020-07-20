@@ -83,12 +83,15 @@ Drawing::Drawing(const Drawing &drawing) {
     this->__machineTemplate = drawing.__machineTemplate;
     this->productID = drawing.productID;
     this->apertureID = drawing.apertureID;
+    this->__apertureDirection = drawing.__apertureDirection;
     this->__tensionType = drawing.__tensionType;
     this->__pressDrawingHyperlinks = drawing.__pressDrawingHyperlinks;
     this->barSpacings = drawing.barSpacings;
     this->barWidths = drawing.barWidths;
     this->sideIronIDs[0] = drawing.sideIronIDs[0];
     this->sideIronIDs[1] = drawing.sideIronIDs[1];
+    this->sideIronsInverted[0] = drawing.sideIronsInverted[0];
+    this->sideIronsInverted[1] = drawing.sideIronsInverted[1];
     this->sidelaps[0] = drawing.sidelaps[0];
     this->sidelaps[1] = drawing.sidelaps[1];
     this->overlaps[0] = drawing.overlaps[0];
@@ -165,6 +168,26 @@ void Drawing::setMachineTemplate(const Machine &machine, unsigned int quantityOn
     invokeUpdateCallbacks();
 }
 
+void Drawing::setMachine(const Machine &machine) {
+    __machineTemplate.machineID = machine.componentID;
+    invokeUpdateCallbacks();
+}
+
+void Drawing::setQuantityOnDeck(unsigned quantityOnDeck) {
+    __machineTemplate.quantityOnDeck = quantityOnDeck;
+    invokeUpdateCallbacks();
+}
+
+void Drawing::setMachinePosition(const std::string &position) {
+    __machineTemplate.position = position;
+    invokeUpdateCallbacks();
+}
+
+void Drawing::setMachineDeck(const MachineDeck &deck) {
+    __machineTemplate.deckID = deck.componentID;
+    invokeUpdateCallbacks();
+}
+
 Product Drawing::product() const {
     return DrawingComponentManager<Product>::getComponentByID(productID);
 }
@@ -181,6 +204,14 @@ Aperture Drawing::aperture() const {
 void Drawing::setAperture(const Aperture &ap) {
     apertureID = ap.componentID;
     invokeUpdateCallbacks();
+}
+
+ApertureDirection Drawing::apertureDirection() const {
+    return __apertureDirection;
+}
+
+void Drawing::setApertureDirection(ApertureDirection direction) {
+    __apertureDirection = direction;
 }
 
 Drawing::TensionType Drawing::tensionType() const {
@@ -233,6 +264,22 @@ void Drawing::setBars(const std::vector<float> &spacings, const std::vector<floa
     invokeUpdateCallbacks();
 }
 
+float Drawing::barSpacing(unsigned int index) const {
+    return barSpacings[index];
+}
+
+float Drawing::barWidth(unsigned int index) const {
+    return barWidths[index];
+}
+
+float Drawing::leftBar() const {
+    return barWidths.front();
+}
+
+float Drawing::rightBar() const {
+    return barWidths.back();
+}
+
 SideIron Drawing::sideIron(Drawing::Side side) const {
     switch (side) {
         case LEFT:
@@ -240,7 +287,17 @@ SideIron Drawing::sideIron(Drawing::Side side) const {
         case RIGHT:
             return DrawingComponentManager<SideIron>::getComponentByID(sideIronIDs[1]);
     }
-    return DrawingComponentManager<SideIron>::getComponentByID(1);
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right")
+}
+
+bool Drawing::sideIronInverted(Drawing::Side side) const {
+    switch (side) {
+        case LEFT:
+            return sideIronsInverted[0];
+        case RIGHT:
+            return sideIronsInverted[1];
+    }
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right")
 }
 
 void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
@@ -250,6 +307,32 @@ void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
             break;
         case RIGHT:
             sideIronIDs[1] = sideIron.componentID;
+            break;
+    }
+    invokeUpdateCallbacks();
+}
+
+void Drawing::setSideIronInverted(Drawing::Side side, bool inverted) {
+    switch (side) {
+        case LEFT:
+            sideIronsInverted[0] = inverted;
+            break;
+        case RIGHT:
+            sideIronsInverted[1] = inverted;
+            break;
+    }
+    invokeUpdateCallbacks();
+}
+
+void Drawing::removeSideIron(Drawing::Side side) {
+    switch (side) {
+        case LEFT:
+            sideIronIDs[0] = 1;
+            sideIronsInverted[0] = false;
+            break;
+        case RIGHT:
+            sideIronIDs[1] = 1;
+            sideIronsInverted[1] = false;
             break;
     }
     invokeUpdateCallbacks();
@@ -277,6 +360,18 @@ void Drawing::setSidelap(Drawing::Side side, const Drawing::Lap &lap) {
     invokeUpdateCallbacks();
 }
 
+void Drawing::removeSidelap(Drawing::Side side) {
+    switch (side) {
+        case LEFT:
+            sidelaps[0] = std::nullopt;
+            break;
+        case RIGHT:
+            sidelaps[1] = std::nullopt;
+            break;
+    }
+    invokeUpdateCallbacks();
+}
+
 std::optional<Drawing::Lap> Drawing::overlap(Drawing::Side side) const {
     switch (side) {
         case LEFT:
@@ -294,6 +389,18 @@ void Drawing::setOverlap(Drawing::Side side, const Drawing::Lap &lap) {
             break;
         case RIGHT:
             overlaps[1] = lap;
+            break;
+    }
+    invokeUpdateCallbacks();
+}
+
+void Drawing::removeOverlap(Drawing::Side side) {
+    switch (side) {
+        case LEFT:
+            overlaps[0] = std::nullopt;
+            break;
+        case RIGHT:
+            overlaps[1] = std::nullopt;
             break;
     }
     invokeUpdateCallbacks();
@@ -319,21 +426,56 @@ bool Drawing::hasOverlaps() const {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCSimplifyInspection"
 
-bool Drawing::checkDrawingValidity() const {
-    if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) != __width) {
-        return false;
+Drawing::BuildWarning Drawing::checkDrawingValidity() const {
+    if (!std::regex_match(__drawingNumber, std::regex(drawingNumberRegexPattern))) {
+        return INVALID_DRAWING_NUMBER;
     }
-    if (std::find(barWidths.begin(), barWidths.end(), 0.0f) != barWidths.end()) {
-        return false;
+    if (!DrawingComponentManager<Product>::validComponentID(productID)) {
+        return INVALID_PRODUCT;
     }
     if (__width <= 0) {
-        return false;
+        return INVALID_WIDTH;
     }
     if (__length <= 0) {
-        return false;
+        return INVALID_LENGTH;
+    }
+    if (!DrawingComponentManager<Material>::validComponentID(topLayerThicknessID)) {
+        return INVALID_TOP_MATERIAL;
+    }
+    if (bottomLayerThicknessID.has_value()) {
+        if (!DrawingComponentManager<Material>::validComponentID(bottomLayerThicknessID.value())) {
+            return INVALID_BOTTOM_MATERIAL;
+        }
+    }
+    if (!DrawingComponentManager<Aperture>::validComponentID(apertureID)) {
+        return INVALID_APERTURE;
+    }
+    if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) != __width) {
+        return INVALID_BAR_SPACINGS;
+    }
+    if (std::find(barWidths.begin(), barWidths.end(), 0.0f) != barWidths.end()) {
+        return INVALID_BAR_WIDTHS;
+    }
+    if (!DrawingComponentManager<SideIron>::validComponentID(sideIronIDs[0])) {
+        return INVALID_SIDE_IRONS;
+    }
+    if (!DrawingComponentManager<SideIron>::validComponentID(sideIronIDs[1])) {
+        return INVALID_SIDE_IRONS;
+    }
+    if (!DrawingComponentManager<Machine>::validComponentID(__machineTemplate.machineID)) {
+        return INVALID_MACHINE;
+    }
+    if (!std::regex_match(__machineTemplate.position, std::regex(positionRegexPattern))) {
+        return INVALID_MACHINE_POSITION;
+    }
+    if (!DrawingComponentManager<MachineDeck>::validComponentID(__machineTemplate.deckID)) {
+        return INVALID_MACHINE_DECK;
+    }
+    if (__hyperlink.empty()) {
+        return INVALID_HYPERLINK;
     }
 
-    return true;
+    return SUCCESS;
 }
 
 #pragma clang diagnostic pop
@@ -352,7 +494,9 @@ void Drawing::addUpdateCallback(const std::function<void()> &callback) {
 
 void Drawing::invokeUpdateCallbacks() const {
     for (const std::function<void()> &callback : updateCallbacks) {
-        callback();
+        if (callback) {
+            callback();
+        }
     }
 }
 
@@ -408,6 +552,8 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     // Aperture ID
     *((unsigned *) buffer) = drawing.apertureID;
     buffer += sizeof(unsigned);
+    *((ApertureDirection *) buffer) = drawing.__apertureDirection;
+    buffer += sizeof(ApertureDirection);
 
     // Tension Type
     *buffer++ = (unsigned char) drawing.__tensionType;
@@ -438,8 +584,10 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     // Side Irons
     *((unsigned *) buffer) = drawing.sideIronIDs[0];
     buffer += sizeof(unsigned);
+    *buffer++ = drawing.sideIronsInverted[0];
     *((unsigned *) buffer) = drawing.sideIronIDs[1];
     buffer += sizeof(unsigned);
+    *buffer++ = drawing.sideIronsInverted[1];
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {
@@ -539,7 +687,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Product ID
     size += sizeof(unsigned);
     // Aperture ID
-    size += sizeof(unsigned);
+    size += sizeof(unsigned) + sizeof(ApertureDirection);
     // Tension Type
     size += sizeof(unsigned char);
     // Press Drawing Links
@@ -551,7 +699,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Bar widths
     size += sizeof(unsigned char) + drawing.barWidths.size() * sizeof(float);
     // Side Irons
-    size += 2 * sizeof(unsigned);
+    size += 2 * (sizeof(unsigned) + sizeof(unsigned char));
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     size += sizeof(unsigned char);
     // Lap: Attachment Type, Width, Material ID
@@ -636,6 +784,8 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     // Aperture ID
     drawing->apertureID = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
+    drawing->__apertureDirection = *((ApertureDirection *) buffer);
+    buffer += sizeof(ApertureDirection);
 
     // Tension Type
     drawing->__tensionType = (Drawing::TensionType) *buffer++;
@@ -665,8 +815,11 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     // Side Irons
     drawing->sideIronIDs[0] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
+    drawing->sideIronsInverted[0] = *buffer++;
+
     drawing->sideIronIDs[1] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
+    drawing->sideIronsInverted[1] = *buffer++;
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {

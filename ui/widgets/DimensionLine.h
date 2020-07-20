@@ -23,6 +23,10 @@ public:
 
     [[nodiscard]] QRectF boundingRect() const override;
 
+    void setBounds(QRectF newBounds);
+
+    void setLabel(const QString &newLabel);
+
 private:
     QRectF bounds;
     Orientation orientation;
@@ -37,6 +41,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
     [[nodiscard]] QRectF boundingRect() const override;
+
+    void setBounds(QRectF newBounds);
 
 private:
     QRectF bounds;

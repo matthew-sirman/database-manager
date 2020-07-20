@@ -40,7 +40,7 @@ color: rgb(70, 70, 70);
       <attribute name="title">
        <string>Drawing Specs</string>
       </attribute>
-      <layout class="QFormLayout" name="formLayout">
+      <layout class="QFormLayout" name="drawingSpecsTabFormLayout">
        <item row="0" column="0">
         <widget class="QLabel" name="drawingNumberLabel">
          <property name="text">
@@ -215,7 +215,7 @@ color: rgb(70, 70, 70);
       <attribute name="title">
        <string>Machine Template</string>
       </attribute>
-      <layout class="QFormLayout" name="formLayout_2">
+      <layout class="QFormLayout" name="machineTemplateTabFormLayout">
        <item row="0" column="0">
         <widget class="QLabel" name="machineLabel">
          <property name="text">
@@ -278,7 +278,7 @@ color: rgb(70, 70, 70);
       <attribute name="title">
        <string>Drawings</string>
       </attribute>
-      <layout class="QFormLayout" name="formLayout_3">
+      <layout class="QFormLayout" name="drawingPDFsTabFormLayout">
        <item row="0" column="0">
         <widget class="QLabel" name="drawingPDFSelectorLabel">
          <property name="text">
@@ -289,15 +289,33 @@ color: rgb(70, 70, 70);
        <item row="0" column="1">
         <widget class="QComboBox" name="drawingPDFSelectorInput"/>
        </item>
-       <item row="1" column="1">
-        <widget class="QGraphicsView" name="pdfViewer"/>
-       </item>
       </layout>
      </widget>
     </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>drawingViewTabs</tabstop>
+  <tabstop>drawingNumberTextbox</tabstop>
+  <tabstop>productTextbox</tabstop>
+  <tabstop>widthTextbox</tabstop>
+  <tabstop>lengthTextbox</tabstop>
+  <tabstop>apertureTextbox</tabstop>
+  <tabstop>sidelapsTextbox</tabstop>
+  <tabstop>overlapsTextbox</tabstop>
+  <tabstop>leftSideIronTextbox</tabstop>
+  <tabstop>rightSideIronTextbox</tabstop>
+  <tabstop>thicknessTextbox</tabstop>
+  <tabstop>topMaterialTextbox</tabstop>
+  <tabstop>bottomMaterialTextbox</tabstop>
+  <tabstop>notesTextbox</tabstop>
+  <tabstop>machineTextbox</tabstop>
+  <tabstop>quantityOnDeckTextbox</tabstop>
+  <tabstop>positionTextbox</tabstop>
+  <tabstop>deckTextbox</tabstop>
+  <tabstop>drawingPDFSelectorInput</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -12,9 +12,6 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                                                unsigned int messageSize) {
     switch (getDeserialiseType(message)) {
         case RequestType::DRAWING_SEARCH_QUERY: {
-//            sql::ResultSet *results = caller.databaseManager().executeSearchQuery(
-//                    DatabaseSearchQuery::deserialise(message));
-
             std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(
                     DatabaseSearchQuery::deserialise(message));
 
@@ -45,8 +42,51 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
             break;
         }
-        case RequestType::DRAWING_ADD:
+        case RequestType::DRAWING_INSERT: {
+            DrawingInsert drawingInsert = DrawingInsert::deserialise(message);
+
+            if (drawingInsert.drawingData.has_value()) {
+                DrawingInsert response;
+
+                response.responseEchoCode = drawingInsert.responseEchoCode;
+
+                switch (caller.databaseManager().drawingExists(drawingInsert.drawingData->drawingNumber())) {
+                    case DatabaseManager::EXISTS:
+                        if (drawingInsert.forcing()) {
+                            if (caller.databaseManager().insertDrawing(drawingInsert)) {
+                                response.insertResponseType = DrawingInsert::SUCCESS;
+                            } else {
+                                response.insertResponseType = DrawingInsert::FAILED;
+                            }
+                        } else {
+                            response.insertResponseType = DrawingInsert::DRAWING_EXISTS;
+                        }
+                        break;
+                    case DatabaseManager::NOT_EXISTS:
+                        if (caller.databaseManager().insertDrawing(drawingInsert)) {
+                            response.insertResponseType = DrawingInsert::SUCCESS;
+                        } else {
+                            response.insertResponseType = DrawingInsert::FAILED;
+                        }
+                        break;
+                    case DatabaseManager::ERROR:
+                        response.insertResponseType = DrawingInsert::FAILED;
+                        break;
+                }
+
+                if (response.insertResponseType == DrawingInsert::SUCCESS) {
+                    caller.setCompressionSchemaDirty();
+                }
+
+                unsigned responseSize = response.serialisedSize();
+                void *responseBuffer = alloca(responseSize);
+                response.serialise(responseBuffer);
+
+                caller.addMessageToSendQueue(clientHandle, responseBuffer, responseSize);
+            }
+
             break;
+        }
         case RequestType::SOURCE_PRODUCT_TABLE: {
             if (DrawingComponentManager<Product>::dirty()) {
                 sql::ResultSet *sourceData = caller.databaseManager().sourceTable("products");
@@ -215,7 +255,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     data.thickness = sourceData->getUInt("thickness");
 
                     materials.push_back(data);
-                    bufferSize += sizeof(unsigned) + sizeof(unsigned short) * 2 + sizeof(unsigned char) + data.name.size();
+                    bufferSize +=
+                            sizeof(unsigned) + sizeof(unsigned short) * 2 + sizeof(unsigned char) + data.name.size();
                 }
 
                 void *sourceBuffer = malloc(bufferSize);
@@ -251,13 +292,28 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
         }
         case RequestType::SOURCE_SIDE_IRON_TABLE: {
             if (DrawingComponentManager<SideIron>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("side_irons");
+                std::stringstream orderBy;
+                orderBy << "CASE " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
+                orderBy << "ELSE 10 " << std::endl;
+                orderBy << "END, length, drawing_number DESC" << std::endl;
+
+                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("side_irons", orderBy.str());
 
                 struct SideIronData {
                     unsigned id{};
                     unsigned char type{};
                     unsigned short length{};
                     std::string drawingNumber;
+                    std::string hyperlink;
                 };
 
                 std::vector<SideIronData> sideIrons;
@@ -269,9 +325,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     data.type = sourceData->getUInt("type");
                     data.length = sourceData->getUInt("length");
                     data.drawingNumber = sourceData->getString("drawing_number");
+                    data.hyperlink = sourceData->getString("hyperlink");
 
                     sideIrons.push_back(data);
-                    bufferSize += sizeof(unsigned) + sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) + data.drawingNumber.size();
+                    bufferSize +=
+                            sizeof(unsigned) + sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) +
+                            data.drawingNumber.size() + sizeof(unsigned char) + data.hyperlink.size();
                 }
 
                 void *sourceBuffer = malloc(bufferSize);
@@ -292,6 +351,10 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     *buff++ = nameSize;
                     memcpy(buff, sideIron.drawingNumber.c_str(), nameSize);
                     buff += nameSize;
+                    unsigned char hyperlinkSize = sideIron.hyperlink.size();
+                    *buff++ = hyperlinkSize;
+                    memcpy(buff, sideIron.hyperlink.c_str(), hyperlinkSize);
+                    buff += hyperlinkSize;
                 }
 
                 DrawingComponentManager<SideIron>::sourceComponentTable(sourceBuffer, bufferSize);
@@ -306,7 +369,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
         }
         case RequestType::SOURCE_MACHINE_TABLE: {
             if (DrawingComponentManager<Machine>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machines");
+                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machines",
+                                                                                  "manufacturer<>'None', manufacturer, model");
 
                 struct MachineData {
                     unsigned id{};
@@ -323,7 +387,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     data.model = sourceData->getString("model");
 
                     machines.push_back(data);
-                    bufferSize += sizeof(unsigned) + sizeof(unsigned char) + data.manufacturer.size() + sizeof(unsigned char) + data.model.size();
+                    bufferSize += sizeof(unsigned) + sizeof(unsigned char) + data.manufacturer.size() +
+                                  sizeof(unsigned char) + data.model.size();
                 }
 
                 void *sourceBuffer = malloc(bufferSize);

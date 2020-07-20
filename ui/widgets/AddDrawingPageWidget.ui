@@ -101,6 +101,27 @@ QLabel[hovering=true] {
          </property>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="dateLabel">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+         </property>
+         <property name="text">
+          <string>Date</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QDateEdit" name="dateInput"/>
+       </item>
       </layout>
      </item>
      <item>
@@ -118,6 +139,19 @@ QLabel[hovering=true] {
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="confirmDrawingButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Add Drawing to Database</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -169,6 +203,9 @@ QLabel[hovering=true] {
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::UpDownArrows</enum>
              </property>
              <property name="suffix">
               <string>mm</string>
@@ -239,6 +276,22 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
+           <item row="2" column="1">
+            <widget class="DynamicComboBox" name="topMaterialInput">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+            </widget>
+           </item>
            <item row="3" column="0">
             <widget class="ActivatorLabel" name="bottomMaterialLabel">
              <property name="styleSheet">
@@ -254,22 +307,6 @@ QLabel[hovering=true] {
              </property>
              <property name="text">
               <string>Bottom Material</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="DynamicComboBox" name="topMaterialInput">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="editable">
-              <bool>true</bool>
-             </property>
-             <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -399,7 +436,7 @@ QLabel[hovering=true] {
             </widget>
            </item>
            <item row="7" column="0">
-            <widget class="ActivatorLabel" name="overlapsLabel">
+            <widget class="QLabel" name="notesLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
 	padding: 3px;
@@ -412,73 +449,12 @@ QLabel[hovering=true] {
 }</string>
              </property>
              <property name="text">
-              <string>Overlaps</string>
+              <string>Notes</string>
              </property>
             </widget>
            </item>
            <item row="7" column="1">
-            <widget class="QComboBox" name="overlapTypeInput">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
-             </property>
-             <item>
-              <property name="text">
-               <string>Integral</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Bonded</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="ActivatorLabel" name="sidelapsLabel">
-             <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
-
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
-             </property>
-             <property name="text">
-              <string>Sidelaps</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="1">
-            <widget class="QComboBox" name="sidelapTypeInput">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
-             </property>
-             <item>
-              <property name="text">
-               <string>Integral</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Bonded</string>
-              </property>
-             </item>
-            </widget>
+            <widget class="QTextEdit" name="notesInput"/>
            </item>
           </layout>
          </item>
@@ -1145,13 +1121,6 @@ QLabel[hovering=true] {
      </item>
     </layout>
    </item>
-   <item>
-    <widget class="Line" name="formsVisualSeparator">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -1171,6 +1140,39 @@ QLabel[hovering=true] {
    <header>../../../ui/widgets/DrawingView.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>drawingNumberInput</tabstop>
+  <tabstop>productInput</tabstop>
+  <tabstop>dateInput</tabstop>
+  <tabstop>widthInput</tabstop>
+  <tabstop>lengthInput</tabstop>
+  <tabstop>topMaterialInput</tabstop>
+  <tabstop>bottomMaterialInput</tabstop>
+  <tabstop>apertureInput</tabstop>
+  <tabstop>numberOfBarsInput</tabstop>
+  <tabstop>tensionTypeInput</tabstop>
+  <tabstop>drawingSpecsVisual</tabstop>
+  <tabstop>notesInput</tabstop>
+  <tabstop>leftSideIronTypeInput</tabstop>
+  <tabstop>leftSideIronLengthInput</tabstop>
+  <tabstop>leftSideIronDrawingInput</tabstop>
+  <tabstop>leftSideIronInvertedInput</tabstop>
+  <tabstop>rightSideIronTypeInput</tabstop>
+  <tabstop>rightSideIronLengthInput</tabstop>
+  <tabstop>rightSideIronDrawingInput</tabstop>
+  <tabstop>rightSideIronInvertedInput</tabstop>
+  <tabstop>machineInput</tabstop>
+  <tabstop>quantityOnDeckInput</tabstop>
+  <tabstop>machinePositionInput</tabstop>
+  <tabstop>machineDeckInput</tabstop>
+  <tabstop>openDrawingPDFButton</tabstop>
+  <tabstop>pressDrawingHyperlinksAddButton</tabstop>
+  <tabstop>confirmDrawingButton</tabstop>
+  <tabstop>hyperlinkDisplay</tabstop>
+  <tabstop>pressDrawingHyperlinksRemoveButton</tabstop>
+  <tabstop>pressDrawingHyperlinkList</tabstop>
+  <tabstop>drawingFormTabs</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

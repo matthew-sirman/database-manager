@@ -7,6 +7,8 @@
 
 #include <QWidget>
 #include <QGraphicsScene>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "../../include/database/Drawing.h"
 
@@ -18,7 +20,10 @@ class AddDrawingPageWidget : public QWidget {
     Q_OBJECT
 
 public:
-    // TODO: Constructor from drawing (clone)
+    enum AddDrawingMode {
+        ADD_NEW_DRAWING,
+        EDIT_DRAWING
+    };
 
     explicit AddDrawingPageWidget(QWidget *parent = nullptr);
 
@@ -29,6 +34,14 @@ public:
     void setupActivators();
 
     void setupDrawingUpdateConnections();
+
+    void setDrawing(const Drawing &newDrawing);
+
+    void confirmDrawing();
+
+    void setConfirmationCallback(const std::function<void(const Drawing &, bool)> &callback);
+
+    void setMode(AddDrawingMode mode);
 
 private:
     Ui::AddDrawingPageWidget *ui = nullptr;
@@ -44,7 +57,14 @@ private:
 
     Drawing drawing;
 
+    unsigned leftSICache = 0, rightSICache = 0;
+    bool leftSIInverted = false, rightSIInverted = false;
+
     const QRegExp drawingNumberRegex = QRegExp("^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3}[a-zA-Z]?)$");
+
+    std::function<void(const Drawing &, bool)> confirmationCallback;
+
+    AddDrawingMode addMode = ADD_NEW_DRAWING;
 
 private slots:
     void capitaliseLineEdit(const QString &text);

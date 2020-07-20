@@ -23,7 +23,7 @@ struct DrawingComponent {
 
     constexpr size_t serialisedSize() const { return sizeof(unsigned); };
 
-    virtual constexpr ComboboxDataElement toDataElement() const = 0;
+    virtual std::vector<ComboboxDataElement> toDataElement() const = 0;
 
     unsigned componentID;
 
@@ -40,12 +40,18 @@ struct Product : public DrawingComponent {
 public:
     std::string productName;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     Product(unsigned id);
 
     static Product *fromSource(void *buffer, unsigned &elementSize);
+};
+
+enum class ApertureDirection {
+    NON_DIRECTIONAL,
+    LONGITUDINAL,
+    TRANSVERSE
 };
 
 struct Aperture : public DrawingComponent {
@@ -57,9 +63,9 @@ public:
     unsigned apertureShapeID{};
     unsigned short quantity{};
 
-    std::string apertureName() const;
+    std::string apertureName(ApertureDirection direction = ApertureDirection::NON_DIRECTIONAL) const;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     Aperture(unsigned id);
@@ -73,7 +79,7 @@ struct ApertureShape : public DrawingComponent {
 public:
     std::string shape;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     ApertureShape(unsigned id);
@@ -90,7 +96,7 @@ public:
 
     std::string material() const;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     Material(unsigned id);
@@ -114,12 +120,11 @@ public:
     SideIronType type = SideIronType::A;
     unsigned short length{};
     std::string drawingNumber;
-    // TODO: Implement hyperlink string
     std::string hyperlink;
 
     std::string sideIronStr() const;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     SideIron(unsigned id);
@@ -146,7 +151,7 @@ public:
 
     std::string machineName() const;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     Machine(unsigned id);
@@ -160,7 +165,7 @@ struct MachineDeck : public DrawingComponent {
 public:
     std::string deck;
 
-    ComboboxDataElement toDataElement() const override;
+    std::vector<ComboboxDataElement> toDataElement() const override;
 
 private:
     MachineDeck(unsigned id);
@@ -176,7 +181,7 @@ public:
     void updateSource() override;
 
 private:
-    void setAdapter(const std::function<ComboboxDataElement(std::vector<unsigned>::const_iterator)> &adapter) override {}
+    void setAdapter(const std::function<std::vector<ComboboxDataElement>(std::vector<unsigned>::const_iterator)> &adapter) override {}
 
     std::vector<unsigned> indexSet;
 };
@@ -207,6 +212,8 @@ public:
     static void setDirty();
 
     static T &getComponentByID(unsigned id);
+
+    static bool validComponentID(unsigned id);
 
     static void *rawSourceData();
 
@@ -294,11 +301,16 @@ void DrawingComponentManager<T>::setDirty() {
 
 template<typename T>
 T &DrawingComponentManager<T>::getComponentByID(unsigned int id) {
-    if (componentLookup.find(id) == componentLookup.end()) {
+    if (!validComponentID(id)) {
         ERROR_RAW("Invalid component lookup ID.")
     }
 
     return *componentLookup[id];
+}
+
+template<typename T>
+bool DrawingComponentManager<T>::validComponentID(unsigned int id) {
+    return componentLookup.find(id) != componentLookup.end();
 }
 
 template<typename T>

@@ -1227,6 +1227,7 @@ color: rgb(70, 70, 70);
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="fileMenu_createBackupAction"/>
     <addaction name="fileMenu_exitAction"/>
    </widget>
    <widget class="QMenu" name="drawingMenu">
@@ -1235,8 +1236,18 @@ color: rgb(70, 70, 70);
     </property>
     <addaction name="drawingMenu_addDrawingAction"/>
    </widget>
+   <widget class="QMenu" name="componentsMenu">
+    <property name="title">
+     <string>Components</string>
+    </property>
+    <addaction name="componentsMenu_addApertureAction"/>
+    <addaction name="componentsMenu_addMachineAction"/>
+    <addaction name="componentsMenu_addSideIronAction"/>
+    <addaction name="actionAdd_new_Material"/>
+   </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
+   <addaction name="componentsMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="drawingMenu_addDrawingAction">
@@ -1247,6 +1258,31 @@ color: rgb(70, 70, 70);
   <action name="fileMenu_exitAction">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="componentsMenu_addApertureAction">
+   <property name="text">
+    <string>Add new Aperture</string>
+   </property>
+  </action>
+  <action name="componentsMenu_addMachineAction">
+   <property name="text">
+    <string>Add new Machine</string>
+   </property>
+  </action>
+  <action name="componentsMenu_addSideIronAction">
+   <property name="text">
+    <string>Add new Side Iron</string>
+   </property>
+  </action>
+  <action name="actionAdd_new_Material">
+   <property name="text">
+    <string>Add new Material</string>
+   </property>
+  </action>
+  <action name="fileMenu_createBackupAction">
+   <property name="text">
+    <string>Create Backup</string>
    </property>
   </action>
  </widget>
@@ -1262,6 +1298,38 @@ color: rgb(70, 70, 70);
    <header>../../../ui/widgets/ActivatorLabel.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>mainTabs</tabstop>
+  <tabstop>drawingNumberSearchInput</tabstop>
+  <tabstop>widthSearchInput</tabstop>
+  <tabstop>lengthSearchInput</tabstop>
+  <tabstop>productTypeSearchInput</tabstop>
+  <tabstop>numberOfBarsSearchInput</tabstop>
+  <tabstop>apertureSearchInput</tabstop>
+  <tabstop>thickness1SearchInput</tabstop>
+  <tabstop>thickness2SearchInput</tabstop>
+  <tabstop>startDateSearchInput</tabstop>
+  <tabstop>endDateSearchInput</tabstop>
+  <tabstop>sideIronTypeSearchInput</tabstop>
+  <tabstop>sideIronLengthSearchInput</tabstop>
+  <tabstop>sidelapsSearchInput</tabstop>
+  <tabstop>overlapsSearchInput</tabstop>
+  <tabstop>sidelapWidthSearchInput</tabstop>
+  <tabstop>overlapWidthSearchInput</tabstop>
+  <tabstop>sidelapAttachmentSearchInput</tabstop>
+  <tabstop>overlapAttachmentSearchInput</tabstop>
+  <tabstop>machineSearchInput</tabstop>
+  <tabstop>quantityOnDeckSearchInput</tabstop>
+  <tabstop>positionSearchInput</tabstop>
+  <tabstop>deckSearchInput</tabstop>
+  <tabstop>searchButton</tabstop>
+  <tabstop>searchResultsTable</tabstop>
+  <tabstop>widthToleranceSearchInput</tabstop>
+  <tabstop>lengthToleranceSearchInput</tabstop>
+  <tabstop>sidelapWidthToleranceSearchInput</tabstop>
+  <tabstop>overlapWidthToleranceSearchInput</tabstop>
+  <tabstop>searchConditionsTabs</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

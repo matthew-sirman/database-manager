@@ -143,4 +143,53 @@ public:
     std::optional<Drawing> drawingData;
 };
 
+class DrawingInsert : public DatabaseQuery {
+public:
+    enum InsertResponseType {
+        NONE,
+        SUCCESS,
+        FAILED,
+        DRAWING_EXISTS
+    };
+
+    void serialise(void *target) const override;
+
+    unsigned int serialisedSize() const override;
+
+    static DrawingInsert &deserialise(void *data);
+
+    void setForce(bool val);
+
+    bool forcing() const;
+
+    std::string drawingInsertQuery(unsigned templateID) const;
+
+    std::string barSpacingInsertQuery(unsigned matID) const;
+
+    std::string machineTemplateInsertQuery() const;
+
+    std::string testMachineTemplateQuery() const;
+
+    std::string apertureInsertQuery(unsigned matID) const;
+
+    std::string sideIronInsertQuery(unsigned matID) const;
+
+    std::string thicknessInsertQuery(unsigned matID) const;
+
+    std::string overlapsInsertQuery(unsigned matID) const;
+
+    std::string sidelapsInsertQuery(unsigned matID) const;
+
+    std::string punchProgramsInsertQuery(unsigned matID) const;
+
+    std::optional<Drawing> drawingData;
+
+    InsertResponseType insertResponseType = NONE;
+
+    unsigned responseEchoCode;
+
+private:
+    bool force = false;
+};
+
 #endif //DATABASE_MANAGER_DATABASEQUERY_H

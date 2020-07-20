@@ -59,7 +59,8 @@ DrawingSummaryCompressionSchema DatabaseManager::createCompressionSchema() {
         maxThicknessID = results->getUInt("mx");
         delete results;
 
-        results = statement->executeQuery("SELECT MAX(width) AS mx FROM (SELECT width FROM sidelaps UNION SELECT width FROM overlaps) AS all_lap_widths");
+        results = statement->executeQuery(
+                "SELECT MAX(width) AS mx FROM (SELECT width FROM sidelaps UNION SELECT width FROM overlaps) AS all_lap_widths");
         results->first();
         maxLapSize = (float) results->getDouble("mx");
         delete results;
@@ -121,12 +122,15 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
 
         std::stringstream queryString;
 
-        queryString << "SELECT d.drawing_number AS drawing_number, d.product_id AS product_id, d.width AS width, " << std::endl;
-        queryString << "d.length AS length, d.tension_type AS tension_type, d.drawing_date AS drawing_date, " << std::endl;
+        queryString << "SELECT d.drawing_number AS drawing_number, d.product_id AS product_id, d.width AS width, "
+                    << std::endl;
+        queryString << "d.length AS length, d.tension_type AS tension_type, d.drawing_date AS drawing_date, "
+                    << std::endl;
         queryString << "d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
-        queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, " << std::endl;
+        queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, "
+                    << std::endl;
         queryString << "mt.deck_id AS deck_id, " << std::endl;
-        queryString << "mal.aperture_id AS aperture_id" << std::endl;
+        queryString << "mal.aperture_id AS aperture_id, mal.direction AS aperture_direction" << std::endl;
         queryString << "FROM drawings AS d " << std::endl;
         queryString << "INNER JOIN machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
         queryString << "INNER JOIN mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
@@ -148,6 +152,17 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
                     results->getUInt("quantity_on_deck"), results->getString("position"),
                     DrawingComponentManager<MachineDeck>::getComponentByID(results->getUInt("deck_id")));
             drawing->setAperture(DrawingComponentManager<Aperture>::getComponentByID(results->getUInt("aperture_id")));
+            ApertureDirection apertureDirection;
+            std::string apertureDirectionString = results->getString("aperture_direction");
+
+            if (apertureDirectionString == "Longitudinal") {
+                apertureDirection = ApertureDirection::LONGITUDINAL;
+            } else if (apertureDirectionString == "Transverse") {
+                apertureDirection = ApertureDirection::TRANSVERSE;
+            } else {
+                apertureDirection = ApertureDirection::NON_DIRECTIONAL;
+            }
+            drawing->setApertureDirection(apertureDirection);
         } else {
             ERROR_RAW_SAFE("Failed to load drawing with mat_id: " + std::to_string(query.matID))
             drawing->setLoadWarning(Drawing::LoadWarning::LOAD_FAILED);
@@ -202,15 +217,17 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
 
         results = statement->executeQuery(queryString.str());
         if (results->first()) {
-            // TODO: Add the inverted flag to the drawing data
             barWidths.insert(barWidths.begin(), (float) results->getDouble("bar_width"));
             drawing->setSideIron(Drawing::Side::LEFT,
-                    DrawingComponentManager<SideIron>::getComponentByID(results->getUInt("side_iron_id")));
+                                 DrawingComponentManager<SideIron>::getComponentByID(results->getUInt("side_iron_id")));
+            drawing->setSideIronInverted(Drawing::LEFT, results->getBoolean("inverted"));
 
             if (results->next()) {
                 barWidths.push_back((float) results->getUInt("bar_width"));
                 drawing->setSideIron(Drawing::Side::RIGHT,
-                        DrawingComponentManager<SideIron>::getComponentByID(results->getUInt("side_iron_id")));
+                                     DrawingComponentManager<SideIron>::getComponentByID(
+                                             results->getUInt("side_iron_id")));
+                drawing->setSideIronInverted(Drawing::RIGHT, results->getBoolean("inverted"));
             } else {
                 ERROR_RAW_SAFE("Missing right side iron for drawing: " + drawing->drawingNumber())
                 drawing->setLoadWarning(Drawing::LoadWarning::MISSING_SIDE_IRONS_DETECTED);
@@ -262,10 +279,12 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
 
             if (results->getString("type") == "S") {
                 drawing->setSidelap(side, Drawing::Lap((float) results->getDouble("width"), attachment,
-                        DrawingComponentManager<Material>::getComponentByID(results->getUInt("material_id"))));
+                                                       DrawingComponentManager<Material>::getComponentByID(
+                                                               results->getUInt("material_id"))));
             } else {
                 drawing->setOverlap(side, Drawing::Lap((float) results->getDouble("width"), attachment,
-                                                       DrawingComponentManager<Material>::getComponentByID(results->getUInt("material_id"))));
+                                                       DrawingComponentManager<Material>::getComponentByID(
+                                                               results->getUInt("material_id"))));
             }
         }
 
@@ -296,14 +315,14 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
     }
 }
 
-sql::ResultSet *DatabaseManager::sourceTable(const std::string &tableName) {
+sql::ResultSet *DatabaseManager::sourceTable(const std::string &tableName, const std::string &orderBy) {
     try {
         if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.")
         }
 
         sql::Statement *statement = conn->createStatement();
-        sql::ResultSet *results = statement->executeQuery("SELECT * FROM " + tableName);
+        sql::ResultSet *results = statement->executeQuery("SELECT * FROM " + tableName + (orderBy.empty() ? "" : " ORDER BY " + orderBy));
 
         delete statement;
 
@@ -311,6 +330,122 @@ sql::ResultSet *DatabaseManager::sourceTable(const std::string &tableName) {
     } catch (sql::SQLException &e) {
         SQL_ERROR_SAFE(e)
         return nullptr;
+    }
+}
+
+bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
+    try {
+        if (conn == nullptr) {
+            ERROR_RAW("Attempted to execute query without connecting to database.");
+        }
+
+        if (!insert.drawingData.has_value()) {
+            return false;
+        }
+        if (insert.drawingData->checkDrawingValidity() != Drawing::SUCCESS) {
+            return false;
+        }
+
+        sql::Statement *statement = conn->createStatement();
+
+        sql::ResultSet *existingMatIDResults = statement->executeQuery(
+                "SELECT mat_id FROM drawings WHERE drawing_number='" + insert.drawingData->drawingNumber() + "'");
+
+        if (existingMatIDResults->first()) {
+            if (!insert.forcing()) {
+                delete existingMatIDResults;
+                return false;
+            }
+            unsigned existingMatID = existingMatIDResults->getUInt("mat_id");
+            statement->execute("DELETE FROM drawings WHERE mat_id=" + to_str(existingMatID));
+        }
+        delete existingMatIDResults;
+
+        sql::ResultSet *existingTemplateResults = statement->executeQuery(insert.testMachineTemplateQuery());
+
+        unsigned templateID;
+
+        if (existingTemplateResults->first()) {
+            templateID = existingTemplateResults->getUInt("template_id");
+        } else {
+            statement->execute(insert.machineTemplateInsertQuery());
+            sql::ResultSet *templateIDResults = statement->executeQuery("SELECT @@identity AS id");
+            if (templateIDResults->first()) {
+                templateID = templateIDResults->getUInt("id");
+            } else {
+                delete templateIDResults;
+                delete existingTemplateResults;
+                return false;
+            }
+            delete templateIDResults;
+        }
+
+        delete existingTemplateResults;
+
+        statement->execute(insert.drawingInsertQuery(templateID));
+        sql::ResultSet *matIDResults = statement->executeQuery("SELECT @@identity AS id");
+
+        unsigned matID;
+        if (matIDResults->first()) {
+            matID = matIDResults->getUInt("id");
+        } else {
+            delete matIDResults;
+            return false;
+        }
+        delete matIDResults;
+
+        statement->execute(insert.barSpacingInsertQuery(matID));
+        statement->execute(insert.apertureInsertQuery(matID));
+        statement->execute(insert.sideIronInsertQuery(matID));
+        statement->execute(insert.thicknessInsertQuery(matID));
+
+        std::string overlapInsert = insert.overlapsInsertQuery(matID), sidelapInsert = insert.sidelapsInsertQuery(
+                matID);
+
+        if (!overlapInsert.empty()) {
+            statement->execute(overlapInsert);
+        }
+        if (!sidelapInsert.empty()) {
+            statement->execute(sidelapInsert);
+        }
+
+        std::string punchProgramInsert = insert.punchProgramsInsertQuery(matID);
+
+        if (!punchProgramInsert.empty()) {
+            statement->execute(punchProgramInsert);
+        }
+
+        delete statement;
+
+        return true;
+    } catch (sql::SQLException &e) {
+        SQL_ERROR_SAFE(e);
+        return false;
+    }
+}
+
+DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std::string &drawingNumber) const {
+    try {
+        if (conn == nullptr) {
+            ERROR_RAW("Attempted to execute query without connecting to database.");
+        }
+
+        sql::Statement *statement = conn->createStatement();
+        sql::ResultSet *results = statement->executeQuery(
+                "SELECT mat_id FROM drawings WHERE drawing_number='" + drawingNumber + "'");
+
+        delete statement;
+
+        if (results->first()) {
+            delete results;
+            return EXISTS;
+        } else {
+            delete results;
+            return NOT_EXISTS;
+        }
+    } catch (sql::SQLException &e) {
+        SQL_ERROR_SAFE(e);
+        return ERROR;
     }
 }
 

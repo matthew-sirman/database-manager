@@ -59,6 +59,14 @@ QRectF DimensionLine::boundingRect() const {
     return bounds;
 }
 
+void DimensionLine::setBounds(QRectF newBounds) {
+    bounds = newBounds;
+}
+
+void DimensionLine::setLabel(const QString &newLabel) {
+    label = newLabel;
+}
+
 WidgetDimensionLine::WidgetDimensionLine(QRectF dimensionBounds, DimensionLine::Orientation orientation,
                                          QGraphicsProxyWidget *proxy) {
     this->bounds = dimensionBounds;
@@ -78,8 +86,7 @@ void WidgetDimensionLine::paint(QPainter *painter, const QStyleOptionGraphicsIte
             painter->drawLine((bounds.topLeft() + bounds.topRight()) / 2,
                               (bounds.bottomLeft() + bounds.bottomRight()) / 2);
 
-            proxy->setRotation(-90);
-            proxy->setPos(bounds.center() - QPointF(proxy->size().width() / 2, proxy->size().height() * 2));
+            proxy->setPos(bounds.center() - QPointF(proxy->size().width() * proxy->scale() / 2, proxy->size().height() * proxy->scale() * 1.5));
 
             painter->restore();
             break;
@@ -94,7 +101,7 @@ void WidgetDimensionLine::paint(QPainter *painter, const QStyleOptionGraphicsIte
             painter->drawLine((bounds.topLeft() + bounds.bottomLeft()) / 2,
                               (bounds.topRight() + bounds.bottomRight()) / 2);
 
-            proxy->setPos(bounds.center() - QPointF(proxy->size().width() / 2, proxy->size().height() * 2));
+            proxy->setPos(bounds.center() - QPointF(proxy->size().width() * proxy->scale() / 2, proxy->size().height() * proxy->scale() * 1.5));
 
             painter->restore();
             break;
@@ -104,4 +111,8 @@ void WidgetDimensionLine::paint(QPainter *painter, const QStyleOptionGraphicsIte
 
 QRectF WidgetDimensionLine::boundingRect() const {
     return bounds;
+}
+
+void WidgetDimensionLine::setBounds(QRectF newBounds) {
+    bounds = newBounds;
 }

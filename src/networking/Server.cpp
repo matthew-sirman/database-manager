@@ -226,6 +226,10 @@ DrawingSummaryCompressionSchema Server::compressionSchema() {
     return schema;
 }
 
+void Server::setCompressionSchemaDirty() {
+    schemaDirty = true;
+}
+
 void Server::acceptClient(TCPSocket &clientSocket) {
     // PROTOCOL:
     // Client and server send each other their respective public keys

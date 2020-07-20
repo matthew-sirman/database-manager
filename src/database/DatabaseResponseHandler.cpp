@@ -11,8 +11,13 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
                 resultsModel->sourceDataFromBuffer(message);
             }
             break;
-        case RequestType::DRAWING_ADD:
+        case RequestType::DRAWING_INSERT: {
+            DrawingInsert response = DrawingInsert::deserialise(message);
+            if (drawingInsertCallback) {
+                drawingInsertCallback(response.insertResponseType, response.responseEchoCode);
+            }
             break;
+        }
         case RequestType::SOURCE_PRODUCT_TABLE:
             DrawingComponentManager<Product>::sourceComponentTable(message, messageSize);
             break;
@@ -48,6 +53,10 @@ void DatabaseResponseHandler::setSearchResultsModel(DrawingSearchResultsModel *m
 
 void DatabaseResponseHandler::setDrawingReceivedHandler(const std::function<void(DrawingRequest &)> &callback) {
     drawingReceivedCallback = callback;
+}
+
+void DatabaseResponseHandler::setDrawingInsertResponseHandler(const std::function<void(DrawingInsert::InsertResponseType, unsigned)> &callback) {
+    drawingInsertCallback = callback;
 }
 
 RequestType DatabaseResponseHandler::getDeserialiseType(void *data) {

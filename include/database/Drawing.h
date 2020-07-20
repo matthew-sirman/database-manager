@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cstring>
 #include <numeric>
+#include <regex>
 
 #include "drawingComponents.h"
 
@@ -49,6 +50,24 @@ public:
         MISSING_MATERIAL_DETECTED = 0x08
     };
 
+    enum BuildWarning {
+        SUCCESS,
+        INVALID_DRAWING_NUMBER,
+        INVALID_PRODUCT,
+        INVALID_WIDTH,
+        INVALID_LENGTH,
+        INVALID_TOP_MATERIAL,
+        INVALID_BOTTOM_MATERIAL,
+        INVALID_APERTURE,
+        INVALID_BAR_SPACINGS,
+        INVALID_BAR_WIDTHS,
+        INVALID_SIDE_IRONS,
+        INVALID_MACHINE,
+        INVALID_MACHINE_POSITION,
+        INVALID_MACHINE_DECK,
+        INVALID_HYPERLINK
+    };
+
     struct MachineTemplate {
         friend struct Drawing;
 
@@ -81,6 +100,12 @@ public:
 
         float width;
         LapAttachment attachmentType;
+
+        inline Lap() {
+            width = 0;
+            attachmentType = LapAttachment::INTEGRAL;
+            materialID = 0;
+        }
 
         inline Lap(float width, LapAttachment attachmentType, const Material &material) {
             this->width = width;
@@ -169,6 +194,14 @@ public:
 
     void setMachineTemplate(const Machine &machine, unsigned quantityOnDeck, const std::string &position, const MachineDeck &deck);
 
+    void setMachine(const Machine &machine);
+
+    void setQuantityOnDeck(unsigned quantityOnDeck);
+
+    void setMachinePosition(const std::string &position);
+
+    void setMachineDeck(const MachineDeck &deck);
+
     Product product() const;
 
     void setProduct(const Product &prod);
@@ -176,6 +209,10 @@ public:
     Aperture aperture() const;
 
     void setAperture(const Aperture &ap);
+
+    ApertureDirection apertureDirection() const;
+
+    void setApertureDirection(ApertureDirection direction);
 
     TensionType tensionType() const;
 
@@ -191,17 +228,35 @@ public:
 
     void setBars(const std::vector<float>& spacings, const std::vector<float>& widths);
 
+    float barSpacing(unsigned index) const;
+
+    float barWidth(unsigned index) const;
+
+    float leftBar() const;
+
+    float rightBar() const;
+
     SideIron sideIron(Side side) const;
 
+    bool sideIronInverted(Side side) const;
+
     void setSideIron(Side side, const SideIron &sideIron);
+
+    void setSideIronInverted(Side side, bool inverted);
+
+    void removeSideIron(Side side);
 
     std::optional<Lap> sidelap(Side side) const;
 
     void setSidelap(Side side, const Lap& lap);
 
+    void removeSidelap(Side side);
+
     std::optional<Lap> overlap(Side side) const;
 
     void setOverlap(Side side, const Lap& lap);
+
+    void removeOverlap(Side side);
 
     std::vector<std::string> pressDrawingHyperlinks() const;
 
@@ -211,7 +266,7 @@ public:
 
     bool hasOverlaps() const;
 
-    bool checkDrawingValidity() const;
+    BuildWarning checkDrawingValidity() const;
 
     bool loadWarning(LoadWarning warning) const;
 
@@ -222,6 +277,9 @@ public:
 private:
     void invokeUpdateCallbacks() const;
 
+    static constexpr char drawingNumberRegexPattern[] = "^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3}[a-zA-Z]?)$";
+    static constexpr char positionRegexPattern[] = "(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)";
+
     std::string __drawingNumber;
     Date __date;
     float __width, __length;
@@ -231,6 +289,7 @@ private:
 
     unsigned productID;
     unsigned apertureID;
+    ApertureDirection __apertureDirection;
 
     TensionType __tensionType;
 
@@ -240,6 +299,7 @@ private:
     std::vector<float> barWidths;
 
     unsigned sideIronIDs[2];
+    bool sideIronsInverted[2];
 
     std::optional<Lap> sidelaps[2], overlaps[2];
 

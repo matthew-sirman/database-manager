@@ -7,6 +7,8 @@
 
 #include <QWidget>
 #include <QMessageBox>
+#include <QPdfDocument>
+#include <QPdfView>
 
 #include "../../include/database/Drawing.h"
 
@@ -28,6 +30,8 @@ private:
     Ui::DrawingViewWidget *ui;
 
     const Drawing *drawing;
+
+    QPdfView *pdfViewer= nullptr;
 };
 
 

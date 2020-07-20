@@ -593,7 +593,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     }
 
     sql << "GROUP BY d.mat_id, mal.aperture_id" << std::endl;
-    sql << "ORDER BY d.mat_id DESC;";
+    sql << "ORDER BY IF(d.drawing_number REGEXP '^[A-Z][0-9]{2,}[A-Z]?$', "
+           "CONCAT('0', d.drawing_number), d.drawing_number) DESC;";
 
     return sql.str();
 }
@@ -689,5 +690,321 @@ DrawingRequest &DrawingRequest::deserialise(void *data) {
     return *drawingRequest;
 }
 
-#pragma clang diagnostic pop
+void DrawingInsert::serialise(void *target) const {
+    unsigned char *buffer = (unsigned char *) target;
+    *((RequestType *) buffer) = RequestType::DRAWING_INSERT;
+    buffer += sizeof(RequestType);
 
+    *((InsertResponseType *) buffer) = insertResponseType;
+    buffer += sizeof(InsertResponseType);
+
+    *((unsigned *) buffer) = responseEchoCode;
+    buffer += sizeof(unsigned);
+
+    *buffer++ = force;
+
+    bool hasDrawingData = drawingData.has_value();
+    *buffer++ = hasDrawingData;
+
+    if (hasDrawingData) {
+        DrawingSerialiser::serialise(drawingData.value(), buffer);
+    }
+}
+
+unsigned int DrawingInsert::serialisedSize() const {
+    return sizeof(RequestType) + sizeof(InsertResponseType) + sizeof(unsigned) + sizeof(unsigned char) +
+           sizeof(unsigned char) +
+           (drawingData.has_value() ? DrawingSerialiser::serialisedSize(drawingData.value()) : 0);
+}
+
+DrawingInsert &DrawingInsert::deserialise(void *data) {
+    DrawingInsert *drawingInsert = new DrawingInsert();
+
+    unsigned char *buffer = (unsigned char *) data + sizeof(RequestType);
+    drawingInsert->insertResponseType = *((InsertResponseType *) buffer);
+    buffer += sizeof(InsertResponseType);
+    drawingInsert->responseEchoCode = *((unsigned *) buffer);
+    buffer += sizeof(unsigned);
+
+    drawingInsert->force = *buffer++;
+
+    bool hasDrawingData = *buffer++;
+
+    if (hasDrawingData) {
+        drawingInsert->drawingData = DrawingSerialiser::deserialise(buffer);
+    } else {
+        drawingInsert->drawingData = std::nullopt;
+    }
+
+    return *drawingInsert;
+}
+
+void DrawingInsert::setForce(bool val) {
+    force = val;
+}
+
+bool DrawingInsert::forcing() const {
+    return force;
+}
+
+std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
+    std::stringstream insert;
+
+    insert << "INSERT INTO drawings" << std::endl;
+    insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
+              "hyperlink, notes)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    insert << "('" << drawingData->drawingNumber() << "', " << drawingData->product().componentID << ", " <<
+           templateID << ", " << drawingData->width() << ", " << drawingData->length() << ", ";
+
+    switch (drawingData->tensionType()) {
+        case Drawing::SIDE:
+            insert << "'Side'";
+            break;
+        case Drawing::END:
+            insert << "'End'";
+            break;
+    }
+
+    insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", '" <<
+           drawingData->hyperlink() << "', '" << drawingData->notes() << "')" << std::endl;
+
+    return insert.str();
+}
+
+std::string DrawingInsert::barSpacingInsertQuery(unsigned matID) const {
+    if (drawingData->numberOfBars() == 0) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO bar_spacings" << std::endl;
+    insert << "(mat_id, bar_spacing, bar_width, bar_index)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (unsigned i = 0; i < drawingData->numberOfBars(); i++) {
+        insert << "(" << matID << ", " << drawingData->barSpacing(i) << ", " << drawingData->barWidth(i + 1) <<
+               ", " << i << ")";
+        if (i != drawingData->numberOfBars() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::machineTemplateInsertQuery() const {
+    std::stringstream insert;
+
+    insert << "INSERT INTO machine_templates" << std::endl;
+    insert << "(machine_id, quantity_on_deck, position, deck_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    Drawing::MachineTemplate t = drawingData->machineTemplate();
+
+    insert << "(" << t.machine().componentID << ", " << t.quantityOnDeck << ", '" <<
+           t.position << "', " << t.deck().componentID << ")" << std::endl;
+
+    return insert.str();
+}
+
+std::string DrawingInsert::testMachineTemplateQuery() const {
+    std::stringstream query;
+
+    Drawing::MachineTemplate t = drawingData->machineTemplate();
+
+    query << "SELECT template_id FROM machine_templates" << std::endl;
+    query << "WHERE machine_id=" << t.machine().componentID << " AND " << std::endl;
+    query << "quantity_on_deck=" << t.quantityOnDeck << " AND" << std::endl;
+    query << "position='" << t.position << "' AND" << std::endl;
+    query << "deck_id=" << t.deck().componentID << std::endl;
+
+    return query.str();
+}
+
+std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
+    std::stringstream insert;
+
+    insert << "INSERT INTO mat_aperture_link" << std::endl;
+    insert << "(mat_id, aperture_id, direction)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    insert << "(" << matID << ", " << drawingData->aperture().componentID << ", '";
+
+    switch (drawingData->apertureDirection()) {
+        case ApertureDirection::NON_DIRECTIONAL:
+            insert << "Nondirectional";
+            break;
+        case ApertureDirection::LONGITUDINAL:
+            insert << "Longitudinal";
+            break;
+        case ApertureDirection::TRANSVERSE:
+            insert << "Transverse";
+            break;
+    }
+
+    insert << "')" << std::endl;
+
+    return insert.str();
+}
+
+std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
+    std::stringstream insert;
+
+    insert << "INSERT INTO mat_side_iron_link" << std::endl;
+    insert << "(mat_id, side_iron_id, bar_width, inverted, side_iron_index)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID << ", " << drawingData->leftBar() << ", " <<
+           drawingData->sideIronInverted(Drawing::LEFT) << ", 0), " << std::endl;
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID << ", " << drawingData->rightBar() << ", " <<
+           drawingData->sideIronInverted(Drawing::RIGHT) << ", 1)" << std::endl;
+
+    return insert.str();
+}
+
+std::string DrawingInsert::thicknessInsertQuery(unsigned matID) const {
+    std::stringstream insert;
+
+    insert << "INSERT INTO thickness" << std::endl;
+    insert << "(mat_id, material_thickness_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    insert << "(" << matID << ", " << drawingData->material(Drawing::TOP)->componentID << ")";
+
+    if (drawingData->material(Drawing::BOTTOM).has_value()) {
+        insert << ", " << std::endl << "(" << matID << ", " << drawingData->material(Drawing::BOTTOM)->componentID
+               << ")";
+    }
+
+    insert << std::endl;
+
+    return insert.str();
+}
+
+std::string DrawingInsert::overlapsInsertQuery(unsigned matID) const {
+    if (!drawingData->hasOverlaps()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO overlaps" << std::endl;
+    insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    std::optional<Drawing::Lap> left = drawingData->overlap(Drawing::LEFT), right = drawingData->overlap(
+            Drawing::RIGHT);
+
+    if (left.has_value()) {
+        insert << "(" << matID << ", " << left->width << ", 'Left', ";
+
+        switch (left->attachmentType) {
+            case LapAttachment::INTEGRAL:
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                break;
+            case LapAttachment::BONDED:
+                insert << "'Bonded', " << left->material().componentID << ")";
+                break;
+        }
+
+        if (right.has_value()) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    if (right.has_value()) {
+        insert << "(" << matID << ", " << right->width << ", 'Right', ";
+
+        switch (right->attachmentType) {
+            case LapAttachment::INTEGRAL:
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                break;
+            case LapAttachment::BONDED:
+                insert << "'Bonded', " << right->material().componentID << ")";
+                break;
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
+    if (!drawingData->hasSidelaps()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO sidelaps" << std::endl;
+    insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    std::optional<Drawing::Lap> left = drawingData->sidelap(Drawing::LEFT), right = drawingData->sidelap(
+            Drawing::RIGHT);
+
+    if (left.has_value()) {
+        insert << "(" << matID << ", " << left->width << ", 'Left', ";
+
+        switch (left->attachmentType) {
+            case LapAttachment::INTEGRAL:
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                break;
+            case LapAttachment::BONDED:
+                insert << "'Bonded', " << left->material().componentID << ")";
+                break;
+        }
+
+        if (right.has_value()) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    if (right.has_value()) {
+        insert << "(" << matID << ", " << right->width << ", 'Right', ";
+
+        switch (right->attachmentType) {
+            case LapAttachment::INTEGRAL:
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                break;
+            case LapAttachment::BONDED:
+                insert << "'Bonded', " << right->material().componentID << ")";
+                break;
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
+    std::vector<std::string> punchPDFs = drawingData->pressDrawingHyperlinks();
+
+    if (punchPDFs.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO punch_program_pdfs" << std::endl;
+    insert << "(mat_id, hyperlink)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<std::string>::const_iterator it = punchPDFs.begin(); it != punchPDFs.end(); it++) {
+        insert << "(" << matID << ", '" << *it << "')";
+        if (it != punchPDFs.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+#pragma clang diagnostic pop

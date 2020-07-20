@@ -16,12 +16,16 @@ public:
     void setSearchResultsModel(DrawingSearchResultsModel *model);
 
     void setDrawingReceivedHandler(const std::function<void(DrawingRequest &)> &callback);
+
+    void setDrawingInsertResponseHandler(const std::function<void(DrawingInsert::InsertResponseType, unsigned)> &callback);
 private:
     static RequestType getDeserialiseType(void *data);
 
     DrawingSearchResultsModel *resultsModel = nullptr;
 
     std::function<void(DrawingRequest &)> drawingReceivedCallback = nullptr;
+
+    std::function<void(DrawingInsert::InsertResponseType, unsigned)> drawingInsertCallback = nullptr;
 };
 
 

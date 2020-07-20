@@ -26,7 +26,7 @@ void DrawingViewWidget::updateFields() {
     ui->productTextbox->setText(drawing->product().productName.c_str());
     ui->widthTextbox->setText(to_str(drawing->width()).c_str());
     ui->lengthTextbox->setText(to_str(drawing->length()).c_str());
-    ui->apertureTextbox->setText(drawing->aperture().apertureName().c_str());
+    ui->apertureTextbox->setText(drawing->aperture().apertureName(drawing->apertureDirection()).c_str());
 
     if (drawing->loadWarning(Drawing::INVALID_LAPS_DETECTED)) {
         QMessageBox::about(this, "Invalid Sidelaps/Overlaps Detected", "When loading this drawing from the database, "
@@ -64,8 +64,10 @@ void DrawingViewWidget::updateFields() {
     if (drawing->loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
         QMessageBox::about(this, "Missing Side Irons Detected", "The side irons are missing from this drawing");
     } else {
-        ui->leftSideIronTextbox->setText(drawing->sideIron(Drawing::Side::LEFT).sideIronStr().c_str());
-        ui->rightSideIronTextbox->setText(drawing->sideIron(Drawing::Side::RIGHT).sideIronStr().c_str());
+        ui->leftSideIronTextbox->setText((drawing->sideIron(Drawing::LEFT).sideIronStr() +
+                                          (drawing->sideIronInverted(Drawing::LEFT) ? " (inverted)" : "")).c_str());
+        ui->rightSideIronTextbox->setText((drawing->sideIron(Drawing::RIGHT).sideIronStr() +
+                                          (drawing->sideIronInverted(Drawing::RIGHT) ? " (inverted)" : "")).c_str());
     }
     if (drawing->loadWarning(Drawing::MISSING_MATERIAL_DETECTED)) {
         QMessageBox::about(this, "Missing Material Detected", "The material(s) are missing from this drawing");
@@ -97,4 +99,19 @@ void DrawingViewWidget::updateFields() {
     for (const std::string &pdf : drawing->pressDrawingHyperlinks()) {
         ui->drawingPDFSelectorInput->addItem(pdf.c_str(), pdf.c_str());
     }
+
+    // TODO: Embed PDF viewer
+
+//    pdfViewer = new QPdfView(this);
+//
+//    connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+//        QPdfDocument *document = new QPdfDocument();
+//        document->load(ui->drawingPDFSelectorInput->itemData(index).toString());
+//
+//        document->load("/home/matthew/Cambridge/Maths/Supervisions/e-3/week5-ms2649.pdf");
+//
+//        pdfViewer->setDocument(document);
+//    });
+
+//    ui->drawingPDFsTabFormLayout->setWidget(1, QFormLayout::FieldRole, pdfViewer);
 }

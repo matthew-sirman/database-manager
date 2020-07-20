@@ -7,8 +7,23 @@
 
 #include <QComboBox>
 #include <QEvent>
+#include <QLineEdit>
 
 #include "../../include/database/ComboboxDataSource.h"
+
+struct ElementIndex {
+    ElementIndex() = default;
+
+    ElementIndex(unsigned index);
+
+    ElementIndex(unsigned index, unsigned differentiator);
+
+    operator unsigned() const;
+
+    unsigned index, differentiator;
+};
+
+Q_DECLARE_METATYPE(ElementIndex);
 
 class DynamicComboBox : public QComboBox {
     Q_OBJECT
@@ -21,15 +36,21 @@ public:
 
     void setDataSource(ComboboxDataSource &dataSource);
 
+    void setFilter(const std::function<bool(const ComboboxDataElement &)> &filter);
+
+    void removeFilter();
+
 protected:
     void showPopup() override;
 
-    bool event(QEvent *event) override;
+    void focusInEvent(QFocusEvent *e) override;
 
 private:
     ComboboxDataSource *source = nullptr;
 
     std::vector<ComboboxDataElement> elementsBeforeSource, elementsAfterSource;
+
+    std::function<bool(const ComboboxDataElement &)> sourceFilter = nullptr;
 
     unsigned sourceState = 0;
 

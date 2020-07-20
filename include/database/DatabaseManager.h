@@ -22,6 +22,12 @@
 
 class DatabaseManager {
 public:
+    enum DrawingExistsResponse {
+        EXISTS,
+        NOT_EXISTS,
+        ERROR
+    };
+
     DatabaseManager();
 
     void connectToDatabase(const std::string &database, const std::string &user, const std::string &password,
@@ -33,7 +39,11 @@ public:
 
     Drawing *executeDrawingQuery(const DrawingRequest &query) const;
 
-    sql::ResultSet *sourceTable(const std::string &tableName);
+    sql::ResultSet *sourceTable(const std::string &tableName, const std::string &orderBy = std::string());
+
+    bool insertDrawing(const DrawingInsert &insert);
+
+    DrawingExistsResponse drawingExists(const std::string &drawingNumber) const;
 
     void execute(const std::string &sqlQuery);
 
