@@ -26,7 +26,7 @@ void Client::initialiseClient() {
     guardTCPSocketCode(clientSocket.create());
 }
 
-bool Client::connectToServer(const std::string& ipAddress, int port, const std::function<void(const std::string &)> &authStringCallback) {
+bool Client::connectToServer(const std::string& ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback) {
     if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
         clientSocket.closeSocket();
         return false;
@@ -113,7 +113,102 @@ bool Client::connectToServer(const std::string& ipAddress, int port, const std::
     std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000,
             "<html><body><h1>Thank you</h1></body></html>");
 
-    EncryptedNetworkMessage authMessage(authToken, sessionKey);
+    unsigned char *authMessageBuff = (unsigned char *) alloca(sizeof(AuthMode) + authToken.size());
+
+    *((AuthMode *) authMessageBuff) = AuthMode::JWT;
+    memcpy(authMessageBuff + sizeof(AuthMode), authToken.c_str(), authToken.size());
+
+    EncryptedNetworkMessage authMessage(authMessageBuff, sizeof(AuthMode) + authToken.size(), sessionKey);
+    clientSocket.sendMessage(authMessage);
+
+    return true;
+}
+
+bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken) {if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
+        clientSocket.closeSocket();
+        return false;
+    }
+
+    // Protocol description found in the server accept method.
+    //
+    // 1. C -> S: KC
+    // 2. S -> C: KS
+    // 3. C -> S: {NC}_KS
+    // 4. S -> C: {{NC, NS, K, T}_SIG}_KC
+    //    if NC invalid:
+    //      client terminates connection
+    //      end
+    // 5. C -> S: {T, JWT}_K
+    //    if JWT invalid:
+    //      S -> C: ERROR
+    //      server terminates connection
+    // Both communicate with AES key from here, with messages starting with token
+
+    // 1: Send client's public key to server
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(PublicKey), KEY_MESSAGE));
+
+    // 2: Receive server's public key
+    PublicKey serverKey;
+    NetworkMessage serverKeyMessage;
+
+    clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE);
+
+    // If the received message was in any way erroneous, terminate the connection
+    if (serverKeyMessage.error()) {
+        std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
+        clientSocket.closeSocket();
+        return false;
+    }
+
+    memcpy(&serverKey, serverKeyMessage.getMessageData(), serverKeyMessage.getMessageSize());
+
+    // 3: Send random challenge to server encrypted under its public key
+    uint2048 challengeMessage;
+    uint64 *challenge = (uint64 *) &challengeMessage;
+    // We only want a 64 bit challenge, so leave the rest as 0s
+    CryptoSafeRandom::random(challenge, sizeof(uint64));
+    uint2048 encryptedChallenge = encrypt(challengeMessage, serverKey);
+    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), RSA_MESSAGE));
+
+    // 4: Receive signed challenge, nonce, session key and token, encrypted under client's public key
+    uint2048 signedEncryptedResponse;
+    NetworkMessage signedEncryptedResponseMessage;
+
+    clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE);
+
+    // If the received message was in any way erroneous, terminate the connection
+    if (signedEncryptedResponseMessage.error()) {
+        std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
+        clientSocket.closeSocket();
+        return false;
+    }
+
+    memcpy(&signedEncryptedResponse, signedEncryptedResponseMessage.getMessageData(), signedEncryptedResponseMessage.getMessageSize());
+
+    uint2048 responseValue = checkSignature(decrypt(signedEncryptedResponse, clientKey.privateKey), serverSignature);
+    uint8 *responseData = (uint8 *) &responseValue;
+    uint64 responseChallenge;
+    uint32 nonce;
+
+    memcpy(&responseChallenge, responseData, sizeof(uint64));
+    memcpy(&nonce, responseData + sizeof(uint64), sizeof(uint32));
+    memcpy(&sessionKey, responseData + sizeof(uint32) + sizeof(uint64), sizeof(AESKey));
+    memcpy(&sessionToken, responseData + sizeof(uint32) + sizeof(uint64) + sizeof(AESKey), sizeof(uint64));
+
+    if (responseChallenge != *challenge) {
+        clientSocket.closeSocket();
+        std::cerr << "ERROR::Client.cpp: Returned challenge from server incorrect. Server failed to authenticate itself." << std::endl;
+        return false;
+    }
+
+    // 5: Client now sends their repeat token to authenticate themselves
+
+    unsigned char *authMessageBuff = (unsigned char *) alloca(sizeof(AuthMode) + sizeof(uint256));
+
+    *((AuthMode *) authMessageBuff) = AuthMode::REPEAT_TOKEN;
+    memcpy(authMessageBuff + sizeof(AuthMode), &repeatToken, sizeof(uint256));
+
+    EncryptedNetworkMessage authMessage(authMessageBuff, sizeof(AuthMode) + sizeof(uint256), sessionKey);
     clientSocket.sendMessage(authMessage);
 
     return true;

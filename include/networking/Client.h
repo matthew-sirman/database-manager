@@ -35,7 +35,10 @@ public:
     void initialiseClient();
 
     // Connect to the server. Returns whether the connection was successful
-    bool connectToServer(const std::string &ipAddress, int port, const std::function<void(const std::string &)> &authStringCallback);
+    bool connectToServer(const std::string &ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback);
+
+    // Connect to the server with a repeat token. Returns whether the connection was successful
+    bool connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken);
 
     // Begins the client loop in another thread (so applications can run as usual)
     void startClientLoop();

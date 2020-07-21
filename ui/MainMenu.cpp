@@ -7,7 +7,7 @@
 #include "MainMenu.h"
 #include "../build/ui_MainMenu.h"
 
-MainMenu::MainMenu(QWidget *parent) :
+MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainMenu) {
     ui->setupUi(this);
@@ -15,25 +15,121 @@ MainMenu::MainMenu(QWidget *parent) :
     // TODO: Make this dynamic plus add keygen if needed
     // TODO: Add option to save login details (aka get repeat key which last x days/months)
 
+    std::ifstream clientMetaFile;
+    clientMetaFile.open(clientMetaFilePath);
+
+    nlohmann::json clientMeta;
+
+    try {
+        clientMetaFile >> clientMeta;
+    } catch (nlohmann::json::parse_error &) {
+        QMessageBox::about(this, "Invalid Client Meta File", "Failed to load the client meta file. "
+                                                             "Make sure the path is valid and that the file is correctly "
+                                                             "formatted JSON.");
+
+        clientMetaFile.close();
+        exit(0);
+    }
+
+    if (clientMeta.find("keyPath") == clientMeta.end()) {
+        QMessageBox::about(this, "Invalid Client Meta File", "Ensure that the client meta file contains "
+                                                             "the field 'keyPath' with the location of the client keys.");
+        clientMetaFile.close();
+        exit(0);
+    }
+    if (clientMeta.find("serverSignaturePath") == clientMeta.end()) {
+        QMessageBox::about(this, "Invalid Client Meta File", "Ensure that the client meta file contains "
+                                                             "the field 'serverSignaturePath' with the location of the server's "
+                                                             "digital signature.");
+        clientMetaFile.close();
+        exit(0);
+    }
+    if (clientMeta.find("serverAddress") == clientMeta.end()) {
+        QMessageBox::about(this, "Invalid Client Meta File", "Ensure that the client meta file contains "
+                                                             "the field 'serverAddress' with the server's IP address.");
+        clientMetaFile.close();
+        exit(0);
+    }
+    if (clientMeta.find("serverPort") == clientMeta.end()) {
+        QMessageBox::about(this, "Invalid Client Meta File", "Ensure that the client meta file contains "
+                                                             "the field 'serverPort' with the server's port for the Database "
+                                                             "Manager application.");
+        clientMetaFile.close();
+        exit(0);
+    }
+
+    std::filesystem::path keyPath = clientMeta["keyPath"];
+    std::filesystem::path serverSignaturePath = clientMeta["serverSignaturePath"];
+    std::string serverIP = clientMeta["serverAddress"];
+    unsigned serverPort = clientMeta["serverPort"];
+
     RSAKeyPair clientKey;
-    clientKey.privateKey = unlockPrivateKey("/home/matthew/database-manager/test_client_keys/client_key.pri", sha256(TEMP_pw.c_str(), TEMP_pw.size()));
-    clientKey.publicKey = readPublicKey("/home/matthew/database-manager/test_client_keys/client_key.pub");
 
-    PublicKey serverSignature = readPublicKey("/home/matthew/database-manager/keys/signature/signature.pub");
+    if (!std::filesystem::exists(keyPath / "client_key.pri") || !std::filesystem::exists(keyPath / "client_key.pub")) {
+        QMessageBox::about(this, "Generating Keys", "Your client will shortly begin generating keys "
+                                                    "for connection to the server. "
+                                                    "This may take up to a minute.");
 
-    client = new Client(16, clientKey, serverSignature);
+        clientKey = generateRSAKeyPair();
+        writePlaintextPrivateKey(clientKey.privateKey, keyPath / "client_key.pri");
+        writePublicKey(clientKey.publicKey, keyPath / "client_key.pub");
+
+        QMessageBox::about(this, "Key Generation Complete", "Your client will now open a web browser with "
+                                                            "an Outlook login. Please login to your Outlook account to use the "
+                                                            "database.");
+    } else {
+        clientKey.privateKey = readPlaintextPrivateKey(keyPath / "client_key.pri");
+        clientKey.publicKey = readPublicKey(keyPath / "client_key.pub");
+    }
+
+    PublicKey serverSignature = readPublicKey(serverSignaturePath / "signature.pub");
+
+    float refreshRate;
+
+    nlohmann::json::iterator refreshRateIter = clientMeta.find("refreshRate");
+
+    if (refreshRateIter != clientMeta.end()) {
+        refreshRate = *refreshRateIter;
+    } else {
+        refreshRate = DEFAULT_REFRESH_RATE;
+    }
+
+    client = new Client(refreshRate, clientKey, serverSignature);
     handler = new DatabaseResponseHandler();
 
     client->initialiseClient();
     client->setResponseHandler(*handler);
 
-    // TODO: Make connection interface and make non blocking (?)
-    if (!client->connectToServer("localhost", 10000, [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
-        QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
-                                                                "The application cannot be used without a connection to the server. "
-                                                                "Is the server running?");
-        exit(0);
+    nlohmann::json::iterator repeatTokenPathIter = clientMeta.find("repeatTokenPath");
+
+    if (repeatTokenPathIter != clientMeta.end()) {
+        std::filesystem::path repeatTokenPath = *repeatTokenPathIter;
+
+        uint256 repeatToken;
+
+        std::ifstream repeatTokenFile;
+        repeatTokenFile.read((char *) &repeatToken, sizeof(uint256));
+
+        if (!client->connectWithToken(serverIP, serverPort, repeatToken)) {
+            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server (with repeat token). "
+                                                                    "The application cannot be used without a connection to the server. "
+                                                                    "Is the server running?");
+            clientMetaFile.close();
+            exit(0);
+        }
+    } else {
+        // TODO: Make connection interface and make non blocking (?)
+        if (!client->connectToServer(serverIP, serverPort,
+                                     [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
+            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
+                                                                    "The application cannot be used without a connection to the server. "
+                                                                    "Is the server running?");
+            clientMetaFile.close();
+            exit(0);
+        }
     }
+
+    clientMetaFile.close();
 
     client->startClientLoop();
 

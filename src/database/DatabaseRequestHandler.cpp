@@ -139,12 +139,14 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             if (DrawingComponentManager<Aperture>::dirty()) {
                 sql::ResultSet *sourceData = caller.databaseManager().sourceTable("apertures");
 
+PACK_START
                 struct ApertureData {
                     unsigned id{};
                     unsigned short width{}, length{}, baseWidth{}, baseLength{};
                     unsigned shapeID{};
                     unsigned short quantity{};
-                } __attribute__((packed));
+                }
+PACK_END
 
                 std::vector<ApertureData> apertures;
                 unsigned bufferSize = sizeof(RequestType) + sizeof(unsigned);

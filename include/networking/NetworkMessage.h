@@ -29,7 +29,18 @@ enum MessageProtocol {
     RSA_MESSAGE,
     AES_MESSAGE,
     RAW_MESSAGE,
+    CONNECTION_RESPONSE_MESSAGE,
     HEARTBEAT
+};
+
+enum class AuthMode {
+    JWT,
+    REPEAT_TOKEN
+};
+
+enum class ConnectionResponse {
+    SUCCESS,
+    FAILED
 };
 
 enum DecodeStatus {

@@ -8,6 +8,8 @@
 #include "DatabaseQuery.h"
 #include "../networking/Server.h"
 
+#include "../../packer.h"
+
 class DatabaseRequestHandler : public ServerRequestHandler {
 public:
     void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message, unsigned int messageSize) override;

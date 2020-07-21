@@ -91,6 +91,13 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
                     return DECODE_ERROR;
                 }
                 break;
+            case CONNECTION_RESPONSE_MESSAGE:
+                // If we are receiving a key, the message should be exactly the size of a ConnectionResponse.
+                // Otherwise, there is an error, so break out.
+                if (messageSize != sizeof(ConnectionResponse)) {
+                    return DECODE_ERROR;
+                }
+                break;
             default:
                 // If we didn't receive any protocol type from above, the protocol was invalid.
                 return DECODE_ERROR;
@@ -203,6 +210,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
             case KEY_MESSAGE:
             case RSA_MESSAGE:
             case RAW_MESSAGE:
+            case CONNECTION_RESPONSE_MESSAGE:
             default:
                 // If we received anything other than the AES message protocol, the protocol was invalid, as this is
                 // supposed to be an encrypted message.

@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QTableWidgetItem>
+#include <QProgressDialog>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
@@ -18,9 +19,7 @@
 #include "widgets/AddDrawingPageWidget.h"
 #include "widgets/DrawingViewWidget.h"
 
-// TEMP ----------------------------------
-const std::string TEMP_pw = "password";
-// ---------------------------------------
+#define DEFAULT_REFRESH_RATE 16
 
 namespace Ui {
     class MainMenu;
@@ -29,7 +28,7 @@ namespace Ui {
 class MainMenu : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainMenu(QWidget *parent = nullptr);
+    explicit MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *parent = nullptr);
 
     ~MainMenu() override;
 

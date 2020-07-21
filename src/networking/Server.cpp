@@ -77,7 +77,7 @@ void Server::startServer() {
             case ERR_ACCEPT: ERROR_TO("Failed to accept client", *errorStream)
             case SOCKET_SUCCESS:
                 *logStream << "Accepted a new client" << std::endl;
-            case NO_DATA:
+            case S_NO_DATA:
             default:
                 break;
         }
@@ -281,12 +281,20 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     // If the client socket doesn't send us a message, close the connection and return
     if (clientSocket.receiveMessage(clientKeyMessage, KEY_MESSAGE) != SOCKET_SUCCESS) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
 
     // If this message was in any way erroneous, close the connection and return
     if (clientKeyMessage.error()) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
@@ -296,6 +304,10 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     // 2: Send server's public key
     if (clientSocket.sendMessage(NetworkMessage(&serverKey.publicKey, sizeof(PublicKey), KEY_MESSAGE)) !=
         SOCKET_SUCCESS) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
@@ -306,12 +318,20 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     // If the client socket doesn't send us a message, close the connection and return
     if (clientSocket.receiveMessage(challengeMessage, RSA_MESSAGE) != SOCKET_SUCCESS) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
 
     // If this message was in any way erroneous, close the connection and return
     if (challengeMessage.error()) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
@@ -348,6 +368,10 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     if (clientSocket.sendMessage(NetworkMessage(signedEncryptedResponse.rawData(), sizeof(uint2048), RSA_MESSAGE)) !=
         SOCKET_SUCCESS) {
+        ConnectionResponse failResponse = ConnectionResponse::FAILED;
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        clientSocket.sendMessage(failedMessage);
+
         clientSocket.closeSocket();
         return;
     }
@@ -385,7 +409,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
     // Attempt to receive a message from the client. If they aren't sending anything, or they send an erroneous message,
     // just return false.
     EncryptedNetworkMessage authMessage;
-    if (clientData.clientSocket.receiveMessage(authMessage, AES_MESSAGE) == NO_DATA) {
+    if (clientData.clientSocket.receiveMessage(authMessage, AES_MESSAGE) == S_NO_DATA) {
         return false;
     }
 
@@ -393,42 +417,86 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
         return false;
     }
 
-    // Get a string of the response
-    std::string jwtResponse = (char *) authMessage.decryptMessageData(clientData.clientSessionKey);
+    unsigned char *authMessageBuff = (unsigned char *) authMessage.decryptMessageData(clientData.clientSessionKey);
+    AuthMode authMode = *((AuthMode *) authMessageBuff);
+    authMessageBuff += sizeof(AuthMode);
 
-    nlohmann::json claims;
+    switch (authMode) {
+        case AuthMode::JWT: {
+            // Get a string of the response
+            std::string jwtResponse = std::string((const char *) authMessageBuff, authMessage.getMessageSize() - sizeof(AuthMode));
 
-    // Attempt to authenticate this JWT
-    MicrosoftAccountAuthState status = authenticateMicrosoftAccount(jwtResponse, CLIENT_APPLICATION_ID,
-                                                                    clientData.clientAuthNonce, "", claims);
+            nlohmann::json claims;
 
-    // TODO: Make this dynamic (maybe source from whitelist file?)
-    const std::string whitelist[]{
-            "matthew.sirman@hotmail.co.uk"
-    };
+            // Attempt to authenticate this JWT
+            MicrosoftAccountAuthState status = authenticateMicrosoftAccount(jwtResponse, CLIENT_APPLICATION_ID,
+                                                                            clientData.clientAuthNonce, "", claims);
 
-    // Check the status
-    switch (status) {
-        case AUTHENTICATED:
-            for (const std::string &whitelistedUser : whitelist) {
-                if (whitelistedUser == claims["email"]) {
-                    // If the client successfully authenticated themselves and is whitelisted,
-                    // add them to the connected clients vector.
-                    // They may now access server resources
-                    clientData.clientEmail = whitelistedUser;
+            // TODO: Make this dynamic (maybe source from whitelist file?)
+            const std::string whitelist[]{
+                    "matthew.sirman@hotmail.co.uk"
+            };
+
+            // Check the status
+            switch (status) {
+                case AUTHENTICATED:
+                    for (const std::string &whitelistedUser : whitelist) {
+                        if (whitelistedUser == claims["email"]) {
+                            // If the client successfully authenticated themselves and is whitelisted,
+                            // add them to the connected clients vector.
+                            // They may now access server resources
+                            clientData.clientEmail = whitelistedUser;
+                            connectedClients.push_back(clientData);
+                            *logStream << "Client " << whitelistedUser << " successfully authenticated themselves."
+                                       << std::endl;
+                            ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
+                            NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+                            clientData.clientSocket.sendMessage(succeededMessage);
+
+                            return true;
+                        }
+                    }
+                case RECEIVED_ERRONEOUS_TOKEN:
+                case NO_MATCHING_KEY:
+                case INVALID_TOKEN:
+                case INVALID_SIGNATURE:
+                    // If the authentication failed for any reason, the client did not authenticate themselves, so terminate
+                    // their connection. If they wish to retry, they must reconnect to the server.
+                    *logStream << "Client failed to authenticate themselves: Bad JWT. Terminating connection." << std::endl;
+                    ConnectionResponse failResponse = ConnectionResponse::FAILED;
+                    NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+                    clientData.clientSocket.sendMessage(failedMessage);
+
+                    clientData.clientSocket.closeSocket();
+                    break;
+            }
+            break;
+        }
+        case AuthMode::REPEAT_TOKEN:
+            uint256 repeatToken;
+
+            memcpy(&repeatToken, authMessageBuff, sizeof(uint256));
+
+            for (std::map<uint256, std::string>::const_iterator it = repeatTokenMap.begin(); it != repeatTokenMap.end(); it++) {
+                if (it->first == repeatToken) {
+                    clientData.clientEmail = repeatTokenMap[repeatToken];
                     connectedClients.push_back(clientData);
-                    *logStream << "Client " << whitelistedUser << " successfully authenticated themselves."
+                    *logStream << "Client " << clientData.clientEmail << " successfully authenticated themselves."
                                << std::endl;
+                    ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
+                    NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+                    clientData.clientSocket.sendMessage(succeededMessage);
+
                     return true;
                 }
             }
-        case RECEIVED_ERRONEOUS_TOKEN:
-        case NO_MATCHING_KEY:
-        case INVALID_TOKEN:
-        case INVALID_SIGNATURE:
-            // If the authentication failed for any reason, the client did not authenticate themselves, so terminate
-            // their connection. If they wish to retry, they must reconnect to the server.
-            *logStream << "Client failed to authenticate themselves. Terminating connection." << std::endl;
+
+            // There is no client with this repeat token
+            *logStream << "Client failed to authenticate themselves: Invalid Repeat Token. Terminating connection." << std::endl;
+            ConnectionResponse failResponse = ConnectionResponse::FAILED;
+            NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+            clientData.clientSocket.sendMessage(failedMessage);
+
             clientData.clientSocket.closeSocket();
             break;
     }

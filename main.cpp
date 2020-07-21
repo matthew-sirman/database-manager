@@ -180,6 +180,8 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     digitalSignatureKeyPair.privateKey = unlockPrivateKey(keyPath / ("signature/signature_" + user + ".pri"), pwHash);
     digitalSignatureKeyPair.publicKey = readPublicKey(keyPath / ("signature/signature.pub"));
 
+    std::cout << keyPath << std::endl;
+
     if (serverKeyPair.privateKey.n != serverKeyPair.publicKey.n ||
         digitalSignatureKeyPair.privateKey.n != digitalSignatureKeyPair.publicKey.n) {
         std::cerr << "Invalid password for user " << user << "." << std::endl;
@@ -209,10 +211,10 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     s.startServer();
 }
 
-int runClient(int argc, char *argv[]) {
+int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
     QApplication app(argc, argv);
 
-    MainMenu mainMenu;
+    MainMenu mainMenu(clientMetaFile);
     mainMenu.show();
 
     return QApplication::exec();
@@ -222,23 +224,23 @@ void printHelpMessage() {
     // Print a help message to the console
     std::cout << "Database Manager Help" << std::endl;
     std::cout << "Flags: " << std::endl;
-    std::cout << "  --server             - run the server." << std::endl;
-    std::cout << "  --client          - run a client instance." << std::endl;
-    std::cout << "  --setup           - set the server keys up and save them in key files." << std::endl;
-    std::cout << "                      NOTE: This will not start the server." << std::endl;
-    std::cout << "  --add-user [USER] - add a new admin user and password. This user will be able to" << std::endl;
-    std::cout << "                      start the server and unlock the key files." << std::endl;
-    std::cout << "                      NOTE: The --user flag will specify the user to authenticate this new"
+    std::cout << "  --server            - run the server." << std::endl;
+    std::cout << "  --client            - run a client instance." << std::endl;
+    std::cout << "  --setup             - set the server keys up and save them in key files." << std::endl;
+    std::cout << "                        NOTE: This will not start the server." << std::endl;
+    std::cout << "  --add-user [USER]   - add a new admin user and password. This user will be able to" << std::endl;
+    std::cout << "                        start the server and unlock the key files." << std::endl;
+    std::cout << "                        NOTE: The --user flag will specify the user to authenticate this new"
               << std::endl;
-    std::cout << "                      user with. Defaults to root." << std::endl;
-    std::cout << "  --keypath [PATH]  - provide an explicit path to store/load the key files." << std::endl;
-    std::cout << "  --user [USER]     - provide a username to unlock the key files with. If no" << std::endl;
-    std::cout << "                      username is provided, it will load the keys from the root file." << std::endl;
-    std::cout << "  --help (-h)       - prints this help message." << std::endl;
+    std::cout << "                        user with. Defaults to root." << std::endl;
+    std::cout << "  --keypath [PATH]    - provide an explicit path to store/load the key files." << std::endl;
+    std::cout << "  --clientmeta [PATH] - provide an explicit path to the client's meta file." << std::endl;
+    std::cout << "  --user [USER]       - provide a username to unlock the key files with. If no" << std::endl;
+    std::cout << "                        username is provided, it will load the keys from the root file." << std::endl;
+    std::cout << "  --help (-h)         - prints this help message." << std::endl;
 }
 
 int main(int argc, char *argv[]) {
-
 #ifdef _WIN32
     if (TCPSocket::initialiseWSA()) {
         return -1;
@@ -253,6 +255,8 @@ int main(int argc, char *argv[]) {
     std::string user = "root";
     // The new user if they are running in add user mode
     std::string newUser;
+    // The path to the client's meta file
+    std::filesystem::path clientMetaFilePath = std::filesystem::current_path();
 
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
@@ -317,6 +321,10 @@ int main(int argc, char *argv[]) {
                 keyPath = argv[++i];
             }
 
+            if (strcmp(argv[i], "--clientmeta") == 0) {
+                clientMetaFilePath = argv[++i];
+            }
+
             // If they provided a specific username to load the key files with, use that. Default to root.
             if (strcmp(argv[i], "--user") == 0) {
                 user = argv[++i];
@@ -329,7 +337,7 @@ int main(int argc, char *argv[]) {
             runServer(keyPath, user);
             break;
         case CLIENT:
-            return runClient(argc, argv);
+            return runClient(clientMetaFilePath, argc, argv);
         case SETUP:
             setupServerKeys(keyPath);
             break;

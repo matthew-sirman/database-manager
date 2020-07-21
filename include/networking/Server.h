@@ -10,6 +10,7 @@
 #include <future>
 #include <chrono>
 #include <unordered_map>
+#include <map>
 #include <queue>
 
 #include <encrypt.h>
@@ -110,6 +111,8 @@ private:
     std::vector<ClientData> connectedClients;
 
     std::unordered_map<unsigned, ClientData *> handleMap;
+
+    std::map<uint256, std::string> repeatTokenMap;
 
     std::queue<std::pair<unsigned, NetworkMessage *>> sendQueue;
     std::mutex sendQueueMutex;
