@@ -15,6 +15,11 @@
           "name": "Qt5_DIR",
           "value": "C:/Qt/5.15.0/msvc2015_64/lib/cmake/Qt5",
           "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "U:/Drawings Database/Database Manager/encrypt/build/lib/x64/libcurl.lib",
+          "type": "FILEPATH"
         }
       ]
     }

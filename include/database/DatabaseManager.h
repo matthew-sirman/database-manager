@@ -25,7 +25,7 @@ public:
     enum DrawingExistsResponse {
         EXISTS,
         NOT_EXISTS,
-        ERROR
+        R_ERROR
     };
 
     DatabaseManager();

@@ -69,7 +69,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                             response.insertResponseType = DrawingInsert::FAILED;
                         }
                         break;
-                    case DatabaseManager::ERROR:
+                    case DatabaseManager::R_ERROR:
                         response.insertResponseType = DrawingInsert::FAILED;
                         break;
                 }

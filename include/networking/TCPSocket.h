@@ -115,7 +115,7 @@ private:
     };
 
 #ifdef _WIN32
-    SOCKET socket;
+    SOCKET sock;
 #else
     int fd = -1;
 #endif
@@ -135,13 +135,12 @@ private:
 public:
     static int initialiseWSA();
 
-    static int cleanupWSA();
+    static void cleanupWSA();
 
 private:
     static WSADATA wsaData;
 
 #endif
 };
-
 
 #endif //DATABASE_MANAGER_TCPSOCKET_H

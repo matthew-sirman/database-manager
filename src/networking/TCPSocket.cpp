@@ -75,17 +75,13 @@ TCPSocket::~TCPSocket() = default;
 
 TCPSocketCode TCPSocket::create() {
 #ifdef _WIN32
-    if ((socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         return ERR_CREATE_SOCKET;
     }
 
-    BOOL reuseAddr = TRUE, reusePort = TRUE;
+    BOOL reuseAddr = TRUE;
 
-    if ((setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char *) &reuseAddr, sizeof(BOOL))) != 0) {
-        return ERR_SET_SOCKET_OPTIONS;
-    }
-
-    if ((setsockopt(socket, SOL_SOCKET, SO_REUSEPORT, (char *) &reusePort, sizeof(BOOL))) != 0) {
+    if ((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &reuseAddr, sizeof(BOOL))) != 0) {
         return ERR_SET_SOCKET_OPTIONS;
     }
 #else
@@ -121,7 +117,7 @@ TCPSocketCode TCPSocket::bindToAddress(unsigned short port, const std::string &i
         address.sin_addr.s_addr = inet_addr(ip.c_str());
     }
 
-    if (bind(socket, (SOCKADDR *) &address, sizeof(address)) == SOCKET_ERROR) {
+    if (bind(sock, (SOCKADDR *) &address, sizeof(address)) == SOCKET_ERROR) {
         return ERR_BIND_SOCKET;
     }
 #else
@@ -157,7 +153,7 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
     serverAddress.sin_port = port;
     serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    if (connect(socket, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
+    if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
         return ERR_CONNECT;
     }
 
@@ -188,7 +184,7 @@ TCPSocketCode TCPSocket::setNonBlocking() {
 
     unsigned long nonBlocking = 1;
 
-    if (ioctlsocket(socket, FIONBIO, (unsigned long *) &nonBlocking) == SOCKET_ERROR) {
+    if (ioctlsocket(sock, FIONBIO, (unsigned long *) &nonBlocking) == SOCKET_ERROR) {
         return ERR_SET_NON_BLOCKING;
     }
 
@@ -216,8 +212,8 @@ void TCPSocket::closeSocket() {
     if (open()) {
 
 #ifdef _WIN32
-        shutdown(socket, SD_BOTH);
-        closesocket(socket);
+        shutdown(sock, SD_BOTH);
+        closesocket(sock);
 #else
         shutdown(fd, SHUT_RDWR);
         close(fd);
@@ -231,7 +227,7 @@ TCPSocketCode TCPSocket::beginListen() {
     // Set the server to begin listening for clients
 
 #ifdef _WIN32
-    if (listen(socket, BACKLOG_QUEUE_SIZE) == SOCKET_ERROR) {
+    if (listen(sock, BACKLOG_QUEUE_SIZE) == SOCKET_ERROR) {
         return ERR_LISTEN;
     }
 #else
@@ -255,14 +251,14 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
 #ifdef _WIN32
     SOCKET clientSocket = INVALID_SOCKET;
 
-    if ((clientSocket = accept(socket, (SOCKADDR *) &clientAddress, &clientAddressSize)) == INVALID_SOCKET) {
+    if ((clientSocket = accept(sock, (SOCKADDR *) &clientAddress, &clientAddressSize)) == INVALID_SOCKET) {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
             return ERR_ACCEPT;
         }
         return S_NO_DATA;
     }
 
-    acceptedSocket->socket = clientSocket;
+    acceptedSocket->sock = clientSocket;
 
     // There is no way to determine if windows sockets are non blocking.
 
@@ -310,7 +306,7 @@ TCPSocketCode TCPSocket::sendMessage(const NetworkMessage &message) {
     }
 
 #ifdef _WIN32
-    bool success = send(socket, (const char *) message.dataStream(), message.dataStreamSize(), 0) >= 0;
+    bool success = send(sock, (const char *) message.dataStream(), message.dataStreamSize(), 0) >= 0;
 #else
     bool success = send(fd, message.dataStream(), message.dataStreamSize(), 0) >= 0;
 #endif
@@ -336,7 +332,7 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
     }
 
 #ifdef _WIN32
-    if (recv(socket, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+    if (recv(sock, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
         return S_NO_DATA;
     }
 #else
@@ -363,7 +359,7 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
         }
 
 #ifdef _WIN32
-        if (recv(socket, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
+        if (recv(sock, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
             message.clear();
             message.setError();
             return ERR_RECEIVE_FAILED;
@@ -445,9 +441,10 @@ int TCPSocket::initialiseWSA() {
         std::cerr << "Failed to intialise WSA." << std::endl;
         return 1;
     }
+    return 0;
 }
 
-int TCPSocket::cleanupWSA() {
+void TCPSocket::cleanupWSA() {
     WSACleanup();
 }
 

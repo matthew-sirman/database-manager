@@ -14,19 +14,22 @@ set(CURL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../curl-7.71.1/include)
 
 set(JSON_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../json/include)
 
-set(MYSQL_INCLUDE_DIRS "C:/Program Files/MySQL/Connector C++ 8.0/include/jdbc")
+set(MYSQL_INCLUDE_DIRS "C:/Program Files/MySQL/Connector C++ 1.1/include")
+
+set(BOOST_INCLUDE_DIRS "C:/boost_1_55_0")
 
 include_directories(
     ${CURL_INCLUDE_DIRS}
     ${JSON_INCLUDE_DIRS}
     ${MYSQL_INCLUDE_DIRS}
+    ${BOOST_INCLUDE_DIRS}
 )
 
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/ui)
 
-add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN)
+add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN -DBOOST_NO_AUTO_PTR)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -41,4 +44,11 @@ add_executable(${PROJECT_NAME} ${WIDGETS} ${PROJECT_UI} main.cpp src/networking/
 
 include_directories(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/../encrypt/include)
 
-target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets)
+if (WIN32)
+find_library (MySQL_LIBRARY NAMES mysqlcppconn PATHS "C:/Program Files/MySQL/Connector C++ 1.1/lib/opt/")
+add_compile_options("/std:c++17")
+else ()
+find_library(MySQL_LIBRARY NAMES mysqlcppconn)
+endif ()
+
+target_link_libraries(${PROJECT_NAME} encrypt ${MySQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets)

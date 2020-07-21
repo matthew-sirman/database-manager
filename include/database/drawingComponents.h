@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <sstream>
 
 #include "RequestType.h"
 #include "../networking/NetworkMessage.h"

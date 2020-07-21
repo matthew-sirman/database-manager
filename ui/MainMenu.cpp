@@ -58,8 +58,14 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
         exit(0);
     }
 
-    std::filesystem::path keyPath = clientMeta["keyPath"];
-    std::filesystem::path serverSignaturePath = clientMeta["serverSignaturePath"];
+    // std::string keyPathStr = clientMeta["keyPath"];
+    // std::filesystem::path keyPath = keyPathStr;
+    // std::string serverSignaturePathStr = clientMeta["serverSignaturePath"].get<std::string>();
+    // std::filesystem::path serverSignaturePath = serverSign
+
+    std::filesystem::path keyPath = clientMeta["keyPath"].get<std::string>();
+    std::filesystem::path serverSignaturePath = clientMeta["serverSignaturePath"].get<std::string>();
+
     std::string serverIP = clientMeta["serverAddress"];
     unsigned serverPort = clientMeta["serverPort"];
 
@@ -103,7 +109,7 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     nlohmann::json::iterator repeatTokenPathIter = clientMeta.find("repeatTokenPath");
 
     if (repeatTokenPathIter != clientMeta.end()) {
-        std::filesystem::path repeatTokenPath = *repeatTokenPathIter;
+        std::filesystem::path repeatTokenPath = (*repeatTokenPathIter).get<std::string>();
 
         uint256 repeatToken;
 

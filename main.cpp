@@ -22,6 +22,48 @@ enum RunMode {
 
 #define USERNAME_CHECK std::regex("^[a-z]+$")
 
+#ifdef _WIN32
+
+uint256 getPasswordHash(const std::string &prompt) {
+    const char BACKSPACE = 8, RETURN = 13;
+
+    std::string password;
+    unsigned char ch = 0;
+
+    std::cout << prompt;
+
+    DWORD consoleMode;
+    DWORD dwRead;
+
+    HANDLE hIn = GetStdHandle(STD_INPUT_HANDLE);
+
+    GetConsoleMode(hIn, &consoleMode);
+    SetConsoleMode(hIn, consoleMode & ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT));
+
+    while (ReadConsoleA(hIn, &ch, 1, &dwRead, NULL) && ch != RETURN) {
+        if (ch == BACKSPACE) {
+            if (password.length() != 0) {
+                std::cout << "\b \b";
+                password.resize(password.length() - 1);
+            }
+        }
+        else {
+            password += ch;
+            std::cout << "*";
+        }
+    }
+
+    std::cout << std::endl;
+
+    uint256 pwHash = sha256((const uint8 *) password.c_str(), password.size());
+
+    memset(password.data(), 0, password.size());
+
+    return pwHash;
+}
+
+#else
+
 uint256 getPasswordHash(const std::string &prompt) {
     // Get the password from the terminal. This will hide the input
     char *pw = getpass(prompt.c_str());
@@ -35,6 +77,8 @@ uint256 getPasswordHash(const std::string &prompt) {
 
     return pwHash;
 }
+
+#endif
 
 void setupServerKeys(const std::filesystem::path &keyPath) {
     if (!std::filesystem::exists(keyPath)) {

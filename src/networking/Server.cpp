@@ -171,7 +171,8 @@ void Server::startServer() {
         // If we have time to wait, wait it, otherwise don't (can't wait a negative time!)
         if (delta > 0) {
             // Sleep function in microseconds, so multiply by 1e6
-            usleep(delta * 1e6);
+            // usleep(delta * 1e6);
+            std::this_thread::sleep_for(std::chrono::microseconds((long long) (delta * 1e6)));
         }
 
         cycle++;

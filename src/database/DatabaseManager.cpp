@@ -445,7 +445,7 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
         }
     } catch (sql::SQLException &e) {
         SQL_ERROR_SAFE(e);
-        return ERROR;
+        return R_ERROR;
     }
 }
 
