@@ -5,7 +5,8 @@
 #ifndef DATABASE_MANAGER_DATABASEQUERY_H
 #define DATABASE_MANAGER_DATABASEQUERY_H
 
-#include <cppconn/resultset.h>
+// #include <cppconn/resultset.h>
+#include <mysqlx/xdevapi.h>
 
 #include <string>
 #include <cstring>
@@ -76,7 +77,7 @@ public:
 
     std::string toSQLQueryString() const;
 
-    static std::vector<DrawingSummary> getQueryResultSummaries(sql::ResultSet *resultSet);
+    static std::vector<DrawingSummary> getQueryResultSummaries(const mysqlx::RowResult &resultSet);
 
     std::optional<std::string> drawingNumber;
     std::optional<ValueRange<unsigned>> width, length;

@@ -5,13 +5,15 @@
 #ifndef DATABASE_MANAGER_DATABASEMANAGER_H
 #define DATABASE_MANAGER_DATABASEMANAGER_H
 
-#include <mysql_connection.h>
+// #include <mysql_connection.h>
 
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <cppconn/prepared_statement.h>
+// #include <cppconn/driver.h>
+// #include <cppconn/exception.h>
+// #include <cppconn/resultset.h>
+// #include <cppconn/statement.h>
+// #include <cppconn/prepared_statement.h>
+
+#include <mysqlx/xdevapi.h>
 
 #include <vector>
 
@@ -39,7 +41,7 @@ public:
 
     Drawing *executeDrawingQuery(const DrawingRequest &query) const;
 
-    sql::ResultSet *sourceTable(const std::string &tableName, const std::string &orderBy = std::string());
+    mysqlx::RowResult sourceTable(const std::string &tableName, const std::string &orderBy = std::string());
 
     bool insertDrawing(const DrawingInsert &insert);
 
@@ -50,8 +52,10 @@ public:
     void closeConnection();
 
 private:
-    sql::Driver *driver = nullptr;
-    sql::Connection *conn = nullptr;
+    // sql::Driver *driver = nullptr;
+    // sql::Connection *conn = nullptr;
+    mysqlx::Session *sess;
+    mysqlx::Schema *db;
 };
 
 

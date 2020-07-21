@@ -12,16 +12,20 @@ void
 DatabaseManager::connectToDatabase(const std::string &database, const std::string &user, const std::string &password,
                                    const std::string &host) {
     try {
-        driver = get_driver_instance();
-        if (conn != nullptr) {
-            conn->close();
-        }
+        // driver = get_driver_instance();
+        // if (conn != nullptr) {
+        //    conn->close();
+        // }
 
-        conn = driver->connect(host, user, password);
+        // conn = driver->connect(host, user, password);
 
-        conn->setSchema(database);
+        // conn->setSchema(database);
 
-    } catch (sql::SQLException &e) {
+        sess = new mysqlx::Session(host, 33060, user, password);
+        db = &sess->getSchema("scs_drawings");
+
+        //} catch (sql::SQLException &e) {
+    } catch (mysqlx::Error &e) {
         SQL_ERROR(e)
     }
 }
@@ -29,17 +33,21 @@ DatabaseManager::connectToDatabase(const std::string &database, const std::strin
 DrawingSummaryCompressionSchema DatabaseManager::createCompressionSchema() {
 
     try {
-        if (conn == nullptr) {
+        // if (conn == nullptr) {
+        //     ERROR_RAW("Attempted to create compression schema without connecting to database.")
+        // }
+        // sql::Statement *statement = conn->createStatement();
+        // sql::ResultSet *results;
+
+        if (!sess) {
             ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
-        sql::Statement *statement = conn->createStatement();
-        sql::ResultSet *results;
 
         unsigned maxMatID, maxThicknessID, maxApertureID;
         float maxWidth, maxLength, maxLapSize;
         unsigned char maxDrawingLength;
 
-        results = statement->executeQuery("SELECT MAX(mat_id) AS mx FROM drawings");
+        /*results = statement->executeQuery("SELECT MAX(mat_id) AS mx FROM drawings");
         results->first();
         maxMatID = results->getUInt("mx");
         delete results;
@@ -75,35 +83,43 @@ DrawingSummaryCompressionSchema DatabaseManager::createCompressionSchema() {
         maxDrawingLength = results->getUInt("mx");
         delete results;
 
-        delete statement;
+        delete statement;*/
 
         return DrawingSummaryCompressionSchema(maxMatID, maxWidth, maxLength, maxThicknessID, maxLapSize,
                                                maxApertureID, maxDrawingLength);
-    } catch (sql::SQLException &e) {
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR(e)
     }
 }
 
 std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSearchQuery &query) const {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.")
         }
 
         sql::Statement *statement = conn->createStatement();
-        sql::ResultSet *results = statement->executeQuery(query.toSQLQueryString());
+        sql::ResultSet *results = statement->executeQuery(query.toSQLQueryString());*/
 
-        if (!results) {
-            ERROR_RAW("Uncaught MySQL Error. Returned result set was null");
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
 
-        std::vector<DrawingSummary> summaries = DatabaseSearchQuery::getQueryResultSummaries(results);
+        /*if (!results) {
+            ERROR_RAW("Uncaught MySQL Error. Returned result set was null");
+        }*/
 
-        delete statement;
-        delete results;
+        std::vector<DrawingSummary> summaries;// = DatabaseSearchQuery::getQueryResultSummaries(results);
+
+        /*delete statement;
+        delete results;*/
 
         return summaries;
-    } catch (sql::SQLException &e) {
+        //} catch (sql::SQLException &e) {
+    } 
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e)
         return {};
     }
@@ -111,12 +127,16 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 
 Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database")
         }
 
         sql::Statement *statement = conn->createStatement();
-        sql::ResultSet *results = nullptr;
+        sql::ResultSet *results = nullptr;*/
+
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
+        }
 
         Drawing *drawing = new Drawing();
 
@@ -136,7 +156,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
         queryString << "INNER JOIN mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
         queryString << "WHERE d.mat_id=" << query.matID << std::endl;
 
-        results = statement->executeQuery(queryString.str());
+        /*results = statement->executeQuery(queryString.str());
         if (results->first()) {
             drawing->setDrawingNumber(results->getString("drawing_number"));
             drawing->setProduct(DrawingComponentManager<Product>::getComponentByID(results->getUInt("product_id")));
@@ -306,37 +326,49 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
 
         delete results;
 
-        delete statement;
+        delete statement;*/
 
         return drawing;
-    } catch (sql::SQLException &e) {
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e);
         return nullptr;
     }
 }
 
-sql::ResultSet *DatabaseManager::sourceTable(const std::string &tableName, const std::string &orderBy) {
+mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, const std::string &orderBy) {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.")
+        }*/
+
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
 
-        sql::Statement *statement = conn->createStatement();
+        /*sql::Statement *statement = conn->createStatement();
         sql::ResultSet *results = statement->executeQuery("SELECT * FROM " + tableName + (orderBy.empty() ? "" : " ORDER BY " + orderBy));
 
-        delete statement;
+        delete statement;*/
 
-        return results;
-    } catch (sql::SQLException &e) {
+        return mysqlx::RowResult();
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e)
-        return nullptr;
+        return mysqlx::RowResult();
     }
 }
 
 bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.");
+        }*/
+
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
 
         if (!insert.drawingData.has_value()) {
@@ -346,7 +378,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
             return false;
         }
 
-        sql::Statement *statement = conn->createStatement();
+        /*sql::Statement *statement = conn->createStatement();
 
         sql::ResultSet *existingMatIDResults = statement->executeQuery(
                 "SELECT mat_id FROM drawings WHERE drawing_number='" + insert.drawingData->drawingNumber() + "'");
@@ -415,10 +447,12 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
             statement->execute(punchProgramInsert);
         }
 
-        delete statement;
+        delete statement;*/
 
         return true;
-    } catch (sql::SQLException &e) {
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e);
         return false;
     }
@@ -426,15 +460,19 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std::string &drawingNumber) const {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.");
         }
 
         sql::Statement *statement = conn->createStatement();
         sql::ResultSet *results = statement->executeQuery(
-                "SELECT mat_id FROM drawings WHERE drawing_number='" + drawingNumber + "'");
+                "SELECT mat_id FROM drawings WHERE drawing_number='" + drawingNumber + "'");*/
 
-        delete statement;
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
+        }
+
+        /*delete statement;
 
         if (results->first()) {
             delete results;
@@ -442,8 +480,10 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
         } else {
             delete results;
             return NOT_EXISTS;
-        }
-    } catch (sql::SQLException &e) {
+    }*/
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e);
         return R_ERROR;
     }
@@ -451,27 +491,37 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
 
 void DatabaseManager::execute(const std::string &sqlQuery) {
     try {
-        if (conn == nullptr) {
+        /*if (conn == nullptr) {
             ERROR_RAW("Attempted to execute query without connecting to database.")
+        }*/
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
 
-        sql::Statement *statement = conn->createStatement();
+        /*sql::Statement *statement = conn->createStatement();
         statement->execute(sqlQuery);
 
-        delete statement;
+        delete statement;*/
 
-    } catch (sql::SQLException &e) {
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e)
     }
 }
 
 void DatabaseManager::closeConnection() {
     try {
-        if (conn != nullptr) {
+        /*if (conn != nullptr) {
             conn->close();
             delete conn;
+        }*/
+        if (!sess) {
+            ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
-    } catch (sql::SQLException &e) {
+    //} catch (sql::SQLException &e) {
+    }
+    catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e)
     }
 }

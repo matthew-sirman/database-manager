@@ -36,12 +36,12 @@
 }
 
 #define SQL_ERROR(error) { \
-    std::cerr << "SQL Error " << error.getErrorCode() << " (" << error.getSQLState() << "): " << error.what() << std::endl; \
+    std::cerr << "SQL Error " << error << std::endl; \
     exit(1); \
 }
 
 #define SQL_ERROR_SAFE(error) { \
-    std::cerr << "SQL Error " << error.getErrorCode() << " (" << error.getSQLState() << "): " << error.what() << std::endl; \
+    std::cerr << "SQL Error " << error << std::endl; \
 }
 
 #endif //DATABASE_SERVER_GUARD_H

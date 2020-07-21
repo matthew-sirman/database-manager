@@ -89,7 +89,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
         }
         case RequestType::SOURCE_PRODUCT_TABLE: {
             if (DrawingComponentManager<Product>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("products");
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("products");
 
                 struct ProductData {
                     unsigned id{};
@@ -127,7 +127,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
                 DrawingComponentManager<Product>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Product>::rawSourceData(),
@@ -137,7 +137,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
         }
         case RequestType::SOURCE_APERTURE_TABLE: {
             if (DrawingComponentManager<Aperture>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("apertures");
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("apertures");
 
 PACK_START
                 struct ApertureData {
@@ -180,7 +180,7 @@ PACK_END
 
                 DrawingComponentManager<Aperture>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Aperture>::rawSourceData(),
@@ -190,7 +190,7 @@ PACK_END
         }
         case RequestType::SOURCE_APERTURE_SHAPE_TABLE: {
             if (DrawingComponentManager<ApertureShape>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("aperture_shapes");
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("aperture_shapes");
 
                 struct ApertureShapeData {
                     unsigned id{};
@@ -228,7 +228,7 @@ PACK_END
 
                 DrawingComponentManager<ApertureShape>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<ApertureShape>::rawSourceData(),
@@ -238,7 +238,7 @@ PACK_END
         }
         case RequestType::SOURCE_MATERIAL_TABLE: {
             if (DrawingComponentManager<Material>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("materials");
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("materials");
 
                 struct MaterialData {
                     unsigned id{};
@@ -284,7 +284,7 @@ PACK_END
 
                 DrawingComponentManager<Material>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Material>::rawSourceData(),
@@ -308,7 +308,7 @@ PACK_END
                 orderBy << "ELSE 10 " << std::endl;
                 orderBy << "END, length, drawing_number DESC" << std::endl;
 
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("side_irons", orderBy.str());
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("side_irons", orderBy.str());
 
                 struct SideIronData {
                     unsigned id{};
@@ -361,7 +361,7 @@ PACK_END
 
                 DrawingComponentManager<SideIron>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIron>::rawSourceData(),
@@ -371,7 +371,7 @@ PACK_END
         }
         case RequestType::SOURCE_MACHINE_TABLE: {
             if (DrawingComponentManager<Machine>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machines",
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machines",
                                                                                   "manufacturer<>'None', manufacturer, model");
 
                 struct MachineData {
@@ -418,7 +418,7 @@ PACK_END
 
                 DrawingComponentManager<Machine>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Machine>::rawSourceData(),
@@ -428,7 +428,7 @@ PACK_END
         }
         case RequestType::SOURCE_MACHINE_DECK_TABLE: {
             if (DrawingComponentManager<MachineDeck>::dirty()) {
-                sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machine_decks");
+                /*sql::ResultSet *sourceData = caller.databaseManager().sourceTable("machine_decks");
 
                 struct MachineDeckData {
                     unsigned id{};
@@ -467,7 +467,7 @@ PACK_END
 
                 DrawingComponentManager<MachineDeck>::sourceComponentTable(sourceBuffer, bufferSize);
 
-                delete sourceData;
+                delete sourceData;*/
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<MachineDeck>::rawSourceData(),
