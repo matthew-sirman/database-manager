@@ -29,14 +29,15 @@ std::string to_str(const T &t) {
     return ss.str();
 }
 
-PACK(struct Date {
-    unsigned short year;
-    unsigned char month, day;
+PACK_START
+struct Date {
+    unsigned year, month, day;
 
     std::string toMySQLDateString() const;
 
     static Date parse(const std::string &dateString);
-});
+}
+PACK_END
 
 struct DrawingSerialiser;
 struct DrawingSummary;
@@ -354,7 +355,8 @@ private:
     unsigned __lapSizes[4];
 };
 
-PACK(struct DrawingSummaryCompressionSchema {
+PACK_START
+struct DrawingSummaryCompressionSchema {
     DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessID,
         float maxLapSize, unsigned maxApertureID, unsigned char maxDrawingLength);
 
@@ -381,6 +383,7 @@ private:
     unsigned char thicknessIDBytes;
     unsigned char lapBytes;
     unsigned char apertureIDBytes;
-});
+}
+PACK_END
 
 #endif //DATABASE_MANAGER_DRAWING_H

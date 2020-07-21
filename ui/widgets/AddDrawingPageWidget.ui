@@ -1127,17 +1127,17 @@ QLabel[hovering=true] {
   <customwidget>
    <class>DynamicComboBox</class>
    <extends>QComboBox</extends>
-   <header>../../../ui/widgets/DynamicComboBox.h</header>
+   <header>widgets/DynamicComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ActivatorLabel</class>
    <extends>QLabel</extends>
-   <header>../../../ui/widgets/ActivatorLabel.h</header>
+   <header>widgets/ActivatorLabel.h</header>
   </customwidget>
   <customwidget>
    <class>DrawingView</class>
    <extends>QGraphicsView</extends>
-   <header>../../../ui/widgets/DrawingView.h</header>
+   <header>widgets/DrawingView.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

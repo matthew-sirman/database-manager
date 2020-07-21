@@ -9,17 +9,22 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 
 if (WIN32)
 
-set(CURL_LIBRARY "-lcurl")
+#set(CURL_LIBRARY "-lcurl")
 set(CURL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../curl-7.71.1/include)
 
 set(JSON_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../json/include)
 
+set(MYSQL_INCLUDE_DIRS "C:/Program Files/MySQL/Connector C++ 8.0/include/jdbc")
+
 include_directories(
     ${CURL_INCLUDE_DIRS}
     ${JSON_INCLUDE_DIRS}
+    ${MYSQL_INCLUDE_DIRS}
 )
 
 endif()
+
+include_directories(${PROJECT_SOURCE_DIR}/ui)
 
 add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN)
 

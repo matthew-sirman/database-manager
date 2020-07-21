@@ -1220,7 +1220,7 @@ color: rgb(70, 70, 70);
      <x>0</x>
      <y>0</y>
      <width>1127</width>
-     <height>16</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="fileMenu">
@@ -1290,12 +1290,12 @@ color: rgb(70, 70, 70);
   <customwidget>
    <class>DynamicComboBox</class>
    <extends>QComboBox</extends>
-   <header>../../../ui/widgets/DynamicComboBox.h</header>
+   <header>widgets/DynamicComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ActivatorLabel</class>
    <extends>QLabel</extends>
-   <header>../../../ui/widgets/ActivatorLabel.h</header>
+   <header>widgets/ActivatorLabel.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
