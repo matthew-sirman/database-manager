@@ -13,37 +13,37 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/x64/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x64/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "BOOST_INCLUDE_DIRS",
-          "value": "D:/Libraries/boost",
+          "value": "C:/Libraries/boost",
           "type": "PATH"
         }
       ]
@@ -61,37 +61,37 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/x64/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x64/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "BOOST_INCLUDE_DIRS",
-          "value": "D:/Libraries/boost",
+          "value": "C:/Libraries/boost",
           "type": "PATH"
         }
       ]
@@ -109,37 +109,37 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp-1.1/include",
+          "value": "C:/Libraries/mysql-connector-cpp-1.1/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
+          "value": "C:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "BOOST_INCLUDE_DIRS",
-          "value": "D:/Libraries/boost",
+          "value": "C:/Libraries/boost",
           "type": "PATH"
         }
       ]
@@ -157,37 +157,37 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp-1.1/include",
+          "value": "C:/Libraries/mysql-connector-cpp-1.1/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
+          "value": "C:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "BOOST_INCLUDE_DIRS",
-          "value": "D:/Libraries/boost",
+          "value": "C:/Libraries/boost",
           "type": "PATH"
         }
       ]

@@ -47,43 +47,19 @@ DrawingSummaryCompressionSchema DatabaseManager::createCompressionSchema() {
         float maxWidth, maxLength, maxLapSize;
         unsigned char maxDrawingLength;
 
-        /*results = statement->executeQuery("SELECT MAX(mat_id) AS mx FROM drawings");
-        results->first();
-        maxMatID = results->getUInt("mx");
-        delete results;
+        /*maxMatID = db->getTable("drawings").select("MAX(mat_id)").execute().fetchOne()[0];
 
-        results = statement->executeQuery("SELECT MAX(width) AS mx FROM drawings");
-        results->first();
-        maxWidth = (float) results->getDouble("mx");
-        delete results;
+        maxWidth = db->getTable("drawings").select("MAX(width)").execute().fetchOne()[0];
 
-        results = statement->executeQuery("SELECT MAX(length) AS mx FROM drawings");
-        results->first();
-        maxLength = (float) results->getDouble("mx");
-        delete results;
+        maxLength = db->getTable("drawings").select("MAX(length)").execute().fetchOne()[0];
 
-        results = statement->executeQuery("SELECT MAX(material_id) AS mx FROM materials");
-        results->first();
-        maxThicknessID = results->getUInt("mx");
-        delete results;
+        maxThicknessID = db->getTable("materials").select("MAX(material_id)").execute().fetchOne()[0];
 
-        results = statement->executeQuery(
-                "SELECT MAX(width) AS mx FROM (SELECT width FROM sidelaps UNION SELECT width FROM overlaps) AS all_lap_widths");
-        results->first();
-        maxLapSize = (float) results->getDouble("mx");
-        delete results;
+        maxLapSize = db->getTable("(SELECT width FROM sidelaps UNION SELECT width FROM overlaps)").select("MAX(width)").execute().fetchOne()[0];
 
-        results = statement->executeQuery("SELECT MAX(aperture_id) AS mx FROM apertures");
-        results->first();
-        maxApertureID = results->getUInt("mx");
-        delete results;
+        maxApertureID = db->getTable("apertures").select("MAX(aperture_id)").execute().fetchOne()[0];
 
-        results = statement->executeQuery("SELECT MAX(LENGTH(drawing_number)) AS mx FROM drawings");
-        results->first();
-        maxDrawingLength = results->getUInt("mx");
-        delete results;
-
-        delete statement;*/
+        maxDrawingLength = db->getTable("drawings").select("MAX(LENGTH(drawing_number))").execute().fetchOne()[0];*/
 
         return DrawingSummaryCompressionSchema(maxMatID, maxWidth, maxLength, maxThicknessID, maxLapSize,
                                                maxApertureID, maxDrawingLength);
@@ -107,17 +83,11 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
             ERROR_RAW("Attempted to create compression schema without connecting to database.")
         }
 
-        /*if (!results) {
-            ERROR_RAW("Uncaught MySQL Error. Returned result set was null");
-        }*/
+        mysqlx::RowResult results = sess->sql(query.toSQLQueryString()).execute();
 
-        std::vector<DrawingSummary> summaries;// = DatabaseSearchQuery::getQueryResultSummaries(results);
-
-        /*delete statement;
-        delete results;*/
+        std::vector<DrawingSummary> summaries = DatabaseSearchQuery::getQueryResultSummaries(results);
 
         return summaries;
-        //} catch (sql::SQLException &e) {
     } 
     catch (mysqlx::Error &e) {
         SQL_ERROR_SAFE(e)
@@ -155,6 +125,15 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) const
         queryString << "INNER JOIN machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
         queryString << "INNER JOIN mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
         queryString << "WHERE d.mat_id=" << query.matID << std::endl;
+
+        mysqlx::Row drawingResults = sess->sql(queryString.str()).execute().fetchOne();
+
+        if (!drawingResults.isNull()) {
+
+        }
+        else {
+
+        }
 
         /*results = statement->executeQuery(queryString.str());
         if (results->first()) {
