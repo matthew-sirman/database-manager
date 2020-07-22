@@ -10,7 +10,7 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 if (WIN32)
 
 #set(CURL_LIBRARY "-lcurl")
-set(CURL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../curl-7.71.1/include)
+set(CURL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../curl-7.71.1/builds/libcurl-vc-x86-release-static-ipv6-sspi-winssl/include)
 
 set(JSON_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../json/include)
 

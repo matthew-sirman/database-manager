@@ -18,7 +18,7 @@
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "U:/Drawings Database/Database Manager/encrypt/build/lib/x64/libcurl.lib",
+          "value": "U:/Drawings Database/Database Manager/curl-7.71.1/builds/libcurl-vc-x86-release-static-ipv6-sspi-winssl/lib/libcurl_a.lib",
           "type": "FILEPATH"
         }
       ]
