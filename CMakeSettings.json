@@ -13,13 +13,182 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "C:/Qt/5.15.0/msvc2015_64/lib/cmake/Qt5",
+          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "U:/Drawings Database/Database Manager/curl-7.71.1/builds/libcurl-vc-x86-release-static-ipv6-sspi-winssl/lib/libcurl_a.lib",
+          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "D:/Libraries/curl/${name}/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "D:/Libraries/mysql-connector-cpp/x64/include/",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "D:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "D:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_INCLUDE_DIRS",
+          "value": "D:/Libraries/boost",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "Qt5_DIR",
+          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "D:/Libraries/curl/${name}/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "D:/Libraries/mysql-connector-cpp/x64/include/",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "D:/Libraries/mysql-connector-cpp/x64/lib64/vs14/mysqlcppconn8.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "D:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_INCLUDE_DIRS",
+          "value": "D:/Libraries/boost",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x86-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "variables": [
+        {
+          "name": "Qt5_DIR",
+          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "D:/Libraries/curl/${name}/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "D:/Libraries/mysql-connector-cpp-1.1/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "D:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "D:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_INCLUDE_DIRS",
+          "value": "D:/Libraries/boost",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x86-Release",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "variables": [
+        {
+          "name": "Qt5_DIR",
+          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "D:/Libraries/curl/${name}/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "D:/Libraries/mysql-connector-cpp-1.1/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "D:/Libraries/mysql-connector-cpp-1.1/lib/opt/mysqlcppconn.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "D:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "BOOST_INCLUDE_DIRS",
+          "value": "D:/Libraries/boost",
+          "type": "PATH"
         }
       ]
     }

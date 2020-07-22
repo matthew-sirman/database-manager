@@ -599,10 +599,10 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     return sql.str();
 }
 
-std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(sql::ResultSet *resultSet) {
+std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(const mysqlx::RowResult &resultSet) {
     std::vector<DrawingSummary> summaries;
 
-    while (resultSet->next()) {
+    /*while (resultSet->next()) {
         DrawingSummary summary;
         summary.matID = resultSet->getUInt("mat_id");
         summary.drawingNumber = resultSet->getString("drawing_number");
@@ -633,7 +633,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(sql::Re
         }
 
         summaries.push_back(summary);
-    }
+    }*/
 
     return summaries;
 }

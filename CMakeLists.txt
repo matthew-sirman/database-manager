@@ -9,15 +9,6 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets)
 
 if (WIN32)
 
-#set(CURL_LIBRARY "-lcurl")
-set(CURL_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../curl-7.71.1/builds/libcurl-vc-x86-release-static-ipv6-sspi-winssl/include)
-
-set(JSON_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/../json/include)
-
-set(MYSQL_INCLUDE_DIRS "C:/Program Files/MySQL/Connector C++ 1.1/include")
-
-set(BOOST_INCLUDE_DIRS "C:/boost_1_55_0")
-
 include_directories(
     ${CURL_INCLUDE_DIRS}
     ${JSON_INCLUDE_DIRS}
@@ -29,7 +20,7 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/ui)
 
-add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN -DBOOST_NO_AUTO_PTR)
+add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN -DCURL_STATICLIB -DSTATIC_CONCPP)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -44,11 +35,19 @@ add_executable(${PROJECT_NAME} ${WIDGETS} ${PROJECT_UI} main.cpp src/networking/
 
 include_directories(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/../encrypt/include)
 
-if (WIN32)
-find_library (MySQL_LIBRARY NAMES mysqlcppconn PATHS "C:/Program Files/MySQL/Connector C++ 1.1/lib/opt/")
-add_compile_options("/std:c++17")
-else ()
-find_library(MySQL_LIBRARY NAMES mysqlcppconn)
+if (MSVC)
+
+add_compile_options(
+    #$<$<CONFIG:>:/MT>
+    #$<$<CONFIG:Debug>:/MTd>
+    #$<$<CONFIG:Release>:/MT>
+    "/std:c++17"
+)
+target_link_libraries(${PROJECT_NAME} encrypt Dnsapi ${MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets)
+
+else()
+
+target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets)
+
 endif ()
 
-target_link_libraries(${PROJECT_NAME} encrypt ${MySQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets)
