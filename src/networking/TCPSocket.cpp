@@ -20,16 +20,16 @@ void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
         case S_NO_DATA:
         case SOCKET_SUCCESS:
             return;
-        case ERR_CREATE_SOCKET: ERROR_TO("Failed to create socket", errorStream)
-        case ERR_SET_SOCKET_OPTIONS: ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
-        case ERR_PARSE_IP: ERROR_TO("Failed to parse IP address. Check that it is in the correct format", errorStream)
-        case ERR_BIND_SOCKET: ERROR_TO("Failed to bind socket to provided address and port.", errorStream)
-        case ERR_CONNECT: ERROR_TO("Failed to connect to server", errorStream)
-        case ERR_GET_FD_FLAGS: ERROR_TO("Failed to get flags from TCP socket file descriptor", errorStream)
-        case ERR_SET_NON_BLOCKING: ERROR_TO("Failed to set TCP socket to non blocking", errorStream)
-        case ERR_LISTEN: ERROR_TO("Failed to set server to listen", errorStream)
-        case ERR_ACCEPT: ERROR_TO("Failed to accept client", errorStream)
-        case ERR_RECEIVE_FAILED: ERROR_TO("Failed to receive data from socket", errorStream)
+        case ERR_CREATE_SOCKET: SOCK_ERROR_TO("Failed to create socket", errorStream)
+        case ERR_SET_SOCKET_OPTIONS: SOCK_ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
+        case ERR_PARSE_IP: SOCK_ERROR_TO("Failed to parse IP address. Check that it is in the correct format", errorStream)
+        case ERR_BIND_SOCKET: SOCK_ERROR_TO("Failed to bind socket to provided address and port.", errorStream)
+        case ERR_CONNECT: SOCK_ERROR_TO("Failed to connect to server", errorStream)
+        case ERR_GET_FD_FLAGS: SOCK_ERROR_TO("Failed to get flags from TCP socket file descriptor", errorStream)
+        case ERR_SET_NON_BLOCKING: SOCK_ERROR_TO("Failed to set TCP socket to non blocking", errorStream)
+        case ERR_LISTEN: SOCK_ERROR_TO("Failed to set server to listen", errorStream)
+        case ERR_ACCEPT: SOCK_ERROR_TO("Failed to accept client", errorStream)
+        case ERR_RECEIVE_FAILED: SOCK_ERROR_TO("Failed to receive data from socket", errorStream)
     }
 }
 
@@ -40,26 +40,26 @@ bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
         case S_NO_DATA:
         case SOCKET_SUCCESS:
             return true;
-        case ERR_CREATE_SOCKET: SAFE_ERROR_TO("Failed to create socket", errorStream)
+        case ERR_CREATE_SOCKET: SAFE_SOCK_ERROR_TO("Failed to create socket", errorStream)
             return false;
-        case ERR_SET_SOCKET_OPTIONS: SAFE_ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
+        case ERR_SET_SOCKET_OPTIONS: SAFE_SOCK_ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
             return false;
-        case ERR_PARSE_IP: SAFE_ERROR_TO("Failed to parse IP address. Check that it is in the correct format",
+        case ERR_PARSE_IP: SAFE_SOCK_ERROR_TO("Failed to parse IP address. Check that it is in the correct format",
                                          errorStream)
             return false;
-        case ERR_BIND_SOCKET: SAFE_ERROR_TO("Failed to bind socket to provided address and port", errorStream)
+        case ERR_BIND_SOCKET: SAFE_SOCK_ERROR_TO("Failed to bind socket to provided address and port", errorStream)
             return false;
-        case ERR_CONNECT: SAFE_ERROR_TO("Failed to connect to server", errorStream)
+        case ERR_CONNECT: SAFE_SOCK_ERROR_TO("Failed to connect to server", errorStream)
             return false;
-        case ERR_GET_FD_FLAGS: SAFE_ERROR_TO("Failed to get flags from TCP socket file descriptor", errorStream)
+        case ERR_GET_FD_FLAGS: SAFE_SOCK_ERROR_TO("Failed to get flags from TCP socket file descriptor", errorStream)
             return false;
-        case ERR_SET_NON_BLOCKING: SAFE_ERROR_TO("Failed to set TCP socket to non blocking", errorStream)
+        case ERR_SET_NON_BLOCKING: SAFE_SOCK_ERROR_TO("Failed to set TCP socket to non blocking", errorStream)
             return false;
-        case ERR_LISTEN: SAFE_ERROR_TO("Failed to set server to listen", errorStream)
+        case ERR_LISTEN: SAFE_SOCK_ERROR_TO("Failed to set server to listen", errorStream)
             return false;
-        case ERR_ACCEPT: SAFE_ERROR_TO("Failed to accept client", errorStream)
+        case ERR_ACCEPT: SAFE_SOCK_ERROR_TO("Failed to accept client", errorStream)
             return false;
-        case ERR_RECEIVE_FAILED: SAFE_ERROR_TO("Failed to receive data from socket", errorStream)
+        case ERR_RECEIVE_FAILED: SAFE_SOCK_ERROR_TO("Failed to receive data from socket", errorStream)
             return false;
     }
     return false;
@@ -106,10 +106,9 @@ TCPSocketCode TCPSocket::create() {
 TCPSocketCode TCPSocket::bindToAddress(unsigned short port, const std::string &ip) {
     sockaddr_in address{};
     address.sin_family = AF_INET;
+    address.sin_port = htons(port);
 
 #ifdef _WIN32
-    address.sin_port = port;
-
     if (ip.empty()) {
         address.sin_addr.s_addr = INADDR_ANY;
     }
@@ -121,8 +120,6 @@ TCPSocketCode TCPSocket::bindToAddress(unsigned short port, const std::string &i
         return ERR_BIND_SOCKET;
     }
 #else
-    address.sin_port = htons(port);
-
     if (ip.empty()) {
         address.sin_addr.s_addr = INADDR_ANY;
     }
@@ -148,9 +145,11 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
     // Set the address family
     serverAddress.sin_family = AF_INET;
 
+    // Set the port
+    serverAddress.sin_port = htons(port);
+
 #ifdef _WIN32
 
-    serverAddress.sin_port = port;
     serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
 
     if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
@@ -158,8 +157,6 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
     }
 
 #else
-    // Set the port
-    serverAddress.sin_port = htons(port);
 
     // Set the address through converting the string to the correct format
     if (inet_pton(AF_INET, ip.c_str(), &serverAddress.sin_addr.s_addr) < 0) {
@@ -252,7 +249,7 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
     SOCKET clientSocket = INVALID_SOCKET;
 
     if ((clientSocket = accept(sock, (SOCKADDR *) &clientAddress, &clientAddressSize)) == INVALID_SOCKET) {
-        if (errno != EWOULDBLOCK && errno != EAGAIN) {
+        if (errno != WSAEWOULDBLOCK) {
             return ERR_ACCEPT;
         }
         return S_NO_DATA;

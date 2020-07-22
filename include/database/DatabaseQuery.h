@@ -5,7 +5,7 @@
 #ifndef DATABASE_MANAGER_DATABASEQUERY_H
 #define DATABASE_MANAGER_DATABASEQUERY_H
 
-// #include <cppconn/resultset.h>
+// #include <jdbc/cppconn/resultset.h>
 #include <mysqlx/xdevapi.h>
 
 #include <string>

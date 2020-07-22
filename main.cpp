@@ -206,16 +206,12 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
         return;
     }
 
-    // TODO: Swap this over
-//    // Create the prompt
-//    std::stringstream prompt;
-//    prompt << "Enter the password for " << user << ": ";
-//
-//    // Hash the password to use as an AES key to secure the two keys
-//    uint256 pwHash = getPasswordHash(prompt.str());
+    // Create the prompt
+    std::stringstream prompt;
+    prompt << "Enter the password for " << user << ": ";
 
-    std::string tpw = "password";
-    uint256 pwHash = sha256(tpw.c_str(), tpw.size());
+    // Hash the password to use as an AES key to secure the two keys
+    uint256 pwHash = getPasswordHash(prompt.str());
 
     RSAKeyPair serverKeyPair, digitalSignatureKeyPair;
 
@@ -223,8 +219,6 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     serverKeyPair.publicKey = readPublicKey(keyPath / ("server/server_key.pub"));
     digitalSignatureKeyPair.privateKey = unlockPrivateKey(keyPath / ("signature/signature_" + user + ".pri"), pwHash);
     digitalSignatureKeyPair.publicKey = readPublicKey(keyPath / ("signature/signature.pub"));
-
-    std::cout << keyPath << std::endl;
 
     if (serverKeyPair.privateKey.n != serverKeyPair.publicKey.n ||
         digitalSignatureKeyPair.privateKey.n != digitalSignatureKeyPair.publicKey.n) {
@@ -240,7 +234,7 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     // Start the server with the given port, TODO: fix which port rather than constant 10000, dynamic password
     s.initialiseServer(10000);
 
-    std::ifstream dbPasswordFile(keyPath / "db-manager-server-mysql-pw");
+    std::ifstream dbPasswordFile(keyPath / "../server-pw.txt");
     std::string dbPassword;
     dbPasswordFile >> dbPassword;
 

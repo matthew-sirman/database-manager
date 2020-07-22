@@ -110,7 +110,7 @@ bool Client::connectToServer(const std::string& ipAddress, unsigned port, const 
     authStringCallback(authUrl.url);
 
     // TODO: Probably open this in another thread - currently this will hang the application
-    std::string authToken = openOneShotHTTPAuthenticationServer("localhost", 5000,
+    std::string authToken = openOneShotHTTPAuthenticationServer("127.0.0.1", 5000,
             "<html><body><h1>Thank you</h1></body></html>");
 
     unsigned char *authMessageBuff = (unsigned char *) alloca(sizeof(AuthMode) + authToken.size());

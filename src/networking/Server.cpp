@@ -317,15 +317,18 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     uint2048 encryptedChallenge;
     NetworkMessage challengeMessage;
 
-    // If the client socket doesn't send us a message, close the connection and return
+    clientSocket.waitForMessage(challengeMessage, RSA_MESSAGE);
+
+    /*// If the client socket doesn't send us a message, close the connection and return
     if (clientSocket.receiveMessage(challengeMessage, RSA_MESSAGE) != SOCKET_SUCCESS) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
         NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
+        std::cout << "Closed" << std::endl;
         return;
-    }
+    }*/
 
     // If this message was in any way erroneous, close the connection and return
     if (challengeMessage.error()) {
@@ -343,7 +346,7 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     // Check that the challenge is valid. If it isn't a uint64 padded by 0's, is is not correct;
     // terminate the connection
-    uint2048 mask = 0xFFFFFFFFFFFFFFFFul;
+    uint2048 mask = 0xFFFFFFFFFFFFFFFFull;
 
     if ((decryptedChallenge & (~mask)) != 0) {
         clientSocket.closeSocket();
@@ -365,6 +368,9 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     memcpy(responseBuffer + sizeof(uint64) + sizeof(uint32) + sizeof(AESKey), &clientSessionToken, sizeof(uint64));
 
     // TODO: This might not work if the signed message is greater than the client key's n value!
+
+    TEST_printHex(serverSignature.privateKey.n / clientKey.n);
+
     uint2048 signedEncryptedResponse = encrypt(sign(response, serverSignature.privateKey), clientKey);
 
     if (clientSocket.sendMessage(NetworkMessage(signedEncryptedResponse.rawData(), sizeof(uint2048), RSA_MESSAGE)) !=

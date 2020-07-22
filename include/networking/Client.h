@@ -18,7 +18,7 @@
 #include "../../guard.h"
 
 #define CLIENT_APPLICATION_ID "1f4c53b0-56be-4ecb-9c90-3c7b1294da44"
-#define REDIRECT_URL "http://localhost:5000/login/authorize"
+#define REDIRECT_URL "http://127.0.0.1:5000/login/authorize"
 
 class ClientResponseHandler {
 public:
