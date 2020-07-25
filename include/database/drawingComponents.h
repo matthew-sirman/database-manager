@@ -24,12 +24,16 @@ struct DrawingComponent {
 
     constexpr size_t serialisedSize() const { return sizeof(unsigned); };
 
-    virtual std::vector<ComboboxDataElement> toDataElement() const = 0;
+    virtual ComboboxDataElement toDataElement() const = 0;
 
-    unsigned componentID;
+    unsigned componentID() const;
+
+    unsigned handle() const;
 
 protected:
     DrawingComponent(unsigned id);
+
+    unsigned __componentID, __handle;
 };
 
 template<typename T>
@@ -41,37 +45,31 @@ struct Product : public DrawingComponent {
 public:
     std::string productName;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     Product(unsigned id);
 
-    static Product *fromSource(void *buffer, unsigned &elementSize);
-};
-
-enum class ApertureDirection {
-    NON_DIRECTIONAL,
-    LONGITUDINAL,
-    TRANSVERSE
+    static Product * fromSource(void *buffer, unsigned &elementSize);
 };
 
 struct Aperture : public DrawingComponent {
     friend class DrawingComponentManager<Aperture>;
 
 public:
-    unsigned short width{}, length{};
+    float width{}, length{};
     unsigned short baseWidth{}, baseLength{};
     unsigned apertureShapeID{};
     unsigned short quantity{};
 
-    std::string apertureName(ApertureDirection direction = ApertureDirection::NON_DIRECTIONAL) const;
+    std::string apertureName() const;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     Aperture(unsigned id);
 
-    static Aperture *fromSource(void *buffer, unsigned &elementSize);
+    static Aperture * fromSource(void *buffer, unsigned &elementSize);
 };
 
 struct ApertureShape : public DrawingComponent {
@@ -80,12 +78,12 @@ struct ApertureShape : public DrawingComponent {
 public:
     std::string shape;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     ApertureShape(unsigned id);
 
-    static ApertureShape *fromSource(void *buffer, unsigned &elementSize);
+    static ApertureShape * fromSource(void *buffer, unsigned &elementSize);
 };
 
 struct Material : public DrawingComponent {
@@ -97,12 +95,12 @@ public:
 
     std::string material() const;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     Material(unsigned id);
 
-    static Material *fromSource(void *buffer, unsigned &elementSize);
+    static Material * fromSource(void *buffer, unsigned &elementSize);
 };
 
 enum class SideIronType {
@@ -125,7 +123,7 @@ public:
 
     std::string sideIronStr() const;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     SideIron(unsigned id);
@@ -152,7 +150,7 @@ public:
 
     std::string machineName() const;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     Machine(unsigned id);
@@ -166,7 +164,7 @@ struct MachineDeck : public DrawingComponent {
 public:
     std::string deck;
 
-    std::vector<ComboboxDataElement> toDataElement() const override;
+    ComboboxDataElement toDataElement() const override;
 
 private:
     MachineDeck(unsigned id);
@@ -182,29 +180,30 @@ public:
     void updateSource() override;
 
 private:
-    void setAdapter(const std::function<std::vector<ComboboxDataElement>(std::vector<unsigned>::const_iterator)> &adapter) override {}
+    void setAdapter(const std::function<ComboboxDataElement(std::vector<unsigned>::const_iterator)> &adapter) override {}
 
-    std::vector<unsigned> indexSet;
+    std::vector<unsigned> handleSet;
 };
 
 template<typename T>
 ComboboxComponentDataSource<T>::ComboboxComponentDataSource() {
     ComboboxDataSource::setAdapter([](std::vector<unsigned>::const_iterator iter) {
-        return DrawingComponentManager<T>::getComponentByID(*iter).toDataElement();
+        return DrawingComponentManager<T>::getComponentByHandle(*iter).toDataElement();
     });
 }
 
 template<typename T>
 void ComboboxComponentDataSource<T>::updateSource() {
-    indexSet = DrawingComponentManager<T>::dataIndexSet();
-    this->__begin = indexSet.begin();
-    this->__end = indexSet.end();
+    handleSet = DrawingComponentManager<T>::dataIndexSet();
+    this->__begin = handleSet.begin();
+    this->__end = handleSet.end();
 
     DataSource::updateSource();
 }
 
 template<typename T>
 class DrawingComponentManager {
+    static_assert(std::is_base_of<DrawingComponent, T>::value, "DrawingComponentManager can only be used with types deriving from DrawingComponent.");
 public:
     static void sourceComponentTable(void *data, unsigned dataSize);
 
@@ -212,9 +211,17 @@ public:
 
     static void setDirty();
 
-    static T &getComponentByID(unsigned id);
+    static T &getComponentByHandle(unsigned handle);
+
+    static unsigned maximumHandle();
+
+    static T &findComponentByID(unsigned id);
+
+    static std::vector<T *> allComponentsByID(unsigned id);
 
     static bool validComponentID(unsigned id);
+
+    static bool validComponentHandle(unsigned handle);
 
     static void *rawSourceData();
 
@@ -226,6 +233,7 @@ public:
 
 private:
     static std::unordered_map<unsigned, T *> componentLookup;
+    static std::unordered_map<unsigned, unsigned> handleToIDMap;
     static std::vector<unsigned> indexSet;
 
     static bool sourceDirty;
@@ -238,6 +246,9 @@ private:
 
 template<typename T>
 std::unordered_map<unsigned, T *> DrawingComponentManager<T>::componentLookup;
+
+template<typename T>
+std::unordered_map<unsigned, unsigned> DrawingComponentManager<T>::handleToIDMap;
 
 template<typename T>
 std::vector<unsigned> DrawingComponentManager<T>::indexSet;
@@ -262,6 +273,7 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
     componentLookup.clear();
 
     componentLookup[0] = new T(0);
+    componentLookup[0]->__handle = 0;
 
     unsigned char *buff = (unsigned char *) data;
 
@@ -272,10 +284,15 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
     buff += sizeof(unsigned);
 
     for (unsigned i = 0; i < elements; i++) {
+        unsigned handle = *((unsigned *)buff);
+        buff += sizeof(unsigned);
+
         unsigned elementSize;
         T *element = T::fromSource(buff, elementSize);
-        componentLookup[element->componentID] = element;
-        indexSet.push_back(element->componentID);
+        element->__handle = handle;
+        componentLookup[handle] = element;
+        handleToIDMap[handle] = element->__componentID;
+        indexSet.push_back(handle);
 
         buff += elementSize;
     }
@@ -301,16 +318,52 @@ void DrawingComponentManager<T>::setDirty() {
 }
 
 template<typename T>
-T &DrawingComponentManager<T>::getComponentByID(unsigned int id) {
-    if (!validComponentID(id)) {
-        ERROR_RAW("Invalid component lookup ID.")
+T &DrawingComponentManager<T>::getComponentByHandle(unsigned handle) {
+    if (!validComponentHandle(handle)) {
+        ERROR_RAW("Invalid component lookup handle.")
     }
 
-    return *componentLookup[id];
+    return *componentLookup[handle];
+}
+
+template<typename T>
+unsigned DrawingComponentManager<T>::maximumHandle() {
+    return *std::max_element(indexSet.begin(), indexSet.end());
+}
+
+template<typename T>
+T &DrawingComponentManager<T>::findComponentByID(unsigned id) {
+    for (const std::pair<unsigned, unsigned> handleMap : handleToIDMap) {
+        if (handleMap.second == id) {
+            return *componentLookup[handleMap.first];
+        }
+    }
+    ERROR_RAW("Component was not found. (" + to_str(id) + ")")
+}
+
+template<typename T>
+std::vector<T *> DrawingComponentManager<T>::allComponentsByID(unsigned id) {
+    std::vector<T *> components;
+    for (const std::pair<unsigned, unsigned> handleMap : handleToIDMap) {
+        if (handleMap.second == id) {
+            components.push_back(componentLookup[handleMap.first]);
+        }
+    }
+    return components;
 }
 
 template<typename T>
 bool DrawingComponentManager<T>::validComponentID(unsigned int id) {
+    for (const std::pair<unsigned, T *> component : componentLookup) {
+        if (component.second->componentID == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template<typename T>
+bool DrawingComponentManager<T>::validComponentHandle(unsigned int id) {
     return componentLookup.find(id) != componentLookup.end();
 }
 

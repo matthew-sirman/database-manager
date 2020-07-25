@@ -1,0 +1,20 @@
+HIGH PRIORITY
+Component menus
+Dynamic bar width sizes
+PDF display (WIP)
+Update drawings (WIP)
+PDF outputting
+Improve component serialisation
+
+MEDIUM PRIORITY
+Disconnect codes and messages
+Stream log to file for silent mode
+Proper database password
+Fix broken calculations on other PC
+Comment code
+Component updating - translation between old and new handle sets
+
+LOW PRIORITY
+Make all search labels activators
+Auto text selecting line edits
+Dev mode

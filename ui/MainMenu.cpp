@@ -12,16 +12,15 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     ui(new Ui::MainMenu) {
     ui->setupUi(this);
 
-    // TODO: Make this dynamic plus add keygen if needed
-    // TODO: Add option to save login details (aka get repeat key which last x days/months)
-
     std::ifstream clientMetaFile;
-    clientMetaFile.open(clientMetaFilePath);
+    clientMetaFile.open(clientMetaFilePath / "clientMeta.json");
 
     nlohmann::json clientMeta;
 
     try {
         clientMetaFile >> clientMeta;
+
+        clientMetaFile.close();
     } catch (nlohmann::json::parse_error &) {
         QMessageBox::about(this, "Invalid Client Meta File", "Failed to load the client meta file. "
                                                              "Make sure the path is valid and that the file is correctly "
@@ -58,11 +57,6 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
         exit(0);
     }
 
-    // std::string keyPathStr = clientMeta["keyPath"];
-    // std::filesystem::path keyPath = keyPathStr;
-    // std::string serverSignaturePathStr = clientMeta["serverSignaturePath"].get<std::string>();
-    // std::filesystem::path serverSignaturePath = serverSign
-
     std::filesystem::path keyPath = clientMeta["keyPath"].get<std::string>();
     std::filesystem::path serverSignaturePath = clientMeta["serverSignaturePath"].get<std::string>();
 
@@ -84,11 +78,11 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
                                                             "an Outlook login. Please login to your Outlook account to use the "
                                                             "database.");
     } else {
-        clientKey.privateKey = readPlaintextPrivateKey(keyPath / "client_key.pri");
-        clientKey.publicKey = readPublicKey(keyPath / "client_key.pub");
+        clientKey.privateKey = readPlaintextPrivateKey<32>(keyPath / "client_key.pri");
+        clientKey.publicKey = readPublicKey<32>(keyPath / "client_key.pub");
     }
 
-    PublicKey serverSignature = readPublicKey(serverSignaturePath / "signature.pub");
+    DigitalSignatureKeyPair::Public serverSignature = readPublicKey<24>(serverSignaturePath / "signature.pub");
 
     float refreshRate;
 
@@ -113,29 +107,64 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
 
         uint256 repeatToken;
 
-        std::ifstream repeatTokenFile;
+        std::ifstream repeatTokenFile(repeatTokenPath);
         repeatTokenFile.read((char *) &repeatToken, sizeof(uint256));
+        repeatTokenFile.close();
 
-        if (!client->connectWithToken(serverIP, serverPort, repeatToken)) {
-            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server (with repeat token). "
-                                                                    "The application cannot be used without a connection to the server. "
-                                                                    "Is the server running?");
-            clientMetaFile.close();
+        switch (client->connectWithToken(serverIP, serverPort, repeatToken)) {
+        case Client::ConnectionStatus::NO_CONNECTION:
+            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
+                "The application cannot be used without a connection to the server. Is the server running?");
+
             exit(0);
+        case Client::ConnectionStatus::CREDS_EXCHANGE_FAILED:
+            QMessageBox::about(this, "Connection to Server Failed", "Credentials exchange failed. "
+                "Failed to connect to the server due to bad credentials.");
+
+            exit(0);
+        case Client::ConnectionStatus::INVALID_REPEAT_TOKEN:
+            QMessageBox::about(this, "Invalid Token", "Your repeat login token has expired. Please log back in "
+                "through Outlook.");
+
+            client->disconnect();
+            client->initialiseClient();
+
+            connectToServerWithJWT(serverIP, serverPort);
+
+            if (QMessageBox::question(this, "Save Login Details", "Would you like to save login details for future use?") == QMessageBox::Yes) {
+                handler->setRepeatTokenResponseCallback([this, repeatTokenPath](const uint256 &token) {
+                    std::ofstream repeatTokenFile(repeatTokenPath);
+                    repeatTokenFile.write((const char *)&token, sizeof(uint256));
+                    repeatTokenFile.close();
+                });
+
+                client->requestRepeatToken((unsigned) RequestType::REPEAT_TOKEN_REQUEST);
+            }
+            break;
+        case Client::ConnectionStatus::SUCCESS:
+            break;
         }
     } else {
-        // TODO: Make connection interface and make non blocking (?)
-        if (!client->connectToServer(serverIP, serverPort,
-                                     [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
-            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
-                                                                    "The application cannot be used without a connection to the server. "
-                                                                    "Is the server running?");
-            clientMetaFile.close();
-            exit(0);
+        connectToServerWithJWT(serverIP, serverPort);
+
+        if (QMessageBox::question(this, "Save Login Details", "Would you like to save login details for future use?") == QMessageBox::Yes) {
+            handler->setRepeatTokenResponseCallback([this, clientMetaFilePath, clientMeta](const uint256 &token) mutable {
+                std::string repeatTokenFilePath = (clientMetaFilePath / "repeat.tok").string();
+
+                std::ofstream repeatTokenFile(repeatTokenFilePath);
+                repeatTokenFile.write((const char *)&token, sizeof(uint256));
+                repeatTokenFile.close();
+
+                clientMeta["repeatTokenPath"] = repeatTokenFilePath;
+
+                std::ofstream clientMetaFile(clientMetaFilePath / "clientMeta.json");
+                clientMetaFile << std::setw(4) << clientMeta << std::endl;
+                clientMetaFile.close();
+            });
+
+            client->requestRepeatToken((unsigned)RequestType::REPEAT_TOKEN_REQUEST);
         }
     }
-
-    clientMetaFile.close();
 
     client->startClientLoop();
 
@@ -319,6 +348,28 @@ unsigned MainMenu::getValidInsertCode() const {
     return codes.size();
 }
 
+void MainMenu::connectToServerWithJWT(const std::string &serverIP, unsigned serverPort) {
+    switch (client->connectToServer(serverIP, serverPort,
+        [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
+    case Client::ConnectionStatus::NO_CONNECTION:
+        QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
+            "The application cannot be used without a connection to the server. Is the server running?");
+
+        exit(0);
+    case Client::ConnectionStatus::CREDS_EXCHANGE_FAILED:
+        QMessageBox::about(this, "Connection to Server Failed", "Credentials exchange failed. "
+            "Failed to connect to the server due to bad credentials.");
+
+        exit(0);
+    case Client::ConnectionStatus::INVALID_JWT:
+        QMessageBox::about(this, "Invalid Login", "Your login was denied by the server.");
+
+        exit(0);
+    case Client::ConnectionStatus::SUCCESS:
+        break;
+    }
+}
+
 void MainMenu::searchButtonPressed() {
     DatabaseSearchQuery query;
 
@@ -336,19 +387,19 @@ void MainMenu::searchButtonPressed() {
         query.length = { length - tolerance, length + tolerance };
     }
     if (ui->productTypeSearchInput->currentText() != "Any") {
-        query.productType = DrawingComponentManager<Product>::getComponentByID(ui->productTypeSearchInput->currentData().value<ElementIndex>());
+        query.productType = DrawingComponentManager<Product>::getComponentByHandle(ui->productTypeSearchInput->currentData().toInt());
     }
     if (ui->numberOfBarsLabel->active()) {
         query.numberOfBars = ui->numberOfBarsSearchInput->value();
     }
     if (ui->apertureSearchInput->currentText() != "Any") {
-        query.aperture = DrawingComponentManager<Aperture>::getComponentByID(ui->apertureSearchInput->currentData().value<ElementIndex>());
+        query.aperture = DrawingComponentManager<Aperture>::getComponentByHandle(ui->apertureSearchInput->currentData().toInt());
     }
     if (ui->thickness1SearchInput->currentText() != "Any") {
-        query.topThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness1SearchInput->currentData().value<ElementIndex>());
+        query.topThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness1SearchInput->currentData().toInt());
     }
     if (ui->thickness2SearchInput->currentText() != "Any") {
-        query.bottomThickness = DrawingComponentManager<Material>::getComponentByID(ui->thickness2SearchInput->currentData().value<ElementIndex>());
+        query.bottomThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness2SearchInput->currentData().toInt());
     }
     if (ui->startDateLabel->active()) {
         QDate date = ui->startDateSearchInput->date();
@@ -393,7 +444,7 @@ void MainMenu::searchButtonPressed() {
         query.overlapAttachment = (LapAttachment) (ui->overlapAttachmentSearchInput->currentIndex() - 1);
     }
     if (ui->machineSearchInput->currentText() != "Any") {
-        query.machine = DrawingComponentManager<Machine>::getComponentByID(ui->machineSearchInput->currentData().value<ElementIndex>());
+        query.machine = DrawingComponentManager<Machine>::getComponentByHandle(ui->machineSearchInput->currentData().toInt());
     }
     if (ui->quantityOnDeckLabel->active()) {
         query.quantityOnDeck = ui->quantityOnDeckSearchInput->value();
@@ -402,7 +453,7 @@ void MainMenu::searchButtonPressed() {
         query.position = ui->positionSearchInput->text().toStdString();
     }
     if (ui->deckSearchInput->currentText() != "Any") {
-        query.machineDeck = DrawingComponentManager<MachineDeck>::getComponentByID(ui->deckSearchInput->currentData().value<ElementIndex>());
+        query.machineDeck = DrawingComponentManager<MachineDeck>::getComponentByHandle(ui->deckSearchInput->currentData().toInt());
     }
 
     unsigned bufferSize;
@@ -482,6 +533,27 @@ void MainMenu::processDrawings() {
                                                                     "the database failed.");
                 } else {
                     DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
+                    Drawing &drawing = request->drawingData.value();
+                    drawingView->setUpdateDrawingCallback([this, drawing]() {
+                        AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, ui->mainTabs);
+                        addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
+                            DrawingInsert insert;
+                            insert.drawingData = drawing;
+
+                            insert.setForce(force);
+
+                            insert.responseEchoCode = getValidInsertCode();
+                            drawingInserts[insert.responseEchoCode] = &drawing;
+
+                            unsigned bufferSize = insert.serialisedSize();
+                            void *buffer = alloca(bufferSize);
+                            insert.serialise(buffer);
+
+                            client->addMessageToSendQueue(buffer, bufferSize);
+                        });
+                        ui->mainTabs->addTab(addDrawingPage, tr("Add Drawing"));
+                        ui->mainTabs->setCurrentWidget(addDrawingPage);
+                    });
 
                     ui->mainTabs->addTab(drawingView, tr((request->drawingData->drawingNumber() + " Details").c_str()));
                     ui->mainTabs->setCurrentWidget(drawingView);
@@ -503,7 +575,7 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
             drawingInserts.erase(responseCode);
             break;
         case DrawingInsert::FAILED:
-            QMessageBox::about(this, "Insert Drawing", "The attempt to add the drawing to the database"
+            QMessageBox::about(this, "Insert Drawing", "The attempt to add the drawing to the database "
                                                        "was unsuccessful.");
             drawingInserts.erase(responseCode);
             break;

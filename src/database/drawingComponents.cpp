@@ -7,15 +7,23 @@
 #include "../../include/database/drawingComponents.h"
 
 void DrawingComponent::serialise(void *buffer) const {
-    *((unsigned *) buffer) = componentID;
+    *((unsigned *) buffer) = __handle;
 }
 
 unsigned DrawingComponent::deserialiseID(void *buffer) {
     return *((unsigned *) buffer);
 }
 
+unsigned DrawingComponent::componentID() const {
+    return __componentID;
+}
+
+unsigned DrawingComponent::handle() const {
+    return __handle;
+}
+
 DrawingComponent::DrawingComponent(unsigned id) {
-    this->componentID = id;
+    this->__componentID = id;
 }
 
 Product::Product(unsigned id) : DrawingComponent(id) {
@@ -37,8 +45,8 @@ Product *Product::fromSource(void *buffer, unsigned &elementSize) {
     return product;
 }
 
-std::vector<ComboboxDataElement> Product::toDataElement() const {
-    return { { productName, componentID } };
+ComboboxDataElement Product::toDataElement() const {
+    return { productName, __handle };
 }
 
 Aperture::Aperture(unsigned id) : DrawingComponent(id) {
@@ -53,10 +61,10 @@ Aperture *Aperture::fromSource(void *buffer, unsigned &elementSize) {
     Aperture *aperture = new Aperture(*((unsigned *) buff));
     elementSize += sizeof(unsigned);
 
-    aperture->width = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
-    aperture->length = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
+    aperture->width = *((float *) (buff + elementSize));
+    elementSize += sizeof(float);
+    aperture->length = *((float *) (buff + elementSize));
+    elementSize += sizeof(float);
     aperture->baseWidth = *((unsigned short *) (buff + elementSize));
     elementSize += sizeof(unsigned short);
     aperture->baseLength = *((unsigned short *) (buff + elementSize));
@@ -69,8 +77,8 @@ Aperture *Aperture::fromSource(void *buffer, unsigned &elementSize) {
     return aperture;
 }
 
-std::string Aperture::apertureName(ApertureDirection direction) const {
-    ApertureShape shape = DrawingComponentManager<ApertureShape>::getComponentByID(apertureShapeID);
+std::string Aperture::apertureName() const {
+    ApertureShape shape = DrawingComponentManager<ApertureShape>::getComponentByHandle(apertureShapeID);
 
     std::stringstream shapeName;
 
@@ -79,17 +87,7 @@ std::string Aperture::apertureName(ApertureDirection direction) const {
     } else if (shape.shape == "SQ" || shape.shape == "DIA") {
         shapeName << width << shape.shape;
     } else if (shape.shape == "BOTH") {
-        switch (direction) {
-            case ApertureDirection::LONGITUDINAL:
-                shapeName << width << "SL" << length;
-                break;
-            case ApertureDirection::TRANSVERSE:
-                shapeName << width << "ST" << length;
-                break;
-            default:
-                shapeName << "ERROR!";
-                break;
-        }
+        shapeName << "ERROR!";
     } else {
         shapeName << width << shape.shape << length;
     }
@@ -97,14 +95,8 @@ std::string Aperture::apertureName(ApertureDirection direction) const {
     return shapeName.str();
 }
 
-std::vector<ComboboxDataElement> Aperture::toDataElement() const {
-    ApertureShape shape = DrawingComponentManager<ApertureShape>::getComponentByID(apertureShapeID);
-    if (shape.shape == "BOTH") {
-        return { { apertureName(ApertureDirection::LONGITUDINAL), componentID, (unsigned) ApertureDirection::LONGITUDINAL },
-                 { apertureName(ApertureDirection::TRANSVERSE), componentID, (unsigned) ApertureDirection::TRANSVERSE } };
-    } else {
-        return { { apertureName(), componentID } };
-    }
+ComboboxDataElement Aperture::toDataElement() const {
+    return { apertureName(), __handle };
 }
 
 ApertureShape::ApertureShape(unsigned id) : DrawingComponent(id) {
@@ -123,11 +115,11 @@ ApertureShape *ApertureShape::fromSource(void *buffer, unsigned &elementSize) {
     apertureShape->shape = std::string((const char *) &buff[elementSize], shapeSize);
     elementSize += shapeSize;
 
-    return apertureShape;
+    return { apertureShape };
 }
 
-std::vector<ComboboxDataElement> ApertureShape::toDataElement() const {
-    return { { shape, componentID } };
+ComboboxDataElement ApertureShape::toDataElement() const {
+    return { shape, __handle };
 }
 
 Material::Material(unsigned id) : DrawingComponent(id) {
@@ -147,9 +139,9 @@ Material *Material::fromSource(void *buffer, unsigned &elementSize) {
     material->thickness = *((unsigned short *) (buff + elementSize));
     elementSize += sizeof(unsigned short);
 
-    unsigned char shapeSize = buff[elementSize++];
-    material->materialName = std::string((const char *) &buff[elementSize], shapeSize);
-    elementSize += shapeSize;
+    unsigned char nameSize = buff[elementSize++];
+    material->materialName = std::string((const char *) &buff[elementSize], nameSize);
+    elementSize += nameSize;
 
     return material;
 }
@@ -162,8 +154,8 @@ std::string Material::material() const {
     return name.str();
 }
 
-std::vector<ComboboxDataElement> Material::toDataElement() const {
-    return { { material(), componentID } };
+ComboboxDataElement Material::toDataElement() const {
+    return { material(), __handle };
 }
 
 SideIron::SideIron(unsigned id) : DrawingComponent(id) {
@@ -221,8 +213,8 @@ std::string SideIron::sideIronStr() const {
     return ss.str();
 }
 
-std::vector<ComboboxDataElement> SideIron::toDataElement() const {
-    return { { sideIronStr(), componentID } };
+ComboboxDataElement SideIron::toDataElement() const {
+    return { sideIronStr(), __handle };
 }
 
 Machine::Machine(unsigned int id) : DrawingComponent(id) {
@@ -252,8 +244,8 @@ std::string Machine::machineName() const {
     return manufacturer + " " + model;
 }
 
-std::vector<ComboboxDataElement> Machine::toDataElement() const {
-    return { { machineName(), componentID } };
+ComboboxDataElement Machine::toDataElement() const {
+    return { machineName(), __componentID };
 }
 
 MachineDeck::MachineDeck(unsigned int id) : DrawingComponent(id) {
@@ -275,8 +267,8 @@ MachineDeck *MachineDeck::fromSource(void *buffer, unsigned int &elementSize) {
     return machineDeck;
 }
 
-std::vector<ComboboxDataElement> MachineDeck::toDataElement() const {
-    return { { deck, componentID } };
+ComboboxDataElement MachineDeck::toDataElement() const {
+    return { deck, __handle };
 }
 
 #pragma clang diagnostic pop

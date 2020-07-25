@@ -249,7 +249,7 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
     SOCKET clientSocket = INVALID_SOCKET;
 
     if ((clientSocket = accept(sock, (SOCKADDR *) &clientAddress, &clientAddressSize)) == INVALID_SOCKET) {
-        if (errno != WSAEWOULDBLOCK) {
+        if (sock_errno != WSAEWOULDBLOCK) {
             return ERR_ACCEPT;
         }
         return S_NO_DATA;
@@ -303,15 +303,34 @@ TCPSocketCode TCPSocket::sendMessage(const NetworkMessage &message) {
     }
 
 #ifdef _WIN32
-    bool success = send(sock, (const char *) message.dataStream(), message.dataStreamSize(), 0) >= 0;
+    FD_SET writeSet;
+    FD_ZERO(&writeSet);
+
+    unsigned total;
+
+    FD_SET(sock, &writeSet);
+
+    if ((total = select(0, nullptr, &writeSet, nullptr, nullptr)) == SOCKET_ERROR) {
+        return ERR_SEND_FAILED;
+    }
+    if (!FD_ISSET(sock, &writeSet)) {
+        return ERR_SEND_FAILED;
+    }
+
+    bool success = send(sock, (const char *) message.dataStream(), message.dataStreamSize(), 0) != SOCKET_ERROR;
+
+    if (sock_errno == WSAECONNRESET) {
+        flags |= SOCKET_DEAD;
+        return ERR_SOCKET_DEAD;
+    }
 #else
     bool success = send(fd, message.dataStream(), message.dataStreamSize(), 0) >= 0;
-#endif
 
     if (errno == EPIPE) {
         flags |= SOCKET_DEAD;
         return ERR_SOCKET_DEAD;
     }
+#endif
 
     return success ? SOCKET_SUCCESS : ERR_SEND_FAILED;
 }
@@ -386,6 +405,24 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
 }
 
 TCPSocketCode TCPSocket::waitForMessage(NetworkMessage &message, MessageProtocol expectedProtocol) {
+
+#ifdef _WIN32
+
+    FD_SET readSet;
+    FD_ZERO(&readSet);
+
+    unsigned total;
+
+    FD_SET(sock, &readSet);
+
+    if ((total = select(0, &readSet, nullptr, nullptr, nullptr)) == SOCKET_ERROR) {
+        return ERR_RECEIVE_FAILED;
+    }
+    if (FD_ISSET(sock, &readSet)) {
+        return receiveMessage(message, expectedProtocol);
+    }
+
+#else
     TCPSocketCode code = S_NO_DATA;
 
     while (code == S_NO_DATA) {
@@ -393,6 +430,7 @@ TCPSocketCode TCPSocket::waitForMessage(NetworkMessage &message, MessageProtocol
     }
 
     return code;
+#endif
 }
 
 void TCPSocket::heartbeat() {

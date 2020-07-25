@@ -205,7 +205,7 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
         query->length = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::PRODUCT_TYPE) {
-        query->productType = DrawingComponentManager<Product>::getComponentByID(Product::deserialiseID(buffer));
+        query->productType = DrawingComponentManager<Product>::getComponentByHandle(Product::deserialiseID(buffer));
         buffer += query->productType->serialisedSize();
     } else {
         query->productType = std::nullopt;
@@ -216,19 +216,19 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
         query->numberOfBars = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::APERTURE) {
-        query->aperture = DrawingComponentManager<Aperture>::getComponentByID(Aperture::deserialiseID(buffer));
+        query->aperture = DrawingComponentManager<Aperture>::getComponentByHandle(Aperture::deserialiseID(buffer));
         buffer += query->aperture->serialisedSize();
     } else {
         query->aperture = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::TOP_THICKNESS) {
-        query->topThickness = DrawingComponentManager<Material>::getComponentByID(Material::deserialiseID(buffer));
+        query->topThickness = DrawingComponentManager<Material>::getComponentByHandle(Material::deserialiseID(buffer));
         buffer += query->topThickness->serialisedSize();
     } else {
         query->topThickness = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::BOTTOM_THICKNESS) {
-        query->bottomThickness = DrawingComponentManager<Material>::getComponentByID(Material::deserialiseID(buffer));
+        query->bottomThickness = DrawingComponentManager<Material>::getComponentByHandle(Material::deserialiseID(buffer));
         buffer += query->bottomThickness->serialisedSize();
     } else {
         query->bottomThickness = std::nullopt;
@@ -283,7 +283,7 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
         query->overlapAttachment = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::MACHINE) {
-        query->machine = DrawingComponentManager<Machine>::getComponentByID(Machine::deserialiseID(buffer));
+        query->machine = DrawingComponentManager<Machine>::getComponentByHandle(Machine::deserialiseID(buffer));
         buffer += query->machine->serialisedSize();
     } else {
         query->machine = std::nullopt;
@@ -301,7 +301,7 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
         query->position = std::nullopt;
     }
     if (searchParameters & (unsigned) SearchParameters::MACHINE_DECK) {
-        query->machineDeck = DrawingComponentManager<MachineDeck>::getComponentByID(MachineDeck::deserialiseID(buffer));
+        query->machineDeck = DrawingComponentManager<MachineDeck>::getComponentByHandle(MachineDeck::deserialiseID(buffer));
         buffer += query->machineDeck->serialisedSize();
     } else {
         query->machineDeck = std::nullopt;
@@ -383,17 +383,17 @@ unsigned DatabaseSearchQuery::getSearchParameters() const {
 std::string DatabaseSearchQuery::toSQLQueryString() const {
     std::stringstream sql;
     sql << "SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, "
-           "mal.aperture_id AS aperture_id, "
-           "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
+           "mal.aperture_id AS aperture_id, mal.direction AS direction, "
+           "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM scs_drawings.thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
            "d.tension_type AS tension_type, "
            "COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) "
-           "FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM sidelaps UNION "
-           "SELECT mat_id, 'O' AS type, width, mat_side FROM overlaps) AS l "
+           "FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM scs_drawings.sidelaps UNION "
+           "SELECT mat_id, 'O' AS type, width, mat_side FROM scs_drawings.overlaps) AS l "
            "WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps"
         << std::endl;
 
-    sql << "FROM " << "drawings" << " AS d" << std::endl;
-    sql << "INNER JOIN " << "mat_aperture_link" << " AS mal ON d.mat_id=mal.mat_id" << std::endl;
+    sql << "FROM " << "scs_drawings.drawings" << " AS d" << std::endl;
+    sql << "INNER JOIN " << "scs_drawings.mat_aperture_link" << " AS mal ON d.mat_id=mal.mat_id" << std::endl;
 
     std::vector<std::string> conditions;
     std::stringstream condition;
@@ -415,7 +415,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     }
     if (productType.has_value()) {
         condition.str(std::string());
-        condition << "d.product_id=" << productType->componentID;
+        condition << "d.product_id=" << productType->componentID();
         conditions.push_back(condition.str());
     }
     if (numberOfBars.has_value()) {
@@ -425,20 +425,35 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     }
     if (aperture.has_value()) {
         condition.str(std::string());
-        condition << "mal.aperture_id=" << aperture->componentID;
+        condition << "mal.aperture_id=" << aperture->componentID();
         conditions.push_back(condition.str());
+        
+        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(aperture->apertureShapeID).componentID()) {
+            case 3:
+                condition.str(std::string());
+                condition << "mal.direction='Longitudinal'";
+                conditions.push_back(condition.str());
+                break;
+            case 4:
+                condition.str(std::string());
+                condition << "mal.direction='Transverse'";
+                conditions.push_back(condition.str());
+                break;
+            default:
+                break;
+        }
     }
     if (topThickness.has_value()) {
         condition.str(std::string());
         if (!bottomThickness.has_value()) {
-            sql << "INNER JOIN " << "thickness" << " AS t ON d.mat_id=t.mat_id" << std::endl;
-            condition << "t.material_thickness_id=" << topThickness->componentID;
+            sql << "INNER JOIN " << "scs_drawings.thickness" << " AS t ON d.mat_id=t.mat_id" << std::endl;
+            condition << "t.material_thickness_id=" << topThickness->componentID();
         } else {
-            condition << "d.mat_id IN (SELECT t1.mat_id AS mid FROM thickness AS t1" << std::endl;
-            condition << "INNER JOIN thickness AS t2 ON t1.mat_id=t2.mat_id" << std::endl;
+            condition << "d.mat_id IN (SELECT t1.mat_id AS mid FROM scs_drawings.thickness AS t1" << std::endl;
+            condition << "INNER JOIN scs_drawings.thickness AS t2 ON t1.mat_id=t2.mat_id" << std::endl;
             condition << "WHERE t1.thickness_id < t2.thickness_id AND" << std::endl;
-            condition << "t1.material_thickness_id=" << topThickness->componentID << " AND" << std::endl;
-            condition << "t2.material_thickness_id=" << bottomThickness->componentID << ")";
+            condition << "t1.material_thickness_id=" << topThickness->componentID() << " AND" << std::endl;
+            condition << "t2.material_thickness_id=" << bottomThickness->componentID() << ")";
         }
         conditions.push_back(condition.str());
     }
@@ -449,8 +464,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         conditions.push_back(condition.str());
     }
     if (sideIronType.has_value() || sideIronLength.has_value()) {
-        sql << "INNER JOIN " << "mat_side_iron_link" << " AS msil ON d.mat_id=msil.mat_id" << std::endl;
-        sql << "INNER JOIN " << "side_irons" << " AS si ON msil.side_iron_id=si.side_iron_id" << std::endl;
+        sql << "INNER JOIN " << "scs_drawings.mat_side_iron_link" << " AS msil ON d.mat_id=msil.mat_id" << std::endl;
+        sql << "INNER JOIN " << "scs_drawings.side_irons" << " AS si ON msil.side_iron_id=si.side_iron_id" << std::endl;
         if (sideIronType.has_value()) {
             condition.str(std::string());
             switch (sideIronType.value()) {
@@ -483,8 +498,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     }
     if (sidelapMode.has_value() || sidelapWidth.has_value() || sidelapAttachment.has_value()) {
         condition.str(std::string());
-        condition << "d.mat_id IN (SELECT d_i.mat_id FROM drawings AS d_i" << std::endl;
-        condition << "LEFT JOIN sidelaps AS s ON d_i.mat_id=s.mat_id" << std::endl;
+        condition << "d.mat_id IN (SELECT d_i.mat_id FROM scs_drawings.drawings AS d_i" << std::endl;
+        condition << "LEFT JOIN scs_drawings.sidelaps AS s ON d_i.mat_id=s.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         if (sidelapWidth.has_value()) {
             condition << "AND s.width BETWEEN " << sidelapWidth->lowerBound << " AND " << sidelapWidth->upperBound
@@ -522,8 +537,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     }
     if (overlapMode.has_value() || overlapWidth.has_value() || overlapAttachment.has_value()) {
         condition.str(std::string());
-        condition << "d.mat_id IN (SELECT d_i.mat_id FROM drawings AS d_i" << std::endl;
-        condition << "LEFT JOIN overlaps AS o ON d_i.mat_id=o.mat_id" << std::endl;
+        condition << "d.mat_id IN (SELECT d_i.mat_id FROM scs_drawings.drawings AS d_i" << std::endl;
+        condition << "LEFT JOIN scs_drawings.overlaps AS o ON d_i.mat_id=o.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         if (overlapWidth.has_value()) {
             condition << "AND o.width BETWEEN " << overlapWidth->lowerBound << " AND " << overlapWidth->upperBound
@@ -560,11 +575,11 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         conditions.push_back(condition.str());
     }
     if (machine.has_value() || quantityOnDeck.has_value() || position.has_value() || machineDeck.has_value()) {
-        sql << "INNER JOIN machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
+        sql << "INNER JOIN scs_drawings.machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
 
         if (machine.has_value()) {
             condition.str(std::string());
-            condition << "mt.machine_id=" << machine->componentID;
+            condition << "mt.machine_id=" << machine->componentID();
             conditions.push_back(condition.str());
         }
         if (quantityOnDeck.has_value()) {
@@ -579,7 +594,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         }
         if (machineDeck.has_value()) {
             condition.str(std::string());
-            condition << "mt.deck_id=" << machineDeck->componentID;
+            condition << "mt.deck_id=" << machineDeck->componentID();
             conditions.push_back(condition.str());
         }
     }
@@ -599,41 +614,82 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     return sql.str();
 }
 
-std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(const mysqlx::RowResult &resultSet) {
+std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult &resultSet) {
     std::vector<DrawingSummary> summaries;
 
-    /*while (resultSet->next()) {
+    for (const mysqlx::Row &row : resultSet) {
         DrawingSummary summary;
-        summary.matID = resultSet->getUInt("mat_id");
-        summary.drawingNumber = resultSet->getString("drawing_number");
-        summary.setWidth((float) resultSet->getDouble("width"));
-        summary.setLength((float) resultSet->getDouble("length"));
-        summary.apertureID = resultSet->getUInt("aperture_id");
+        summary.matID = row[0];
+        summary.drawingNumber = row[1].get<std::string>();
+        summary.setWidth(row[2]);
+        summary.setLength(row[3]);
 
-        nlohmann::json thicknessIDs = nlohmann::json::parse(resultSet->getString("material_ids").c_str()),
-                lapSizes = nlohmann::json::parse(resultSet->getString("laps").c_str());
+        std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(row[4]);
 
-        unsigned int index = 0;
-        memset(&summary.thicknessIDs, 0, sizeof(summary.thicknessIDs));
+        if (matchingApertures.size() == 1) {
+            summary.apertureHandle = matchingApertures.front()->handle();
+        } else {
+            std::string apertureDirectionString = row[5].get<std::string>();
+
+            if (apertureDirectionString == "Longitudinal") {
+                for (const Aperture *ap : matchingApertures) {
+                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
+                        summary.apertureHandle = ap->handle();
+                    }
+                }
+            } else if (apertureDirectionString == "Transverse") {
+                for (const Aperture *ap : matchingApertures) {
+                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
+                        summary.apertureHandle = ap->handle();
+                    }
+                }
+            }
+        }
+
+        /*std::vector<unsigned> thicknessIDs = row[6];
+
+        nlohmann::json thicknessIDs = nlohmann::json::parse(row[5].get<std::string>()),
+                lapSizes = nlohmann::json::parse(row[7].get<std::string>());*/
+
+        memset(&summary.thicknessHandles, 0, sizeof(summary.thicknessHandles));
         for (unsigned i = 0; i < 4; i++) {
             summary.setLapSize(i, 0);
         }
 
-        for (const nlohmann::json &it : thicknessIDs) {
+        /*for (const nlohmann::json &it : thicknessIDs) {
             summary.thicknessIDs[index++] = it.get<unsigned>();
         }
 
         for (const nlohmann::json &it : lapSizes) {
-            if (resultSet->getString("tension_type") == "Side") {
+            if (row[6].get<std::string>() == "Side") {
                 index = (it[2] == "Right") + 2 * (it[0] == "O");
             } else {
                 index = (it[2] == "Right") + 2 * (it[0] == "S");
             }
             summary.setLapSize(index, it[1].get<float>());
+        }*/
+
+        for (unsigned thicknessSlot = 0; thicknessSlot < row[6].elementCount(); thicknessSlot++) {
+            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[6][thicknessSlot]).handle();
+        }
+
+        for (const mysqlx::Value &lap : row[8]) {
+            if (lap[2].isNull()) {
+                continue;
+            }
+
+            unsigned index = (lap[2] == "Right");
+            if (row[7].get<std::string>() == "Side") {
+                index += 2 * (lap[0] == "O");
+            }
+            else {
+                index += 2 * (lap[0] == "S");
+            }
+            summary.setLapSize(index, lap[1].get<double>());
         }
 
         summaries.push_back(summary);
-    }*/
+    }
 
     return summaries;
 }
@@ -750,12 +806,12 @@ bool DrawingInsert::forcing() const {
 std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     std::stringstream insert;
 
-    insert << "INSERT INTO drawings" << std::endl;
+    insert << "INSERT INTO scs_drawings.drawings" << std::endl;
     insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
               "hyperlink, notes)" << std::endl;
     insert << "VALUES" << std::endl;
 
-    insert << "('" << drawingData->drawingNumber() << "', " << drawingData->product().componentID << ", " <<
+    insert << "('" << drawingData->drawingNumber() << "', " << drawingData->product().componentID() << ", " <<
            templateID << ", " << drawingData->width() << ", " << drawingData->length() << ", ";
 
     switch (drawingData->tensionType()) {
@@ -780,7 +836,7 @@ std::string DrawingInsert::barSpacingInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO bar_spacings" << std::endl;
+    insert << "INSERT INTO scs_drawings.bar_spacings" << std::endl;
     insert << "(mat_id, bar_spacing, bar_width, bar_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -799,14 +855,14 @@ std::string DrawingInsert::barSpacingInsertQuery(unsigned matID) const {
 std::string DrawingInsert::machineTemplateInsertQuery() const {
     std::stringstream insert;
 
-    insert << "INSERT INTO machine_templates" << std::endl;
+    insert << "INSERT INTO scs_drawings.machine_templates" << std::endl;
     insert << "(machine_id, quantity_on_deck, position, deck_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     Drawing::MachineTemplate t = drawingData->machineTemplate();
 
-    insert << "(" << t.machine().componentID << ", " << t.quantityOnDeck << ", '" <<
-           t.position << "', " << t.deck().componentID << ")" << std::endl;
+    insert << "(" << t.machine().componentID() << ", " << t.quantityOnDeck << ", '" <<
+           t.position << "', " << t.deck().componentID() << ")" << std::endl;
 
     return insert.str();
 }
@@ -816,11 +872,11 @@ std::string DrawingInsert::testMachineTemplateQuery() const {
 
     Drawing::MachineTemplate t = drawingData->machineTemplate();
 
-    query << "SELECT template_id FROM machine_templates" << std::endl;
-    query << "WHERE machine_id=" << t.machine().componentID << " AND " << std::endl;
+    query << "SELECT template_id FROM scs_drawings.machine_templates" << std::endl;
+    query << "WHERE machine_id=" << t.machine().componentID() << " AND " << std::endl;
     query << "quantity_on_deck=" << t.quantityOnDeck << " AND" << std::endl;
     query << "position='" << t.position << "' AND" << std::endl;
-    query << "deck_id=" << t.deck().componentID << std::endl;
+    query << "deck_id=" << t.deck().componentID() << std::endl;
 
     return query.str();
 }
@@ -828,21 +884,21 @@ std::string DrawingInsert::testMachineTemplateQuery() const {
 std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
-    insert << "INSERT INTO mat_aperture_link" << std::endl;
+    insert << "INSERT INTO scs_drawings.mat_aperture_link" << std::endl;
     insert << "(mat_id, aperture_id, direction)" << std::endl;
     insert << "VALUES" << std::endl;
 
-    insert << "(" << matID << ", " << drawingData->aperture().componentID << ", '";
+    insert << "(" << matID << ", " << drawingData->aperture().componentID() << ", '";
 
-    switch (drawingData->apertureDirection()) {
-        case ApertureDirection::NON_DIRECTIONAL:
-            insert << "Nondirectional";
-            break;
-        case ApertureDirection::LONGITUDINAL:
+    switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(drawingData->aperture().apertureShapeID).componentID()) {
+        case 3:
             insert << "Longitudinal";
             break;
-        case ApertureDirection::TRANSVERSE:
+        case 4:
             insert << "Transverse";
+            break;
+        default:
+            insert << "Nondirectional";
             break;
     }
 
@@ -854,13 +910,13 @@ std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
 std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
-    insert << "INSERT INTO mat_side_iron_link" << std::endl;
+    insert << "INSERT INTO scs_drawings.mat_side_iron_link" << std::endl;
     insert << "(mat_id, side_iron_id, bar_width, inverted, side_iron_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
-    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID << ", " << drawingData->leftBar() << ", " <<
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftBar() << ", " <<
            drawingData->sideIronInverted(Drawing::LEFT) << ", 0), " << std::endl;
-    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID << ", " << drawingData->rightBar() << ", " <<
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightBar() << ", " <<
            drawingData->sideIronInverted(Drawing::RIGHT) << ", 1)" << std::endl;
 
     return insert.str();
@@ -869,14 +925,14 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
 std::string DrawingInsert::thicknessInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
-    insert << "INSERT INTO thickness" << std::endl;
+    insert << "INSERT INTO scs_drawings.thickness" << std::endl;
     insert << "(mat_id, material_thickness_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
-    insert << "(" << matID << ", " << drawingData->material(Drawing::TOP)->componentID << ")";
+    insert << "(" << matID << ", " << drawingData->material(Drawing::TOP)->componentID() << ")";
 
     if (drawingData->material(Drawing::BOTTOM).has_value()) {
-        insert << ", " << std::endl << "(" << matID << ", " << drawingData->material(Drawing::BOTTOM)->componentID
+        insert << ", " << std::endl << "(" << matID << ", " << drawingData->material(Drawing::BOTTOM)->componentID()
                << ")";
     }
 
@@ -892,7 +948,7 @@ std::string DrawingInsert::overlapsInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO overlaps" << std::endl;
+    insert << "INSERT INTO scs_drawings.overlaps" << std::endl;
     insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -904,10 +960,10 @@ std::string DrawingInsert::overlapsInsertQuery(unsigned matID) const {
 
         switch (left->attachmentType) {
             case LapAttachment::INTEGRAL:
-                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID() << ")";
                 break;
             case LapAttachment::BONDED:
-                insert << "'Bonded', " << left->material().componentID << ")";
+                insert << "'Bonded', " << left->material().componentID() << ")";
                 break;
         }
 
@@ -922,10 +978,10 @@ std::string DrawingInsert::overlapsInsertQuery(unsigned matID) const {
 
         switch (right->attachmentType) {
             case LapAttachment::INTEGRAL:
-                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID() << ")";
                 break;
             case LapAttachment::BONDED:
-                insert << "'Bonded', " << right->material().componentID << ")";
+                insert << "'Bonded', " << right->material().componentID() << ")";
                 break;
         }
         insert << std::endl;
@@ -941,7 +997,7 @@ std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO sidelaps" << std::endl;
+    insert << "INSERT INTO scs_drawings.sidelaps" << std::endl;
     insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -953,10 +1009,10 @@ std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
 
         switch (left->attachmentType) {
             case LapAttachment::INTEGRAL:
-                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID() << ")";
                 break;
             case LapAttachment::BONDED:
-                insert << "'Bonded', " << left->material().componentID << ")";
+                insert << "'Bonded', " << left->material().componentID() << ")";
                 break;
         }
 
@@ -971,10 +1027,10 @@ std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
 
         switch (right->attachmentType) {
             case LapAttachment::INTEGRAL:
-                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID << ")";
+                insert << "'Integral', " << drawingData->material(Drawing::TOP)->componentID() << ")";
                 break;
             case LapAttachment::BONDED:
-                insert << "'Bonded', " << right->material().componentID << ")";
+                insert << "'Bonded', " << right->material().componentID() << ")";
                 break;
         }
         insert << std::endl;
@@ -992,7 +1048,7 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO punch_program_pdfs" << std::endl;
+    insert << "INSERT INTO scs_drawings.punch_program_pdfs" << std::endl;
     insert << "(mat_id, hyperlink)" << std::endl;
     insert << "VALUES" << std::endl;
 

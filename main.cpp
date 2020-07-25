@@ -55,6 +55,8 @@ uint256 getPasswordHash(const std::string &prompt) {
 
     std::cout << std::endl;
 
+    SetConsoleMode(hIn, consoleMode);
+
     uint256 pwHash = sha256((const uint8 *) password.c_str(), password.size());
 
     memset(password.data(), 0, password.size());
@@ -80,18 +82,43 @@ uint256 getPasswordHash(const std::string &prompt) {
 
 #endif
 
-void setupServerKeys(const std::filesystem::path &keyPath) {
-    if (!std::filesystem::exists(keyPath)) {
-        std::cerr << "Key path " << keyPath << " does not exist." << std::endl;
+void setupServerKeys(std::filesystem::path metaFilePath) {
+    metaFilePath = metaFilePath / "serverMeta.json";
+    if (!std::filesystem::exists(metaFilePath)) {
+        std::cerr << "Meta file path " << metaFilePath << " does not exist." << std::endl;
         return;
     }
+
+    std::ifstream metaFile;
+    metaFile.open(metaFilePath);
+
+    nlohmann::json meta;
+
+    try {
+        metaFile >> meta;
+
+        metaFile.close();
+    }
+    catch (nlohmann::json::parse_error &) {
+        std::cerr << "Failed to load " << metaFilePath << ". Check the JSON is valid" << std::endl;
+
+        metaFile.close();
+        return;
+    }
+
+    if (meta.find("keyPath") == meta.end()) {
+        std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
+        return;
+    }
+
+    std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
 
     std::cout << "Generating RSA key pairs for the server and signatures (this may take up to a minute)..."
               << std::endl;
 
     // Generate the two keys for the server and the digital signature
     RSAKeyPair serverKeyPair = generateRSAKeyPair();
-    RSAKeyPair digitalSignatureKeyPair = generateRSAKeyPair();
+    DigitalSignatureKeyPair digitalSignatureKeyPair = generateDigitalSignatureKeyPair();
 
     std::cout << "Keys generated." << std::endl;
     std::cout << "Enter one or more passwords to save the encryption key files with." << std::endl;
@@ -144,11 +171,36 @@ void setupServerKeys(const std::filesystem::path &keyPath) {
     }
 }
 
-void addUser(const std::string &newUser, const std::filesystem::path &keyPath, const std::string &authUser) {
-    if (!std::filesystem::exists(keyPath)) {
-        std::cerr << "Key path " << keyPath << " does not exist." << std::endl;
+void addUser(const std::string &newUser, std::filesystem::path metaFilePath, const std::string &authUser) {
+    metaFilePath = metaFilePath / "serverMeta.json";
+    if (!std::filesystem::exists(metaFilePath)) {
+        std::cerr << "Meta file path " << metaFilePath << " does not exist." << std::endl;
         return;
     }
+
+    std::ifstream metaFile;
+    metaFile.open(metaFilePath);
+
+    nlohmann::json meta;
+
+    try {
+        metaFile >> meta;
+
+        metaFile.close();
+    }
+    catch (nlohmann::json::parse_error &) {
+        std::cerr << "Failed to load " << metaFilePath << ". Check the JSON is valid" << std::endl;
+
+        metaFile.close();
+        return;
+    }
+
+    if (meta.find("keyPath") == meta.end()) {
+        std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
+        return;
+    }
+
+    std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
 
     if (!std::filesystem::exists(keyPath / ("server/server_key_" + authUser + ".pri")) ||
         !std::filesystem::exists(keyPath / ("server/server_key.pub")) ||
@@ -165,13 +217,14 @@ void addUser(const std::string &newUser, const std::filesystem::path &keyPath, c
     // Hash the password to use as an AES key to secure the two keys
     uint256 pwHash = getPasswordHash(prompt.str());
 
-    RSAKeyPair serverKeyPair, digitalSignatureKeyPair;
+    RSAKeyPair serverKeyPair;
+    DigitalSignatureKeyPair digitalSignatureKeyPair;
 
-    serverKeyPair.privateKey = unlockPrivateKey(keyPath / ("server/server_key_" + authUser + ".pri"), pwHash);
-    serverKeyPair.publicKey = readPublicKey(keyPath / ("server/server_key.pub"));
-    digitalSignatureKeyPair.privateKey = unlockPrivateKey(keyPath / ("signature/signature_" + authUser + ".pri"),
+    serverKeyPair.privateKey = unlockPrivateKey<32>(keyPath / ("server/server_key_" + authUser + ".pri"), pwHash);
+    serverKeyPair.publicKey = readPublicKey<32>(keyPath / ("server/server_key.pub"));
+    digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(keyPath / ("signature/signature_" + authUser + ".pri"),
                                                           pwHash);
-    digitalSignatureKeyPair.publicKey = readPublicKey(keyPath / ("signature/signature.pub"));
+    digitalSignatureKeyPair.publicKey = readPublicKey<24>(keyPath / ("signature/signature.pub"));
 
     if (serverKeyPair.privateKey.n == serverKeyPair.publicKey.n &&
         digitalSignatureKeyPair.privateKey.n == digitalSignatureKeyPair.publicKey.n) {
@@ -192,11 +245,41 @@ void addUser(const std::string &newUser, const std::filesystem::path &keyPath, c
     }
 }
 
-void runServer(const std::filesystem::path &keyPath, const std::string &user) {
-    if (!std::filesystem::exists(keyPath)) {
-        std::cerr << "Key path " << keyPath << " does not exist." << std::endl;
+void runServer(std::filesystem::path metaFilePath, const std::string &user) {
+    metaFilePath = metaFilePath / "serverMeta.json";
+    if (!std::filesystem::exists(metaFilePath)) {
+        std::cerr << "Meta file path " << metaFilePath << " does not exist." << std::endl;
         return;
     }
+
+    std::ifstream metaFile;
+    metaFile.open(metaFilePath);
+
+    nlohmann::json meta;
+
+    try {
+        metaFile >> meta;
+
+        metaFile.close();
+    }
+    catch (nlohmann::json::parse_error &) {
+        std::cerr << "Failed to load " << metaFilePath << ". Check the JSON is valid" << std::endl;
+
+        metaFile.close();
+        return;
+    }
+
+    if (meta.find("keyPath") == meta.end()) {
+        std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
+        return;
+    }
+    if (meta.find("serverPort") == meta.end()) {
+        std::cerr << "Could not find 'serverPort' in meta file." << std::endl;
+        return;
+    }
+
+    std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
+    unsigned serverPort = meta["serverPort"];
 
     if (!std::filesystem::exists(keyPath / ("server/server_key_" + user + ".pri")) ||
         !std::filesystem::exists(keyPath / ("server/server_key.pub")) ||
@@ -213,12 +296,13 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     // Hash the password to use as an AES key to secure the two keys
     uint256 pwHash = getPasswordHash(prompt.str());
 
-    RSAKeyPair serverKeyPair, digitalSignatureKeyPair;
+    RSAKeyPair serverKeyPair;
+    DigitalSignatureKeyPair digitalSignatureKeyPair;
 
-    serverKeyPair.privateKey = unlockPrivateKey(keyPath / ("server/server_key_" + user + ".pri"), pwHash);
-    serverKeyPair.publicKey = readPublicKey(keyPath / ("server/server_key.pub"));
-    digitalSignatureKeyPair.privateKey = unlockPrivateKey(keyPath / ("signature/signature_" + user + ".pri"), pwHash);
-    digitalSignatureKeyPair.publicKey = readPublicKey(keyPath / ("signature/signature.pub"));
+    serverKeyPair.privateKey = unlockPrivateKey<32>(keyPath / ("server/server_key_" + user + ".pri"), pwHash);
+    serverKeyPair.publicKey = readPublicKey<32>(keyPath / ("server/server_key.pub"));
+    digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(keyPath / ("signature/signature_" + user + ".pri"), pwHash);
+    digitalSignatureKeyPair.publicKey = readPublicKey<24>(keyPath / ("signature/signature.pub"));
 
     if (serverKeyPair.privateKey.n != serverKeyPair.publicKey.n ||
         digitalSignatureKeyPair.privateKey.n != digitalSignatureKeyPair.publicKey.n) {
@@ -231,10 +315,9 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
 
     DatabaseRequestHandler handler;
 
-    // Start the server with the given port, TODO: fix which port rather than constant 10000, dynamic password
-    s.initialiseServer(10000);
+    s.initialiseServer(serverPort);
 
-    std::ifstream dbPasswordFile(keyPath / "../server-pw.txt");
+    std::ifstream dbPasswordFile(keyPath / "../db-pw.txt");
     std::string dbPassword;
     dbPasswordFile >> dbPassword;
 
@@ -243,7 +326,7 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
     s.setRequestHandler(handler);
 
     // Send a heartbeat approximately every minute
-    s.setHeartBeatCycles(64);
+    s.setHeartBeatCycles(1024);
 
     // Start running the server - this will enter a loop and return when the server is closed
     s.startServer();
@@ -251,9 +334,15 @@ void runServer(const std::filesystem::path &keyPath, const std::string &user) {
 
 int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":scs_logo.png"));
 
     MainMenu mainMenu(clientMetaFile);
     mainMenu.show();
+
+    /*QSystemTrayIcon *trayIcon = new QSystemTrayIcon(&mainMenu);
+    QIcon trayImage("D:/Users/Matthew/Work/Database Manager/database-manager/res/scs_logo.ico");
+    trayIcon->setIcon(trayImage);
+    trayIcon->show();*/
 
     return QApplication::exec();
 }
@@ -271,8 +360,9 @@ void printHelpMessage() {
     std::cout << "                        NOTE: The --user flag will specify the user to authenticate this new"
               << std::endl;
     std::cout << "                        user with. Defaults to root." << std::endl;
-    std::cout << "  --keypath [PATH]    - provide an explicit path to store/load the key files." << std::endl;
-    std::cout << "  --clientmeta [PATH] - provide an explicit path to the client's meta file." << std::endl;
+    std::cout << "  --meta [PATH]       - provide an explicit path to the meta file." << std::endl;
+    std::cout << "                        This path should contain 'clientMeta.json' for running the client" << std::endl;
+    std::cout << "                        or 'serverMeta.json' for running the server." << std::endl;
     std::cout << "  --user [USER]       - provide a username to unlock the key files with. If no" << std::endl;
     std::cout << "                        username is provided, it will load the keys from the root file." << std::endl;
     std::cout << "  --help (-h)         - prints this help message." << std::endl;
@@ -287,14 +377,12 @@ int main(int argc, char *argv[]) {
 
     // The mode to run in. This changes depending on the arguments provided
     RunMode mode = NO_MODE;
-    // The path to create the key files in
-    std::filesystem::path keyPath = std::filesystem::current_path();
     // The user to start the server on
     std::string user = "root";
     // The new user if they are running in add user mode
     std::string newUser;
     // The path to the client's meta file
-    std::filesystem::path clientMetaFilePath = std::filesystem::current_path();
+    std::filesystem::path metaFilePath = std::filesystem::current_path();
 
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
@@ -354,13 +442,8 @@ int main(int argc, char *argv[]) {
                 }
             }
 
-            // If they specified a key path, use that to create the keys (setup only)
-            if (strcmp(argv[i], "--keypath") == 0) {
-                keyPath = argv[++i];
-            }
-
-            if (strcmp(argv[i], "--clientmeta") == 0) {
-                clientMetaFilePath = argv[++i];
+            if (strcmp(argv[i], "--meta") == 0) {
+                metaFilePath = argv[++i];
             }
 
             // If they provided a specific username to load the key files with, use that. Default to root.
@@ -372,15 +455,15 @@ int main(int argc, char *argv[]) {
 
     switch (mode) {
         case SERVER:
-            runServer(keyPath, user);
+            runServer(metaFilePath, user);
             break;
         case CLIENT:
-            return runClient(clientMetaFilePath, argc, argv);
+            return runClient(metaFilePath, argc, argv);
         case SETUP:
-            setupServerKeys(keyPath);
+            setupServerKeys(metaFilePath);
             break;
         case ADD_USER:
-            addUser(newUser, keyPath, user);
+            addUser(newUser, metaFilePath, user);
             break;
         case HELP:
             printHelpMessage();
@@ -391,14 +474,16 @@ int main(int argc, char *argv[]) {
             goto error;
     }
 
+#ifdef _WIN32
+    TCPSocket::cleanupWSA();
+#endif
+
     return 0;
 
 error:
 
 #ifdef _WIN32
-
     TCPSocket::cleanupWSA();
-
 #endif
 
     return -1;

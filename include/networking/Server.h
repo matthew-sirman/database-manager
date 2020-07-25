@@ -21,7 +21,7 @@
 #include "../database/Drawing.h"
 #include "../../guard.h"
 
-#define CLIENT_APPLICATION_ID "1f4c53b0-56be-4ecb-9c90-3c7b1294da44"
+#define CLIENT_APPLICATION_ID "e89163c2-86fd-4675-ad9e-0d0e7632b9a8"
 
 static std::string getNonBlockingInput();
 
@@ -59,7 +59,7 @@ public:
 // TCP Server class
 class Server {
 public:
-    Server(float refreshRate, RSAKeyPair serverKey, RSAKeyPair serverSignature);
+    Server(float refreshRate, RSAKeyPair serverKey, DigitalSignatureKeyPair serverSignature);
 
     ~Server();
 
@@ -77,6 +77,8 @@ public:
 
     void addMessageToSendQueue(const ClientHandle &clientHandle, const std::string &message);
 
+    void sendRepeatToken(const ClientHandle &clientHandle, unsigned responseCode = 0);
+
     void connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                  const std::string &host = "localhost");
 
@@ -88,13 +90,10 @@ public:
 
     DatabaseManager &databaseManager();
 
-    DrawingSummaryCompressionSchema compressionSchema();
-
-    void setCompressionSchemaDirty();
-
 private:
     // The two keys this server has for communicating with clients and signing messages for authenticity
-    RSAKeyPair serverKey, serverSignature;
+    RSAKeyPair serverKey;
+    DigitalSignatureKeyPair serverSignature;
 
     // The server's TCP socket
     TCPSocket serverSocket;
@@ -105,10 +104,10 @@ private:
     int heartBeatCycles = 128;
 
     // A list of all the clients which are connected, but haven't yet authenticated themselves
-    std::vector<ClientData> waitingClients;
+    std::vector<ClientData *> waitingClients;
 
     // A list of all the currently connected and authenticated clients
-    std::vector<ClientData> connectedClients;
+    std::vector<ClientData *> connectedClients;
 
     std::unordered_map<unsigned, ClientData *> handleMap;
 
@@ -122,10 +121,7 @@ private:
     std::ostream *logStream = &std::cout;
     std::ostream *errorStream = &std::cerr;
 
-    DatabaseManager dbManager;
-
-    DrawingSummaryCompressionSchema schema;
-    bool schemaDirty = true;
+    DatabaseManager *dbManager = nullptr;
 
     // Accepts a new client into the server
     void acceptClient(TCPSocket& clientSocket);

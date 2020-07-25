@@ -18,6 +18,8 @@ public:
     void setDrawingReceivedHandler(const std::function<void(DrawingRequest &)> &callback);
 
     void setDrawingInsertResponseHandler(const std::function<void(DrawingInsert::InsertResponseType, unsigned)> &callback);
+
+    void setRepeatTokenResponseCallback(const std::function<void(const uint256 &token)> &callback);
 private:
     static RequestType getDeserialiseType(void *data);
 
@@ -26,6 +28,8 @@ private:
     std::function<void(DrawingRequest &)> drawingReceivedCallback = nullptr;
 
     std::function<void(DrawingInsert::InsertResponseType, unsigned)> drawingInsertCallback = nullptr;
+
+    std::function<void(const uint256 &token)> repeatTokenCallback = nullptr;
 };
 
 

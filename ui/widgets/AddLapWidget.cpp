@@ -188,25 +188,23 @@ void AddLapWidget::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
                 break;
         }
 
-        for (const std::vector<ComboboxDataElement> &matGroup : materialSource) {
-            for (const ComboboxDataElement &mat : matGroup) {
-                QAction *action = materialSubMenu->addAction(mat.text.c_str(), [this, mat]() {
-                    if (mat.index.has_value()) {
-                        lap.setMaterial(mat.index.value());
-                        lap.attachmentType = LapAttachment::BONDED;
-                        if (lapChangedCallback) {
-                            lapChangedCallback(lap);
-                        }
-                    }
-                });
-
+        for (const ComboboxDataElement &mat : materialSource) {
+            QAction *action = materialSubMenu->addAction(mat.text.c_str(), [this, mat]() {
                 if (mat.index.has_value()) {
-                    if (mat.index.value() == lap.material().componentID) {
-                        QFont font = action->font();
-                        font.setBold(true);
-                        font.setUnderline(true);
-                        action->setFont(font);
+                    lap.setMaterial(mat.index.value());
+                    lap.attachmentType = LapAttachment::BONDED;
+                    if (lapChangedCallback) {
+                        lapChangedCallback(lap);
                     }
+                }
+            });
+
+            if (mat.index.has_value()) {
+                if (mat.index.value() == lap.material().handle()) {
+                    QFont font = action->font();
+                    font.setBold(true);
+                    font.setUnderline(true);
+                    action->setFont(font);
                 }
             }
         }

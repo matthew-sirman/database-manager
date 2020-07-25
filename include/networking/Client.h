@@ -17,8 +17,8 @@
 #include "TCPSocket.h"
 #include "../../guard.h"
 
-#define CLIENT_APPLICATION_ID "1f4c53b0-56be-4ecb-9c90-3c7b1294da44"
-#define REDIRECT_URL "http://127.0.0.1:5000/login/authorize"
+#define CLIENT_APPLICATION_ID "e89163c2-86fd-4675-ad9e-0d0e7632b9a8"
+#define REDIRECT_URL "http://localhost:5000/login/authorize"
 
 class ClientResponseHandler {
 public:
@@ -27,7 +27,15 @@ public:
 
 class Client {
 public:
-    Client(float refreshRate, RSAKeyPair clientKey, PublicKey serverSignature);
+    enum class ConnectionStatus {
+        SUCCESS,
+        NO_CONNECTION,
+        CREDS_EXCHANGE_FAILED,
+        INVALID_JWT,
+        INVALID_REPEAT_TOKEN
+    };
+
+    Client(float refreshRate, RSAKeyPair clientKey, DigitalSignatureKeyPair::Public serverSignature);
 
     ~Client();
 
@@ -35,10 +43,12 @@ public:
     void initialiseClient();
 
     // Connect to the server. Returns whether the connection was successful
-    bool connectToServer(const std::string &ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback);
+    ConnectionStatus connectToServer(const std::string &ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback);
 
     // Connect to the server with a repeat token. Returns whether the connection was successful
-    bool connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken);
+    ConnectionStatus connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken);
+
+    void disconnect();
 
     // Begins the client loop in another thread (so applications can run as usual)
     void startClientLoop();
@@ -50,6 +60,8 @@ public:
 
     void addMessageToSendQueue(const std::string &message);
 
+    void requestRepeatToken(unsigned responseCode = 0);
+
     void setResponseHandler(ClientResponseHandler &handler);
 
 private:
@@ -57,7 +69,7 @@ private:
     RSAKeyPair clientKey;
 
     // The public key for the server's signature
-    PublicKey serverSignature;
+    DigitalSignatureKeyPair::Public serverSignature;
 
     // The address of the server stored when we connect
     sockaddr_in serverAddress{};

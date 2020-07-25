@@ -11,20 +11,6 @@
 
 #include "../../include/database/ComboboxDataSource.h"
 
-struct ElementIndex {
-    ElementIndex() = default;
-
-    ElementIndex(unsigned index);
-
-    ElementIndex(unsigned index, unsigned differentiator);
-
-    operator unsigned() const;
-
-    unsigned index, differentiator;
-};
-
-Q_DECLARE_METATYPE(ElementIndex);
-
 class DynamicComboBox : public QComboBox {
     Q_OBJECT
 public:
@@ -40,6 +26,8 @@ public:
 
     void removeFilter();
 
+    void updateSourceList();
+
 protected:
     void showPopup() override;
 
@@ -53,8 +41,6 @@ private:
     std::function<bool(const ComboboxDataElement &)> sourceFilter = nullptr;
 
     unsigned sourceState = 0;
-
-    void updateSourceList();
 };
 
 

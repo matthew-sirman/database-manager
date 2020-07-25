@@ -4,20 +4,6 @@
 
 #include "DynamicComboBox.h"
 
-ElementIndex::ElementIndex(unsigned int index) {
-    this->index = index;
-    this->differentiator = 0;
-}
-
-ElementIndex::ElementIndex(unsigned int index, unsigned int differentiator) {
-    this->index = index;
-    this->differentiator = differentiator;
-}
-
-ElementIndex::operator unsigned() const {
-    return index;
-}
-
 DynamicComboBox::DynamicComboBox(QWidget *parent) : QComboBox(parent) {
 
 }
@@ -29,6 +15,7 @@ DynamicComboBox::~DynamicComboBox() {
 void DynamicComboBox::setDataSource(ComboboxDataSource &dataSource) {
     delete source;
     source = &dataSource;
+    updateSourceList();
 }
 
 void DynamicComboBox::setFilter(const std::function<bool(const ComboboxDataElement &)> &filter) {
@@ -70,24 +57,16 @@ void DynamicComboBox::updateSourceList() {
             }
         }
 
-        for (const std::vector<ComboboxDataElement> &elementGroup : *source) {
-            for (const ComboboxDataElement &element : elementGroup) {
-                if (sourceFilter) {
-                    if (!sourceFilter(element)) {
-                        continue;
-                    }
+        for (const ComboboxDataElement &element : *source) {
+            if (sourceFilter) {
+                if (!sourceFilter(element)) {
+                    continue;
                 }
-                if (element.index.has_value()) {
-                    QVariant var;
-                    if (element.differentiator.has_value()) {
-                        var.setValue(ElementIndex(element.index.value(), element.differentiator.value()));
-                    } else {
-                        var.setValue(ElementIndex(element.index.value()));
-                    }
-                    addItem(element.text.c_str(), var);
-                } else {
-                    addItem(element.text.c_str());
-                }
+            }
+            if (element.index.has_value()) {
+                addItem(element.text.c_str(), element.index.value());
+            } else {
+                addItem(element.text.c_str());
             }
         }
 

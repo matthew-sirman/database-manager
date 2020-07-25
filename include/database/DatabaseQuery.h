@@ -77,7 +77,7 @@ public:
 
     std::string toSQLQueryString() const;
 
-    static std::vector<DrawingSummary> getQueryResultSummaries(const mysqlx::RowResult &resultSet);
+    static std::vector<DrawingSummary> getQueryResultSummaries(mysqlx::RowResult &resultSet);
 
     std::optional<std::string> drawingNumber;
     std::optional<ValueRange<unsigned>> width, length;

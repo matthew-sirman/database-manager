@@ -72,7 +72,7 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
             case KEY_MESSAGE:
                 // If we are receiving a key, the message should be exactly the size of a public key.
                 // Otherwise, there is an error, so break out.
-                if (messageSize != sizeof(PublicKey)) {
+                if (messageSize != sizeof(RSAKeyPair::Public)) {
                     return DECODE_ERROR;
                 }
                 break;

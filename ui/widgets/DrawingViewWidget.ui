@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>979</width>
-    <height>485</height>
+    <height>516</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -292,6 +292,43 @@ color: rgb(70, 70, 70);
       </layout>
      </widget>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="editDrawingHorizontalLayout">
+     <item>
+      <spacer name="editDrawingLeftSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="editDrawingButton">
+       <property name="text">
+        <string>Edit Drawing</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="editDrawingRightSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

@@ -11,6 +11,7 @@
 #include <QUrl>
 #include <QTableWidgetItem>
 #include <QProgressDialog>
+#include <QSystemTrayIcon.h>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
@@ -61,6 +62,8 @@ private:
     unsigned getValidRequestCode() const;
 
     unsigned getValidInsertCode() const;
+
+    void connectToServerWithJWT(const std::string &serverIP, unsigned serverPort);
 
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;

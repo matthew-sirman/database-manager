@@ -27,7 +27,7 @@
 #define BACKLOG_QUEUE_SIZE 8
 
 #ifdef _WIN32
-#define errno WSAGetLastError()
+#define sock_errno WSAGetLastError()
 #endif
 
 enum TCPSocketCode {

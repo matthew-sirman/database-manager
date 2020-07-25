@@ -14,7 +14,7 @@
 #ifdef _MSC_VER
 // #define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__; __pragma(pack(pop))
 #define PACK_START __pragma(pack(push, 1))
-#define PACK_END ; __pragma(pack(pop))
+#define PACK_END ; __pragma(pack(pop));
 #endif
 
 #endif //DATABASE_MANAGER_PACKER_H

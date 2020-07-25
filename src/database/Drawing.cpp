@@ -81,24 +81,50 @@ Drawing::Drawing(const Drawing &drawing) {
     this->__hyperlink = drawing.__hyperlink;
     this->__notes = drawing.__notes;
     this->__machineTemplate = drawing.__machineTemplate;
-    this->productID = drawing.productID;
-    this->apertureID = drawing.apertureID;
-    this->__apertureDirection = drawing.__apertureDirection;
+    this->productHandle = drawing.productHandle;
+    this->apertureHandle = drawing.apertureHandle;
     this->__tensionType = drawing.__tensionType;
     this->__pressDrawingHyperlinks = drawing.__pressDrawingHyperlinks;
     this->barSpacings = drawing.barSpacings;
     this->barWidths = drawing.barWidths;
-    this->sideIronIDs[0] = drawing.sideIronIDs[0];
-    this->sideIronIDs[1] = drawing.sideIronIDs[1];
+    this->sideIronHandles[0] = drawing.sideIronHandles[0];
+    this->sideIronHandles[1] = drawing.sideIronHandles[1];
     this->sideIronsInverted[0] = drawing.sideIronsInverted[0];
     this->sideIronsInverted[1] = drawing.sideIronsInverted[1];
     this->sidelaps[0] = drawing.sidelaps[0];
     this->sidelaps[1] = drawing.sidelaps[1];
     this->overlaps[0] = drawing.overlaps[0];
     this->overlaps[1] = drawing.overlaps[1];
-    this->topLayerThicknessID = drawing.topLayerThicknessID;
-    this->bottomLayerThicknessID = drawing.bottomLayerThicknessID;
+    this->topLayerThicknessHandle = drawing.topLayerThicknessHandle;
+    this->bottomLayerThicknessHandle = drawing.bottomLayerThicknessHandle;
     this->loadWarnings = drawing.loadWarnings;
+}
+
+void Drawing::setAsDefault() {
+    this->__drawingNumber = "";
+    this->__date = { 2000, 1, 1 };
+    this->__width = 0;
+    this->__length = 0;
+    this->__hyperlink = "";
+    this->__notes = "";
+    this->__machineTemplate = MachineTemplate();
+    this->productHandle = 0;
+    this->apertureHandle = 0;
+    this->__tensionType = TensionType::SIDE;
+    this->__pressDrawingHyperlinks = std::vector<std::string>();
+    this->barSpacings = std::vector<float>();
+    this->barWidths = std::vector<float>();
+    this->sideIronHandles[0] = 1;
+    this->sideIronHandles[1] = 1;
+    this->sideIronsInverted[0] = false;
+    this->sideIronsInverted[1] = false;
+    this->sidelaps[0] = std::nullopt;
+    this->sidelaps[1] = std::nullopt;
+    this->overlaps[0] = std::nullopt;
+    this->overlaps[1] = std::nullopt;
+    this->topLayerThicknessHandle = 0;
+    this->bottomLayerThicknessHandle = std::nullopt;
+    this->loadWarnings = 0;
 }
 
 std::string Drawing::drawingNumber() const {
@@ -161,15 +187,15 @@ Drawing::MachineTemplate Drawing::machineTemplate() const {
 
 void Drawing::setMachineTemplate(const Machine &machine, unsigned int quantityOnDeck, const std::string &position,
                                  const MachineDeck &deck) {
-    __machineTemplate.machineID = machine.componentID;
+    __machineTemplate.machineHandle = machine.handle();
     __machineTemplate.quantityOnDeck = quantityOnDeck;
     __machineTemplate.position = position;
-    __machineTemplate.deckID = deck.componentID;
+    __machineTemplate.deckHandle = deck.handle();
     invokeUpdateCallbacks();
 }
 
 void Drawing::setMachine(const Machine &machine) {
-    __machineTemplate.machineID = machine.componentID;
+    __machineTemplate.machineHandle = machine.handle();
     invokeUpdateCallbacks();
 }
 
@@ -184,34 +210,26 @@ void Drawing::setMachinePosition(const std::string &position) {
 }
 
 void Drawing::setMachineDeck(const MachineDeck &deck) {
-    __machineTemplate.deckID = deck.componentID;
+    __machineTemplate.deckHandle = deck.handle();
     invokeUpdateCallbacks();
 }
 
 Product Drawing::product() const {
-    return DrawingComponentManager<Product>::getComponentByID(productID);
+    return DrawingComponentManager<Product>::getComponentByHandle(productHandle);
 }
 
 void Drawing::setProduct(const Product &prod) {
-    productID = prod.componentID;
+    productHandle = prod.handle();
     invokeUpdateCallbacks();
 }
 
 Aperture Drawing::aperture() const {
-    return DrawingComponentManager<Aperture>::getComponentByID(apertureID);
+    return DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle);
 }
 
 void Drawing::setAperture(const Aperture &ap) {
-    apertureID = ap.componentID;
+    apertureHandle = ap.handle();
     invokeUpdateCallbacks();
-}
-
-ApertureDirection Drawing::apertureDirection() const {
-    return __apertureDirection;
-}
-
-void Drawing::setApertureDirection(ApertureDirection direction) {
-    __apertureDirection = direction;
 }
 
 Drawing::TensionType Drawing::tensionType() const {
@@ -226,10 +244,10 @@ void Drawing::setTensionType(Drawing::TensionType newTensionType) {
 std::optional<Material> Drawing::material(Drawing::MaterialLayer layer) const {
     switch (layer) {
         case TOP:
-            return DrawingComponentManager<Material>::getComponentByID(topLayerThicknessID);
+            return DrawingComponentManager<Material>::getComponentByHandle(topLayerThicknessHandle);
         case BOTTOM:
-            if (bottomLayerThicknessID.has_value()) {
-                return DrawingComponentManager<Material>::getComponentByID(bottomLayerThicknessID.value());
+            if (bottomLayerThicknessHandle.has_value()) {
+                return DrawingComponentManager<Material>::getComponentByHandle(bottomLayerThicknessHandle.value());
             } else {
                 return std::nullopt;
             }
@@ -240,17 +258,17 @@ std::optional<Material> Drawing::material(Drawing::MaterialLayer layer) const {
 void Drawing::setMaterial(Drawing::MaterialLayer layer, const Material &mat) {
     switch (layer) {
         case TOP:
-            topLayerThicknessID = mat.componentID;
+            topLayerThicknessHandle = mat.handle();
             break;
         case BOTTOM:
-            bottomLayerThicknessID = mat.componentID;
+            bottomLayerThicknessHandle = mat.handle();
             break;
     }
     invokeUpdateCallbacks();
 }
 
 void Drawing::removeBottomLayer() {
-    bottomLayerThicknessID = std::nullopt;
+    bottomLayerThicknessHandle = std::nullopt;
     invokeUpdateCallbacks();
 }
 
@@ -283,9 +301,9 @@ float Drawing::rightBar() const {
 SideIron Drawing::sideIron(Drawing::Side side) const {
     switch (side) {
         case LEFT:
-            return DrawingComponentManager<SideIron>::getComponentByID(sideIronIDs[0]);
+            return DrawingComponentManager<SideIron>::getComponentByHandle(sideIronHandles[0]);
         case RIGHT:
-            return DrawingComponentManager<SideIron>::getComponentByID(sideIronIDs[1]);
+            return DrawingComponentManager<SideIron>::getComponentByHandle(sideIronHandles[1]);
     }
     ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right")
 }
@@ -303,10 +321,10 @@ bool Drawing::sideIronInverted(Drawing::Side side) const {
 void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
     switch (side) {
         case LEFT:
-            sideIronIDs[0] = sideIron.componentID;
+            sideIronHandles[0] = sideIron.handle();
             break;
         case RIGHT:
-            sideIronIDs[1] = sideIron.componentID;
+            sideIronHandles[1] = sideIron.handle();
             break;
     }
     invokeUpdateCallbacks();
@@ -327,11 +345,11 @@ void Drawing::setSideIronInverted(Drawing::Side side, bool inverted) {
 void Drawing::removeSideIron(Drawing::Side side) {
     switch (side) {
         case LEFT:
-            sideIronIDs[0] = 1;
+            sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[0] = false;
             break;
         case RIGHT:
-            sideIronIDs[1] = 1;
+            sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[1] = false;
             break;
     }
@@ -430,7 +448,7 @@ Drawing::BuildWarning Drawing::checkDrawingValidity() const {
     if (!std::regex_match(__drawingNumber, std::regex(drawingNumberRegexPattern))) {
         return INVALID_DRAWING_NUMBER;
     }
-    if (!DrawingComponentManager<Product>::validComponentID(productID)) {
+    if (!DrawingComponentManager<Product>::validComponentHandle(productHandle)) {
         return INVALID_PRODUCT;
     }
     if (__width <= 0) {
@@ -439,15 +457,15 @@ Drawing::BuildWarning Drawing::checkDrawingValidity() const {
     if (__length <= 0) {
         return INVALID_LENGTH;
     }
-    if (!DrawingComponentManager<Material>::validComponentID(topLayerThicknessID)) {
+    if (!DrawingComponentManager<Material>::validComponentHandle(topLayerThicknessHandle)) {
         return INVALID_TOP_MATERIAL;
     }
-    if (bottomLayerThicknessID.has_value()) {
-        if (!DrawingComponentManager<Material>::validComponentID(bottomLayerThicknessID.value())) {
+    if (bottomLayerThicknessHandle.has_value()) {
+        if (!DrawingComponentManager<Material>::validComponentHandle(bottomLayerThicknessHandle.value())) {
             return INVALID_BOTTOM_MATERIAL;
         }
     }
-    if (!DrawingComponentManager<Aperture>::validComponentID(apertureID)) {
+    if (!DrawingComponentManager<Aperture>::validComponentHandle(apertureHandle)) {
         return INVALID_APERTURE;
     }
     if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) != __width) {
@@ -456,19 +474,19 @@ Drawing::BuildWarning Drawing::checkDrawingValidity() const {
     if (std::find(barWidths.begin(), barWidths.end(), 0.0f) != barWidths.end()) {
         return INVALID_BAR_WIDTHS;
     }
-    if (!DrawingComponentManager<SideIron>::validComponentID(sideIronIDs[0])) {
+    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[0])) {
         return INVALID_SIDE_IRONS;
     }
-    if (!DrawingComponentManager<SideIron>::validComponentID(sideIronIDs[1])) {
+    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[1])) {
         return INVALID_SIDE_IRONS;
     }
-    if (!DrawingComponentManager<Machine>::validComponentID(__machineTemplate.machineID)) {
+    if (!DrawingComponentManager<Machine>::validComponentHandle(__machineTemplate.machineHandle)) {
         return INVALID_MACHINE;
     }
     if (!std::regex_match(__machineTemplate.position, std::regex(positionRegexPattern))) {
         return INVALID_MACHINE_POSITION;
     }
-    if (!DrawingComponentManager<MachineDeck>::validComponentID(__machineTemplate.deckID)) {
+    if (!DrawingComponentManager<MachineDeck>::validComponentHandle(__machineTemplate.deckHandle)) {
         return INVALID_MACHINE_DECK;
     }
     if (__hyperlink.empty()) {
@@ -534,7 +552,7 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     buffer += notesSize;
 
     // Machine Template: Machine ID, Quantity on Deck, Position string (<256 chars), Deck ID
-    *((unsigned *) buffer) = drawing.__machineTemplate.machine().componentID;
+    *((unsigned *) buffer) = drawing.__machineTemplate.machine().handle();
     buffer += sizeof(unsigned);
     *((unsigned *) buffer) = drawing.__machineTemplate.quantityOnDeck;
     buffer += sizeof(unsigned);
@@ -542,18 +560,16 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *buffer++ = machinePositionSize;
     memcpy(buffer, drawing.__machineTemplate.position.c_str(), machinePositionSize);
     buffer += machinePositionSize;
-    *((unsigned *) buffer) = drawing.__machineTemplate.deck().componentID;
+    *((unsigned *) buffer) = drawing.__machineTemplate.deck().handle();
     buffer += sizeof(unsigned);
 
     // Product ID
-    *((unsigned *) buffer) = drawing.productID;
+    *((unsigned *) buffer) = drawing.productHandle;
     buffer += sizeof(unsigned);
 
     // Aperture ID
-    *((unsigned *) buffer) = drawing.apertureID;
+    *((unsigned *) buffer) = drawing.apertureHandle;
     buffer += sizeof(unsigned);
-    *((ApertureDirection *) buffer) = drawing.__apertureDirection;
-    buffer += sizeof(ApertureDirection);
 
     // Tension Type
     *buffer++ = (unsigned char) drawing.__tensionType;
@@ -582,10 +598,10 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     }
 
     // Side Irons
-    *((unsigned *) buffer) = drawing.sideIronIDs[0];
+    *((unsigned *) buffer) = drawing.sideIronHandles[0];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[0];
-    *((unsigned *) buffer) = drawing.sideIronIDs[1];
+    *((unsigned *) buffer) = drawing.sideIronHandles[1];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[1];
 
@@ -612,7 +628,7 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     if (drawing.overlaps[1].has_value()) {
         *buffer |= OVERLAP_R;
     }
-    if (drawing.bottomLayerThicknessID.has_value()) {
+    if (drawing.bottomLayerThicknessHandle.has_value()) {
         *buffer |= HAS_BOTTOM_LAYER;
     }
 
@@ -624,7 +640,7 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         *buffer++ = (unsigned char) drawing.sidelaps[0]->attachmentType;
         *((float *) buffer) = drawing.sidelaps[0]->width;
         buffer += sizeof(float);
-        *((unsigned *) buffer) = drawing.sidelaps[0]->material().componentID;
+        *((unsigned *) buffer) = drawing.sidelaps[0]->material().handle();
         buffer += sizeof(unsigned);
     }
     // Right sidelap
@@ -632,7 +648,7 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         *buffer++ = (unsigned char) drawing.sidelaps[1]->attachmentType;
         *((float *) buffer) = drawing.sidelaps[1]->width;
         buffer += sizeof(float);
-        *((unsigned *) buffer) = drawing.sidelaps[1]->material().componentID;
+        *((unsigned *) buffer) = drawing.sidelaps[1]->material().handle();
         buffer += sizeof(unsigned);
     }
     // Left overlap
@@ -640,7 +656,7 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         *buffer++ = (unsigned char) drawing.overlaps[0]->attachmentType;
         *((float *) buffer) = drawing.overlaps[0]->width;
         buffer += sizeof(float);
-        *((unsigned *) buffer) = drawing.overlaps[0]->material().componentID;
+        *((unsigned *) buffer) = drawing.overlaps[0]->material().handle();
         buffer += sizeof(unsigned);
     }
     // Right overlap
@@ -648,17 +664,17 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         *buffer++ = (unsigned char) drawing.overlaps[1]->attachmentType;
         *((float *) buffer) = drawing.overlaps[1]->width;
         buffer += sizeof(float);
-        *((unsigned *) buffer) = drawing.overlaps[1]->material().componentID;
+        *((unsigned *) buffer) = drawing.overlaps[1]->material().handle();
         buffer += sizeof(unsigned);
     }
 
     // Top layer material ID
-    *((unsigned *) buffer) = drawing.topLayerThicknessID;
+    *((unsigned *) buffer) = drawing.topLayerThicknessHandle;
     buffer += sizeof(unsigned);
 
     // Bottom layer material ID
-    if (drawing.bottomLayerThicknessID.has_value()) {
-        *((unsigned *) buffer) = drawing.bottomLayerThicknessID.value();
+    if (drawing.bottomLayerThicknessHandle.has_value()) {
+        *((unsigned *) buffer) = drawing.bottomLayerThicknessHandle.value();
         buffer += sizeof(unsigned);
     }
 
@@ -687,7 +703,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Product ID
     size += sizeof(unsigned);
     // Aperture ID
-    size += sizeof(unsigned) + sizeof(ApertureDirection);
+    size += sizeof(unsigned);
     // Tension Type
     size += sizeof(unsigned char);
     // Press Drawing Links
@@ -722,7 +738,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Top layer material ID
     size += sizeof(unsigned);
     // Bottom layer material ID
-    if (drawing.bottomLayerThicknessID.has_value()) {
+    if (drawing.bottomLayerThicknessHandle.has_value()) {
         size += sizeof(unsigned);
     }
     // Load Warnings
@@ -764,28 +780,26 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     buffer += notesSize;
 
     // Machine Template: Machine ID, Quantity on Deck, Position string (<256 chars), Deck ID
-    unsigned machineID = *((unsigned *) buffer);
+    unsigned machineHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     unsigned quantityOnDeck = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     unsigned char machinePositionSize = *buffer++;
     std::string position = std::string((const char *) buffer, machinePositionSize);
     buffer += machinePositionSize;
-    unsigned deckID = *((unsigned *) buffer);
+    unsigned deckHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
 
-    drawing->setMachineTemplate(DrawingComponentManager<Machine>::getComponentByID(machineID), quantityOnDeck, position,
-                                DrawingComponentManager<MachineDeck>::getComponentByID(deckID));
+    drawing->setMachineTemplate(DrawingComponentManager<Machine>::getComponentByHandle(machineHandle), quantityOnDeck, position,
+                                DrawingComponentManager<MachineDeck>::getComponentByHandle(deckHandle));
 
     // Product ID
-    drawing->productID = *((unsigned *) buffer);
+    drawing->productHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
 
     // Aperture ID
-    drawing->apertureID = *((unsigned *) buffer);
+    drawing->apertureHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
-    drawing->__apertureDirection = *((ApertureDirection *) buffer);
-    buffer += sizeof(ApertureDirection);
 
     // Tension Type
     drawing->__tensionType = (Drawing::TensionType) *buffer++;
@@ -813,11 +827,11 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     }
 
     // Side Irons
-    drawing->sideIronIDs[0] = *((unsigned *) buffer);
+    drawing->sideIronHandles[0] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[0] = *buffer++;
 
-    drawing->sideIronIDs[1] = *((unsigned *) buffer);
+    drawing->sideIronHandles[1] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[1] = *buffer++;
 
@@ -838,10 +852,10 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         LapAttachment attachment = (LapAttachment) *buffer++;
         float width = *((float *) buffer);
         buffer += sizeof(float);
-        unsigned materialID = *((unsigned *) buffer);
+        unsigned materialHandle = *((unsigned *) buffer);
         buffer += sizeof(unsigned);
 
-        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByID(materialID));
+        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByHandle(materialHandle));
         drawing->sidelaps[0] = lap;
     } else {
         drawing->sidelaps[0] = std::nullopt;
@@ -851,10 +865,10 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         LapAttachment attachment = (LapAttachment) *buffer++;
         float width = *((float *) buffer);
         buffer += sizeof(float);
-        unsigned materialID = *((unsigned *) buffer);
+        unsigned materialHandle = *((unsigned *) buffer);
         buffer += sizeof(unsigned);
 
-        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByID(materialID));
+        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByHandle(materialHandle));
         drawing->sidelaps[1] = lap;
     } else {
         drawing->sidelaps[1] = std::nullopt;
@@ -864,10 +878,10 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         LapAttachment attachment = (LapAttachment) *buffer++;
         float width = *((float *) buffer);
         buffer += sizeof(float);
-        unsigned materialID = *((unsigned *) buffer);
+        unsigned materialHandle = *((unsigned *) buffer);
         buffer += sizeof(unsigned);
 
-        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByID(materialID));
+        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByHandle(materialHandle));
         drawing->overlaps[0] = lap;
     } else {
         drawing->overlaps[0] = std::nullopt;
@@ -877,25 +891,25 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         LapAttachment attachment = (LapAttachment) *buffer++;
         float width = *((float *) buffer);
         buffer += sizeof(float);
-        unsigned materialID = *((unsigned *) buffer);
+        unsigned materialHandle = *((unsigned *) buffer);
         buffer += sizeof(unsigned);
 
-        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByID(materialID));
+        Drawing::Lap lap(width, attachment, DrawingComponentManager<Material>::getComponentByHandle(materialHandle));
         drawing->overlaps[1] = lap;
     } else {
         drawing->overlaps[1] = std::nullopt;
     }
 
     // Top layer material ID
-    drawing->topLayerThicknessID = *((unsigned *) buffer);
+    drawing->topLayerThicknessHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
 
     // Bottom layer material ID
     if (flags & HAS_BOTTOM_LAYER) {
-        drawing->bottomLayerThicknessID = *((unsigned *) buffer);
+        drawing->bottomLayerThicknessHandle = *((unsigned *) buffer);
         buffer += sizeof(unsigned);
     } else {
-        drawing->bottomLayerThicknessID = std::nullopt;
+        drawing->bottomLayerThicknessHandle = std::nullopt;
     }
 
     // Load Warnings
@@ -906,7 +920,7 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
 }
 
 bool DrawingSummary::hasTwoLayers() const {
-    return thicknessIDs[1] != 0;
+    return thicknessHandles[1] != 0;
 }
 
 unsigned DrawingSummary::numberOfLaps() const {
@@ -940,11 +954,11 @@ std::string DrawingSummary::summaryString() const {
     if (__lapSizes[3] != 0) {
         s << "+" << lapSize(3);
     }
-    s << " x " << DrawingComponentManager<Material>::getComponentByID(thicknessIDs[0]).thickness;
-    if (thicknessIDs[1] != 0) {
-        s << "+" << DrawingComponentManager<Material>::getComponentByID(thicknessIDs[1]).thickness;
+    s << " x " << DrawingComponentManager<Material>::getComponentByHandle(thicknessHandles[0]).thickness;
+    if (thicknessHandles[1] != 0) {
+        s << "+" << DrawingComponentManager<Material>::getComponentByHandle(thicknessHandles[1]).thickness;
     }
-    s << " x " << DrawingComponentManager<Aperture>::getComponentByID(apertureID).apertureName();
+    s << " x " << DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle).apertureName();
 
     return s.str();
 }
@@ -980,30 +994,30 @@ void DrawingSummary::setLapSize(unsigned index, float size) {
 }
 
 DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int maxMatID, float maxWidth, float maxLength,
-                                                                 unsigned int maxThicknessID, float maxLapSize,
-                                                                 unsigned int maxApertureID,
+                                                                 unsigned int maxThicknessHandle, float maxLapSize,
+                                                                 unsigned int maxApertureHandle,
                                                                  unsigned char maxDrawingLength) {
     this->matIDSize = MIN_COVERING_BITS(maxMatID);
     this->widthSize = MIN_COVERING_BITS((unsigned) (maxWidth * 2));
     this->lengthSize = MIN_COVERING_BITS((unsigned) (maxLength * 2));
-    this->thicknessIDSize = MIN_COVERING_BITS(maxThicknessID);
+    this->thicknessHandleSize = MIN_COVERING_BITS(maxThicknessHandle);
     this->lapSize = MIN_COVERING_BITS((unsigned) (maxLapSize * 2));
-    this->apertureIDSize = MIN_COVERING_BITS(maxApertureID);
+    this->apertureHandleSize = MIN_COVERING_BITS(maxApertureHandle);
 
     this->maxDrawingLength = maxDrawingLength;
 
     matIDBytes = MIN_COVERING_BYTES(matIDSize);
     widthBytes = MIN_COVERING_BYTES(widthSize);
     lengthBytes = MIN_COVERING_BYTES(lengthSize);
-    thicknessIDBytes = MIN_COVERING_BYTES(thicknessIDSize);
+    thicknessHandleBytes = MIN_COVERING_BYTES(thicknessHandleSize);
     lapBytes = MIN_COVERING_BYTES(lapSize);
-    apertureIDBytes = MIN_COVERING_BYTES(apertureIDSize);
+    apertureHandleBytes = MIN_COVERING_BYTES(apertureHandleSize);
 }
 
 unsigned DrawingSummaryCompressionSchema::compressedSize(const DrawingSummary &summary) const {
     return sizeof(unsigned char) + summary.drawingNumber.size() + MIN_COVERING_BYTES(
-            matIDSize + widthSize + lengthSize + apertureIDSize + thicknessIDSize + 1 +
-            (summary.hasTwoLayers() ? thicknessIDSize : 0) + 3 + summary.numberOfLaps() * lapSize);
+            matIDSize + widthSize + lengthSize + apertureHandleSize + thicknessHandleSize + 1 +
+            (summary.hasTwoLayers() ? thicknessHandleSize : 0) + 3 + summary.numberOfLaps() * lapSize);
 }
 
 void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summary, void *target) const {
@@ -1019,16 +1033,16 @@ void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summ
     offset += widthSize;
     writeAtBitOffset((void *) &summary.__length, lengthBytes, buff, offset);
     offset += lengthSize;
-    writeAtBitOffset((void *) &summary.apertureID, apertureIDBytes, buff, offset);
-    offset += apertureIDSize;
-    writeAtBitOffset((void *) &summary.thicknessIDs[0], thicknessIDBytes, buff, offset);
-    offset += thicknessIDSize;
+    writeAtBitOffset((void *) &summary.apertureHandle, apertureHandleBytes, buff, offset);
+    offset += apertureHandleSize;
+    writeAtBitOffset((void *) &summary.thicknessHandles[0], thicknessHandleBytes, buff, offset);
+    offset += thicknessHandleSize;
     bool hasTwoLayers = summary.hasTwoLayers();
     writeAtBitOffset(&hasTwoLayers, 1, buff, offset);
     offset += 1;
     if (hasTwoLayers) {
-        writeAtBitOffset((void *) &summary.thicknessIDs[1], thicknessIDBytes, buff, offset);
-        offset += thicknessIDSize;
+        writeAtBitOffset((void *) &summary.thicknessHandles[1], thicknessHandleBytes, buff, offset);
+        offset += thicknessHandleSize;
     }
     unsigned noOfLaps = summary.numberOfLaps();
     writeAtBitOffset(&noOfLaps, 1, buff, offset);
@@ -1055,16 +1069,16 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
     offset += widthSize;
     readFromBitOffset(buff, offset, &summary.__length, lengthSize);
     offset += lengthSize;
-    readFromBitOffset(buff, offset, &summary.apertureID, apertureIDSize);
-    offset += apertureIDSize;
-    readFromBitOffset(buff, offset, &summary.thicknessIDs[0], thicknessIDSize);
-    offset += thicknessIDSize;
+    readFromBitOffset(buff, offset, &summary.apertureHandle, apertureHandleSize);
+    offset += apertureHandleSize;
+    readFromBitOffset(buff, offset, &summary.thicknessHandles[0], thicknessHandleSize);
+    offset += thicknessHandleSize;
     bool hasTwoLayers;
     readFromBitOffset(buff, offset, &hasTwoLayers, 1);
     offset += 1;
     if (hasTwoLayers) {
-        readFromBitOffset(buff, offset, &summary.thicknessIDs[1], thicknessIDSize);
-        offset += thicknessIDSize;
+        readFromBitOffset(buff, offset, &summary.thicknessHandles[1], thicknessHandleSize);
+        offset += thicknessHandleSize;
     }
     unsigned noOfLaps = 0;
     readFromBitOffset(buff, offset, &noOfLaps, 3);
@@ -1081,7 +1095,7 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
 
 unsigned DrawingSummaryCompressionSchema::maxCompressedSize() const {
     return sizeof(unsigned char) + maxDrawingLength + MIN_COVERING_BYTES(
-            matIDSize + widthSize + lengthSize + thicknessIDSize * 2 + 4 + lapSize * 4 + apertureIDSize);
+            matIDSize + widthSize + lengthSize + thicknessHandleSize * 2 + 4 + lapSize * 4 + apertureHandleSize);
 }
 
 #pragma clang diagnostic pop

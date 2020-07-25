@@ -30,32 +30,28 @@ public:
         R_ERROR
     };
 
-    DatabaseManager();
+    DatabaseManager(const std::string &database, const std::string &user, const std::string &password,
+        const std::string &host = "localhost");
 
-    void connectToDatabase(const std::string &database, const std::string &user, const std::string &password,
-                                  const std::string &host = "localhost");
+    void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, unsigned char &maxDrawingLength);
 
-    DrawingSummaryCompressionSchema createCompressionSchema();
+    std::vector<DrawingSummary> executeSearchQuery(const DatabaseSearchQuery &query);
 
-    std::vector<DrawingSummary> executeSearchQuery(const DatabaseSearchQuery &query) const;
-
-    Drawing *executeDrawingQuery(const DrawingRequest &query) const;
+    Drawing *executeDrawingQuery(const DrawingRequest &query);
 
     mysqlx::RowResult sourceTable(const std::string &tableName, const std::string &orderBy = std::string());
 
     bool insertDrawing(const DrawingInsert &insert);
 
-    DrawingExistsResponse drawingExists(const std::string &drawingNumber) const;
-
-    void execute(const std::string &sqlQuery);
+    DrawingExistsResponse drawingExists(const std::string &drawingNumber);
 
     void closeConnection();
 
 private:
     // sql::Driver *driver = nullptr;
     // sql::Connection *conn = nullptr;
-    mysqlx::Session *sess;
-    mysqlx::Schema *db;
+    mysqlx::Session sess;
+    // mysqlx::Schema db;
 };
 
 

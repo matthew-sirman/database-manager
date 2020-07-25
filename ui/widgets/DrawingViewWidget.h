@@ -7,6 +7,8 @@
 
 #include <QWidget>
 #include <QMessageBox>
+#include <QPdfDocument>
+#include <QPdfView>
 
 #include "../../include/database/Drawing.h"
 
@@ -24,12 +26,17 @@ public:
 
     void updateFields();
 
+    void setUpdateDrawingCallback(const std::function<void()> &callback);
+
 private:
     Ui::DrawingViewWidget *ui;
 
     const Drawing *drawing;
 
-//    QPdfView *pdfViewer= nullptr;
+    std::function<void()> updateDrawingCallback = nullptr;
+
+    QPdfView *pdfViewer = nullptr;
+    QPdfDocument *pdfDocument = nullptr;
 };
 
 

@@ -76,25 +76,30 @@ public:
         unsigned quantityOnDeck;
         std::string position;
 
-        inline MachineTemplate() = default;
+        inline MachineTemplate() {
+            machineHandle = DrawingComponentManager<Machine>::findComponentByID(1).handle();
+            quantityOnDeck = 0;
+            position = std::string();
+            deckHandle = DrawingComponentManager<MachineDeck>::findComponentByID(1).handle();
+        }
 
         inline MachineTemplate(const MachineTemplate &machineTemplate) {
-            this->machineID = machineTemplate.machineID;
+            this->machineHandle = machineTemplate.machineHandle;
             this->quantityOnDeck = machineTemplate.quantityOnDeck;
             this->position = machineTemplate.position;
-            this->deckID = machineTemplate.deckID;
+            this->deckHandle = machineTemplate.deckHandle;
         }
 
         inline Machine &machine() const {
-            return DrawingComponentManager<Machine>::getComponentByID(machineID);
+            return DrawingComponentManager<Machine>::getComponentByHandle(machineHandle);
         }
 
         inline MachineDeck &deck() const {
-            return DrawingComponentManager<MachineDeck>::getComponentByID(deckID);
+            return DrawingComponentManager<MachineDeck>::getComponentByHandle(deckHandle);
         }
 
     private:
-        unsigned machineID, deckID;
+        unsigned machineHandle, deckHandle;
     };
 
     struct Lap {
@@ -106,7 +111,7 @@ public:
         inline Lap() {
             width = 0;
             attachmentType = LapAttachment::INTEGRAL;
-            materialID = 0;
+            materialHandle = 0;
         }
 
         inline Lap(float width, LapAttachment attachmentType, const Material &material) {
@@ -118,19 +123,19 @@ public:
         inline Lap(const Lap &lap) {
             this->width = lap.width;
             this->attachmentType = lap.attachmentType;
-            setMaterial(lap.materialID);
+            setMaterial(lap.materialHandle);
         }
 
         inline Material &material() const {
-            return DrawingComponentManager<Material>::getComponentByID(materialID);
+            return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
 
-        inline void setMaterial(unsigned id) {
-            materialID = id;
+        inline void setMaterial(unsigned handle) {
+            materialHandle = handle;
         }
 
         inline void setMaterial(const Material &material) {
-            setMaterial(material.componentID);
+            setMaterial(material.handle());
         }
 
         inline std::string strAsSidelap() const {
@@ -146,7 +151,7 @@ public:
         }
 
     private:
-        unsigned materialID;
+        unsigned materialHandle;
     };
 
     enum Side {
@@ -167,6 +172,8 @@ public:
     Drawing();
 
     explicit Drawing(const Drawing &drawing);
+
+    void setAsDefault();
 
     std::string drawingNumber() const;
 
@@ -211,10 +218,6 @@ public:
     Aperture aperture() const;
 
     void setAperture(const Aperture &ap);
-
-    ApertureDirection apertureDirection() const;
-
-    void setApertureDirection(ApertureDirection direction);
 
     TensionType tensionType() const;
 
@@ -289,9 +292,8 @@ private:
     std::string __notes;
     MachineTemplate __machineTemplate;
 
-    unsigned productID;
-    unsigned apertureID;
-    ApertureDirection __apertureDirection;
+    unsigned productHandle;
+    unsigned apertureHandle;
 
     TensionType __tensionType;
 
@@ -300,13 +302,13 @@ private:
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
 
-    unsigned sideIronIDs[2];
+    unsigned sideIronHandles[2];
     bool sideIronsInverted[2];
 
     std::optional<Lap> sidelaps[2], overlaps[2];
 
-    unsigned topLayerThicknessID;
-    std::optional<unsigned> bottomLayerThicknessID;
+    unsigned topLayerThicknessHandle;
+    std::optional<unsigned> bottomLayerThicknessHandle;
 
     unsigned loadWarnings = 0;
 
@@ -327,8 +329,8 @@ struct DrawingSummary {
     friend class DrawingSummaryCompressionSchema;
 
     unsigned matID;
-    unsigned thicknessIDs[2];
-    unsigned apertureID;
+    unsigned thicknessHandles[2];
+    unsigned apertureHandle;
     std::string drawingNumber;
 
     bool hasTwoLayers() const;
@@ -357,8 +359,8 @@ private:
 
 PACK_START
 struct DrawingSummaryCompressionSchema {
-    DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessID,
-        float maxLapSize, unsigned maxApertureID, unsigned char maxDrawingLength);
+    DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessHandle,
+        float maxLapSize, unsigned maxApertureHandle, unsigned char maxDrawingLength);
 
     unsigned compressedSize(const DrawingSummary &summary) const;
 
@@ -372,17 +374,17 @@ private:
     unsigned char matIDSize;
     unsigned char widthSize;
     unsigned char lengthSize;
-    unsigned char thicknessIDSize;
+    unsigned char thicknessHandleSize;
     unsigned char lapSize;
-    unsigned char apertureIDSize;
+    unsigned char apertureHandleSize;
     unsigned char maxDrawingLength;
 
     unsigned char matIDBytes;
     unsigned char widthBytes;
     unsigned char lengthBytes;
-    unsigned char thicknessIDBytes;
+    unsigned char thicknessHandleBytes;
     unsigned char lapBytes;
-    unsigned char apertureIDBytes;
+    unsigned char apertureHandleBytes;
 }
 PACK_END
 

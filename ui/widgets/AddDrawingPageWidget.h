@@ -27,15 +27,9 @@ public:
 
     explicit AddDrawingPageWidget(QWidget *parent = nullptr);
 
+    AddDrawingPageWidget(const Drawing &drawing, QWidget *parent = nullptr);
+
     ~AddDrawingPageWidget() override;
-
-    void setupComboboxSources();
-
-    void setupActivators();
-
-    void setupDrawingUpdateConnections();
-
-    void setDrawing(const Drawing &newDrawing);
 
     void confirmDrawing();
 
@@ -64,7 +58,15 @@ private:
 
     std::function<void(const Drawing &, bool)> confirmationCallback;
 
-    AddDrawingMode addMode = ADD_NEW_DRAWING;
+    AddDrawingMode addMode = ADD_NEW_DRAWING; 
+    
+    void setupComboboxSources();
+
+    void setupActivators();
+
+    void setupDrawingUpdateConnections();
+
+    void loadDrawing();
 
 private slots:
     void capitaliseLineEdit(const QString &text);

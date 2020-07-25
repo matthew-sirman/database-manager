@@ -7,6 +7,8 @@
 
 #include "../../include/database/DrawingSearchResultsModel.h"
 
+int qIntVectorID = qRegisterMetaType<QVector<int>>();
+
 DrawingSearchResultsModel::DrawingSearchResultsModel(QObject *parent) : QAbstractTableModel(parent) {
 
 }
@@ -64,15 +66,13 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
     unsigned recordCount = *((unsigned *)buff);
     buff += sizeof(unsigned);
 
-    beginRemoveRows(QModelIndex(), 0, (int) summaries.size() - 1);
-    removeRows(0, (int) summaries.size() - 1);
-    endRemoveRows();
+    if (summaries.size() != 0) {
+        beginRemoveRows(QModelIndex(), 0, (int)summaries.size() - 1);
+        removeRows(0, (int)summaries.size() - 1);
+        endRemoveRows();
+    }
 
     summaries.clear();
-
-    beginInsertRows(QModelIndex(), 0, (int) recordCount - 1);
-    insertRows(0, (int) recordCount - 1);
-    endInsertRows();
 
     for (unsigned i = 0; i < recordCount; i++) {
         unsigned size;
@@ -82,6 +82,10 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
 
         summaries.push_back(summary);
     }
+
+    beginInsertRows(QModelIndex(), 0, (int)recordCount - 1);
+    insertRows(0, (int)recordCount - 1);
+    endInsertRows();
 
     emit dataChanged(index(0, 0), index(rowCount(), columnCount()));
 }

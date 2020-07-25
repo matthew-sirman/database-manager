@@ -6,7 +6,7 @@
 
 #include "../../include/networking/Client.h"
 
-Client::Client(float refreshRate, RSAKeyPair clientKey, PublicKey serverSignature) {
+Client::Client(float refreshRate, RSAKeyPair clientKey, DigitalSignatureKeyPair::Public serverSignature) {
     this->refreshRate = refreshRate;
     this->clientKey = clientKey;
     this->serverSignature = serverSignature;
@@ -26,10 +26,10 @@ void Client::initialiseClient() {
     guardTCPSocketCode(clientSocket.create());
 }
 
-bool Client::connectToServer(const std::string& ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback) {
+Client::ConnectionStatus Client::connectToServer(const std::string& ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback) {
     if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::NO_CONNECTION;
     }
 
     // Protocol description found in the server accept method.
@@ -48,19 +48,23 @@ bool Client::connectToServer(const std::string& ipAddress, unsigned port, const 
     // Both communicate with AES key from here, with messages starting with token
 
     // 1: Send client's public key to server
-    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(PublicKey), KEY_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), KEY_MESSAGE));
 
     // 2: Receive server's public key
-    PublicKey serverKey;
+    RSAKeyPair::Public serverKey;
     NetworkMessage serverKeyMessage;
 
-    clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE);
+    if (clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE) != SOCKET_SUCCESS) {
+        std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
+        clientSocket.closeSocket();
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
+    }
 
     // If the received message was in any way erroneous, terminate the connection
     if (serverKeyMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     memcpy(&serverKey, serverKeyMessage.getMessageData(), serverKeyMessage.getMessageSize());
@@ -77,13 +81,17 @@ bool Client::connectToServer(const std::string& ipAddress, unsigned port, const 
     uint2048 signedEncryptedResponse;
     NetworkMessage signedEncryptedResponseMessage;
 
-    clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE);
+    if (clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE) != SOCKET_SUCCESS) {
+        std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
+        clientSocket.closeSocket();
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
+    }
 
     // If the received message was in any way erroneous, terminate the connection
     if (signedEncryptedResponseMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     memcpy(&signedEncryptedResponse, signedEncryptedResponseMessage.getMessageData(), signedEncryptedResponseMessage.getMessageSize());
@@ -101,7 +109,7 @@ bool Client::connectToServer(const std::string& ipAddress, unsigned port, const 
     if (responseChallenge != *challenge) {
         clientSocket.closeSocket();
         std::cerr << "ERROR::Client.cpp: Returned challenge from server incorrect. Server failed to authenticate itself." << std::endl;
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     // 5: Client now has to gather and send a JWT to the server to authenticate themselves
@@ -121,12 +129,30 @@ bool Client::connectToServer(const std::string& ipAddress, unsigned port, const 
     EncryptedNetworkMessage authMessage(authMessageBuff, sizeof(AuthMode) + authToken.size(), sessionKey);
     clientSocket.sendMessage(authMessage);
 
-    return true;
+    NetworkMessage authResponse;
+
+    if (clientSocket.receiveMessage(authResponse, CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
+        if (!authResponse.error()) {
+            ConnectionResponse response = *((ConnectionResponse *)authResponse.getMessageData());
+
+            switch (response) {
+            case ConnectionResponse::SUCCESS:
+                return ConnectionStatus::SUCCESS;
+                break;
+            case ConnectionResponse::FAILED:
+                return ConnectionStatus::INVALID_JWT;
+                break;
+            }
+        }
+    }
+
+    return ConnectionStatus::INVALID_JWT;
 }
 
-bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken) {if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
+Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken) {
+    if (!safeGuardTCPSocketCode(clientSocket.connectToServer(ipAddress, port))) {
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::NO_CONNECTION;
     }
 
     // Protocol description found in the server accept method.
@@ -145,10 +171,10 @@ bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint2
     // Both communicate with AES key from here, with messages starting with token
 
     // 1: Send client's public key to server
-    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(PublicKey), KEY_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), KEY_MESSAGE));
 
     // 2: Receive server's public key
-    PublicKey serverKey;
+    RSAKeyPair::Public serverKey;
     NetworkMessage serverKeyMessage;
 
     clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE);
@@ -157,7 +183,7 @@ bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint2
     if (serverKeyMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     memcpy(&serverKey, serverKeyMessage.getMessageData(), serverKeyMessage.getMessageSize());
@@ -180,7 +206,7 @@ bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint2
     if (signedEncryptedResponseMessage.error()) {
         std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
         clientSocket.closeSocket();
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     memcpy(&signedEncryptedResponse, signedEncryptedResponseMessage.getMessageData(), signedEncryptedResponseMessage.getMessageSize());
@@ -198,7 +224,7 @@ bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint2
     if (responseChallenge != *challenge) {
         clientSocket.closeSocket();
         std::cerr << "ERROR::Client.cpp: Returned challenge from server incorrect. Server failed to authenticate itself." << std::endl;
-        return false;
+        return ConnectionStatus::CREDS_EXCHANGE_FAILED;
     }
 
     // 5: Client now sends their repeat token to authenticate themselves
@@ -211,7 +237,28 @@ bool Client::connectWithToken(const std::string &ipAddress, unsigned port, uint2
     EncryptedNetworkMessage authMessage(authMessageBuff, sizeof(AuthMode) + sizeof(uint256), sessionKey);
     clientSocket.sendMessage(authMessage);
 
-    return true;
+    NetworkMessage authResponse;
+
+    if (clientSocket.receiveMessage(authResponse, CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
+        if (!authResponse.error()) {
+            ConnectionResponse response = *((ConnectionResponse *)authResponse.getMessageData());
+
+            switch (response) {
+            case ConnectionResponse::SUCCESS:
+                return ConnectionStatus::SUCCESS;
+                break;
+            case ConnectionResponse::FAILED:
+                return ConnectionStatus::INVALID_REPEAT_TOKEN;
+                break;
+            }
+        }
+    }
+
+    return ConnectionStatus::INVALID_JWT;
+}
+
+void Client::disconnect() {
+    clientSocket.closeSocket();
 }
 
 void Client::startClientLoop() {
@@ -255,6 +302,10 @@ void Client::addMessageToSendQueue(const void *message, unsigned messageLength) 
 
 void Client::addMessageToSendQueue(const std::string &message) {
     addMessageToSendQueue(message.c_str(), message.size());
+}
+
+void Client::requestRepeatToken(unsigned responseCode) {
+    addMessageToSendQueue(&responseCode, sizeof(unsigned));
 }
 
 void Client::setResponseHandler(ClientResponseHandler &handler) {

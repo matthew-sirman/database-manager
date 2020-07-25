@@ -8,17 +8,13 @@
 #include "../build/ui_AddDrawingPageWidget.h"
 
 AddDrawingPageWidget::AddDrawingPageWidget(QWidget *parent)
-        : QWidget(parent), ui(new Ui::AddDrawingPageWidget) {
+        : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
-
-    // TODO: Text selecting line edits / spin boxes
 
     setupActivators();
     setupComboboxSources();
 
-    drawing.setWidth(0);
-    drawing.setLength(0);
-    drawing.setTensionType(Drawing::SIDE);
+    drawing.setAsDefault();
 
     visualsScene = new QGraphicsScene();
     ui->drawingSpecsVisual->setScene(visualsScene);
@@ -37,6 +33,38 @@ AddDrawingPageWidget::AddDrawingPageWidget(QWidget *parent)
             SLOT(capitaliseLineEdit(const QString &)));
 
     setupDrawingUpdateConnections();
+}
+
+AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, QWidget *parent)
+    : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
+    ui->setupUi(this);
+
+    setupActivators();
+    setupComboboxSources();
+
+    this->drawing = drawing;
+
+    visualsScene = new QGraphicsScene();
+    ui->drawingSpecsVisual->setScene(visualsScene);
+    ui->drawingSpecsVisual->setDrawing(this->drawing);
+
+    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(drawingNumberRegex);
+
+    ui->drawingNumberInput->setValidator(drawingNumberValidator);
+    connect(ui->drawingNumberInput, SIGNAL(textEdited(const QString &)), this,
+        SLOT(capitaliseLineEdit(const QString &)));
+
+    QRegExpValidator *positionValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
+
+    ui->machinePositionInput->setValidator(positionValidator);
+    connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
+        SLOT(capitaliseLineEdit(const QString &)));
+
+    setupDrawingUpdateConnections();
+
+    setMode(EDIT_DRAWING);
+
+    loadDrawing();
 }
 
 AddDrawingPageWidget::~AddDrawingPageWidget() {
@@ -76,8 +104,8 @@ void AddDrawingPageWidget::setupActivators() {
                     drawing.removeBottomLayer();
                 } else {
                     if (ui->bottomMaterialInput->currentIndex() != -1) {
-                        drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::getComponentByID(
-                                ui->bottomMaterialInput->currentData().value<ElementIndex>()));
+                        drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::getComponentByHandle(
+                                ui->bottomMaterialInput->currentData().toInt()));
                     }
                 }
             }
@@ -110,9 +138,9 @@ void AddDrawingPageWidget::setupActivators() {
                     ui->leftSideIronLabel->setText("No Side Irons");
                     ui->rightSideIronLabel->setText("No Side Irons");
 
-                    leftSICache = drawing.sideIron(Drawing::LEFT).componentID;
+                    leftSICache = drawing.sideIron(Drawing::LEFT).handle();
                     leftSIInverted = drawing.sideIronInverted(Drawing::LEFT);
-                    rightSICache = drawing.sideIron(Drawing::RIGHT).componentID;
+                    rightSICache = drawing.sideIron(Drawing::RIGHT).handle();
                     rightSIInverted = drawing.sideIronInverted(Drawing::RIGHT);
 
                     drawing.removeSideIron(Drawing::LEFT);
@@ -124,10 +152,10 @@ void AddDrawingPageWidget::setupActivators() {
 
                     if (leftSICache != 0) {
                         drawing.setSideIron(Drawing::LEFT,
-                                            DrawingComponentManager<SideIron>::getComponentByID(leftSICache));
+                                            DrawingComponentManager<SideIron>::getComponentByHandle(leftSICache));
                         drawing.setSideIronInverted(Drawing::LEFT, leftSIInverted);
                         drawing.setSideIron(Drawing::RIGHT,
-                                            DrawingComponentManager<SideIron>::getComponentByID(leftSICache));
+                                            DrawingComponentManager<SideIron>::getComponentByHandle(leftSICache));
                         drawing.setSideIronInverted(Drawing::RIGHT, leftSIInverted);
                     }
                 }
@@ -142,14 +170,14 @@ void AddDrawingPageWidget::setupActivators() {
 
                     if (rightSICache != 0) {
                         drawing.setSideIron(Drawing::RIGHT,
-                                            DrawingComponentManager<SideIron>::getComponentByID(rightSICache));
+                                            DrawingComponentManager<SideIron>::getComponentByHandle(rightSICache));
                         drawing.setSideIronInverted(Drawing::RIGHT, rightSIInverted);
                     }
                 } else {
                     ui->leftSideIronLabel->setText("Side Irons");
                     ui->rightSideIronLabel->setText("Different Side Irons");
 
-                    rightSICache = drawing.sideIron(Drawing::RIGHT).componentID;
+                    rightSICache = drawing.sideIron(Drawing::RIGHT).handle();
                     drawing.setSideIron(Drawing::RIGHT, drawing.sideIron(Drawing::LEFT));
                 }
             }
@@ -164,7 +192,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     });
     connect(ui->productInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setProduct(
-                DrawingComponentManager<Product>::getComponentByID(ui->productInput->itemData(index).value<ElementIndex>()));
+                DrawingComponentManager<Product>::getComponentByHandle(ui->productInput->itemData(index).toInt()));
     });
     connect(ui->dateInput, &QDateEdit::dateChanged, [this](const QDate &date) {
         drawing.setDate({ (unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day() });
@@ -175,16 +203,16 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->lengthInput, qOverload<double>(&QDoubleSpinBox::valueChanged),
             [this](double d) { drawing.setLength((float) d); });
     connect(ui->topMaterialInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMaterial(Drawing::MaterialLayer::TOP, DrawingComponentManager<Material>::getComponentByID(
-                ui->topMaterialInput->itemData(index).value<ElementIndex>()));
+        drawing.setMaterial(Drawing::MaterialLayer::TOP, DrawingComponentManager<Material>::getComponentByHandle(
+                ui->topMaterialInput->itemData(index).toInt()));
     });
     connect(ui->bottomMaterialInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMaterial(Drawing::MaterialLayer::BOTTOM, DrawingComponentManager<Material>::getComponentByID(
-                ui->bottomMaterialInput->itemData(index).value<ElementIndex>()));
+        drawing.setMaterial(Drawing::MaterialLayer::BOTTOM, DrawingComponentManager<Material>::getComponentByHandle(
+                ui->bottomMaterialInput->itemData(index).toInt()));
     });
     connect(ui->apertureInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setAperture(
-                DrawingComponentManager<Aperture>::getComponentByID(ui->apertureInput->itemData(index).value<ElementIndex>()));
+                DrawingComponentManager<Aperture>::getComponentByHandle(ui->apertureInput->itemData(index).toInt()));
     });
     connect(ui->numberOfBarsInput, qOverload<int>(&QSpinBox::valueChanged),
             [this](int i) { ui->drawingSpecsVisual->setNumberOfBars(i); });
@@ -205,11 +233,11 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     });
 
     connect(ui->leftSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setSideIron(Drawing::LEFT, DrawingComponentManager<SideIron>::getComponentByID(
-                ui->leftSideIronDrawingInput->itemData(index).value<ElementIndex>()));
+        drawing.setSideIron(Drawing::LEFT, DrawingComponentManager<SideIron>::getComponentByHandle(
+                ui->leftSideIronDrawingInput->itemData(index).toInt()));
         if (!ui->rightSideIronLabel->active()) {
-            drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByID(
-                    ui->leftSideIronDrawingInput->itemData(index).value<ElementIndex>()));
+            drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByHandle(
+                    ui->leftSideIronDrawingInput->itemData(index).toInt()));
         }
     });
     connect(ui->leftSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
@@ -217,15 +245,15 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     });
 
     connect(ui->rightSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByID(
-                ui->leftSideIronDrawingInput->itemData(index).value<ElementIndex>()));
+        drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByHandle(
+                ui->leftSideIronDrawingInput->itemData(index).toInt()));
     });
     connect(ui->rightSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
         drawing.setSideIronInverted(Drawing::RIGHT, checked);
     });
 
     connect(ui->machineInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMachine(DrawingComponentManager<Machine>::getComponentByID(ui->machineInput->itemData(index).value<ElementIndex>()));
+        drawing.setMachine(DrawingComponentManager<Machine>::getComponentByHandle(ui->machineInput->itemData(index).toInt()));
     });
     connect(ui->quantityOnDeckInput, qOverload<int>(&QSpinBox::valueChanged), [this](int newValue) {
         drawing.setQuantityOnDeck(newValue);
@@ -234,7 +262,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setMachinePosition(newPosition.toStdString());
     });
     connect(ui->machineDeckInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMachineDeck(DrawingComponentManager<MachineDeck>::getComponentByID(ui->machineDeckInput->itemData(index).value<ElementIndex>()));
+        drawing.setMachineDeck(DrawingComponentManager<MachineDeck>::getComponentByHandle(ui->machineDeckInput->itemData(index).toInt()));
     });
 
     connect(ui->openDrawingPDFButton, &QPushButton::pressed, [this]() {
@@ -278,8 +306,60 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->confirmDrawingButton, &QPushButton::pressed, this, &AddDrawingPageWidget::confirmDrawing);
 }
 
-void AddDrawingPageWidget::setDrawing(const Drawing &newDrawing) {
-    drawing = newDrawing;
+void AddDrawingPageWidget::loadDrawing() {
+    ui->drawingNumberInput->setText(drawing.drawingNumber().c_str());
+    ui->productInput->setCurrentIndex(ui->productInput->findData(drawing.product().handle()));
+    ui->dateInput->setDate(QDate(drawing.date().year, drawing.date().month, drawing.date().day));
+    ui->widthInput->setValue(drawing.width());
+    ui->lengthInput->setValue(drawing.length());
+    std::cout << drawing.material(Drawing::TOP)->handle() << std::endl;
+    std::cout << ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()) << std::endl;
+    ui->topMaterialInput->setCurrentIndex(ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()));
+    if (drawing.material(Drawing::BOTTOM).has_value()) {
+        ui->bottomMaterialLabel->setActive();
+        ui->bottomMaterialInput->setCurrentIndex(ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
+    }
+    ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
+    ui->numberOfBarsInput->setValue(drawing.numberOfBars());
+    switch (drawing.tensionType()) {
+    case Drawing::TensionType::SIDE:
+        ui->tensionTypeInput->setCurrentText("Side");
+        break;
+    case Drawing::TensionType::END:
+        ui->tensionTypeInput->setCurrentText("End");
+        break;
+    }
+    ui->notesInput->setPlainText(drawing.notes().c_str());
+
+    SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+    ui->leftSideIronDrawingInput->setCurrentIndex(ui->leftSideIronDrawingInput->findData(leftSideIron.handle()));
+    ui->leftSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::LEFT));
+    ui->rightSideIronDrawingInput->setCurrentIndex(ui->rightSideIronDrawingInput->findData(rightSideIron.handle()));
+    ui->rightSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::RIGHT));
+    if (leftSideIron.handle() == rightSideIron.handle()) {
+        ui->rightSideIronLabel->setActive(false);
+
+        if (leftSideIron.componentID() == 1) {
+            ui->leftSideIronLabel->setActive(false);
+        }
+        else {
+            ui->leftSideIronLabel->setActive(true);
+        }
+    }
+    else {
+        ui->rightSideIronLabel->setActive(true);
+    }
+
+    Drawing::MachineTemplate machineTemplate = drawing.machineTemplate();
+    ui->machineInput->setCurrentIndex(ui->machineInput->findData(machineTemplate.machine().handle()));
+    ui->quantityOnDeckInput->setValue(machineTemplate.quantityOnDeck);
+    ui->machinePositionInput->setText(machineTemplate.position.c_str());
+    ui->machineDeckInput->setCurrentIndex(ui->machineDeckInput->findData(machineTemplate.deck().handle()));
+
+    ui->hyperlinkDisplay->setText(drawing.hyperlink().c_str());
+    for (const std::string &hyperlink : drawing.pressDrawingHyperlinks()) {
+        ui->pressDrawingHyperlinkList->addItem(hyperlink.c_str());
+    }
 }
 
 void AddDrawingPageWidget::confirmDrawing() {

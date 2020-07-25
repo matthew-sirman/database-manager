@@ -11,7 +11,15 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
 
     this->drawing = &drawing;
 
+    this->pdfDocument = new QPdfDocument();
+
     updateFields();
+
+    connect(ui->editDrawingButton, &QPushButton::pressed, [this]() {
+        if (updateDrawingCallback) {
+            updateDrawingCallback();
+        }
+    });
 }
 
 DrawingViewWidget::~DrawingViewWidget() {
@@ -26,7 +34,7 @@ void DrawingViewWidget::updateFields() {
     ui->productTextbox->setText(drawing->product().productName.c_str());
     ui->widthTextbox->setText(to_str(drawing->width()).c_str());
     ui->lengthTextbox->setText(to_str(drawing->length()).c_str());
-    ui->apertureTextbox->setText(drawing->aperture().apertureName(drawing->apertureDirection()).c_str());
+    ui->apertureTextbox->setText(drawing->aperture().apertureName().c_str());
 
     if (drawing->loadWarning(Drawing::INVALID_LAPS_DETECTED)) {
         QMessageBox::about(this, "Invalid Sidelaps/Overlaps Detected", "When loading this drawing from the database, "
@@ -102,16 +110,19 @@ void DrawingViewWidget::updateFields() {
 
     // TODO: Embed PDF viewer
 
-//    pdfViewer = new QPdfView(this);
-//
-//    connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
-//        QPdfDocument *document = new QPdfDocument();
-//        document->load(ui->drawingPDFSelectorInput->itemData(index).toString());
-//
-//        document->load("/home/matthew/Cambridge/Maths/Supervisions/e-3/week5-ms2649.pdf");
-//
-//        pdfViewer->setDocument(document);
-//    });
+    pdfViewer = new QPdfView(this);
 
-//    ui->drawingPDFsTabFormLayout->setWidget(1, QFormLayout::FieldRole, pdfViewer);
+    connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        pdfDocument->load(ui->drawingPDFSelectorInput->itemData(index).toString());
+
+        pdfViewer->setDocument(pdfDocument);
+    });
+
+    ui->drawingPDFsTabFormLayout->setWidget(1, QFormLayout::FieldRole, pdfViewer);
+    pdfDocument->load(drawing->hyperlink().c_str());
+    pdfViewer->setDocument(pdfDocument);
+}
+
+void DrawingViewWidget::setUpdateDrawingCallback(const std::function<void()> &callback) {
+    updateDrawingCallback = callback;
 }
