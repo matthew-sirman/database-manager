@@ -334,7 +334,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
 
 int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
     QApplication app(argc, argv);
-    app.setWindowIcon(QIcon(":scs_logo.png"));
+    app.setWindowIcon(QIcon(":/scs_logo.png"));
 
     MainMenu mainMenu(clientMetaFile);
     mainMenu.show();

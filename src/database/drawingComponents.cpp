@@ -10,7 +10,7 @@ void DrawingComponent::serialise(void *buffer) const {
     *((unsigned *) buffer) = __handle;
 }
 
-unsigned DrawingComponent::deserialiseID(void *buffer) {
+unsigned DrawingComponent::deserialise(void *buffer) {
     return *((unsigned *) buffer);
 }
 
@@ -245,7 +245,7 @@ std::string Machine::machineName() const {
 }
 
 ComboboxDataElement Machine::toDataElement() const {
-    return { machineName(), __componentID };
+    return { machineName(), __handle };
 }
 
 MachineDeck::MachineDeck(unsigned int id) : DrawingComponent(id) {

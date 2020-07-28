@@ -177,12 +177,31 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->drawingMenu_addDrawingAction, SIGNAL(triggered()), this, SLOT(openAddDrawingTab()));
     connect(this, SIGNAL(itemAddedToDrawingQueue()), this, SLOT(processDrawings()));
 
+    connect(ui->componentsMenu_addApertureAction, &QAction::triggered, [this]() {
+        (new AddApertureWindow(client))->show();
+    });
+    connect(ui->componentsMenu_addMachineAction, &QAction::triggered, [this]() {
+        (new AddMachineWindow(client))->show();
+    });
+    connect(ui->componentsMenu_addSideIronAction, &QAction::triggered, [this]() {
+        (new AddSideIronWindow(client))->show();
+    });
+    connect(ui->componentsMenu_addMaterialAction, &QAction::triggered, [this]() {
+        (new AddMaterialWindow(client))->show();
+    });
+
+    handler->setAddComponentResponseCallback([this](ComponentInsert::ComponentInsertResponse responseCode) {
+        emit addComponentResponseReceived((unsigned)responseCode);
+    });
+
+    connect(this, SIGNAL(addComponentResponseReceived(unsigned)), this, SLOT(insertComponentResponse(unsigned)));
+
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::LeftSide, nullptr);
 
     handler->setDrawingReceivedHandler([this](DrawingRequest &drawingRequest) { onReceiveDrawing(drawingRequest); });
 
-    handler->setDrawingInsertResponseHandler([this](DrawingInsert::InsertResponseType responseType, unsigned responseCode) {
+    handler->setDrawingInsertResponseHandler([this](DrawingInsert::InsertResponseCode responseType, unsigned responseCode) {
         emit insertDrawingResponseReceived(responseType, responseCode);
     });
 
@@ -226,17 +245,11 @@ void MainMenu::setupComboboxSources() {
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
 
     ui->productTypeSearchInput->setDataSource(productSource);
-    ui->productTypeSearchInput->addExtraSourceItem({ "Any" });
     ui->apertureSearchInput->setDataSource(apertureSource);
-    ui->apertureSearchInput->addExtraSourceItem({ "Any" });
     ui->thickness1SearchInput->setDataSource(materialSource);
-    ui->thickness1SearchInput->addExtraSourceItem({ "Any" });
     ui->thickness2SearchInput->setDataSource(materialSource);
-    ui->thickness2SearchInput->addExtraSourceItem({ "Any" });
     ui->machineSearchInput->setDataSource(machineSource);
-    ui->machineSearchInput->addExtraSourceItem({ "Any" });
     ui->deckSearchInput->setDataSource(machineDeckSource);
-    ui->deckSearchInput->addExtraSourceItem({ "Any" });
 }
 
 void MainMenu::setupValidators() {
@@ -263,25 +276,41 @@ void MainMenu::setupActivators() {
     ui->lengthLabel->addTarget(ui->lengthToleranceLabel);
     ui->lengthLabel->addTarget(ui->lengthToleranceSearchInput);
 
+    ui->productTypeLabel->addTarget(ui->productTypeSearchInput);
+
     ui->numberOfBarsLabel->addTarget(ui->numberOfBarsSearchInput);
+
+    ui->apertureLabel->addTarget(ui->apertureSearchInput);
+
+    ui->thickness1SearchLabel->addTarget(ui->thickness1SearchInput);
+    ui->thickness2SearchLabel->addTarget(ui->thickness2SearchInput);
 
     ui->startDateLabel->addTarget(ui->startDateSearchInput);
 
     ui->endDateLabel->addTarget(ui->endDateSearchInput);
 
+    ui->sideIronTypeLabel->addTarget(ui->sideIronTypeSearchInput);
     ui->sideIronLengthLabel->addTarget(ui->sideIronLengthSearchInput);
 
+    ui->sidelapsLabel->addTarget(ui->sidelapsSearchInput);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthSearchInput);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthToleranceLabel);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthToleranceSearchInput);
+    ui->sidelapAttachmentLabel->addTarget(ui->sidelapAttachmentSearchInput);
 
+    ui->overlapsLabel->addTarget(ui->overlapsSearchInput);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthSearchInput);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthToleranceLabel);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthToleranceSearchInput);
+    ui->overlapAttachmentLabel->addTarget(ui->overlapAttachmentSearchInput);
+
+    ui->machineLabel->addTarget(ui->machineSearchInput);
 
     ui->quantityOnDeckLabel->addTarget(ui->quantityOnDeckSearchInput);
 
     ui->positionLabel->addTarget(ui->positionSearchInput);
+
+    ui->deckLabel->addTarget(ui->deckSearchInput);
 }
 
 void MainMenu::setupSearchResultsTable() {
@@ -386,19 +415,19 @@ void MainMenu::searchButtonPressed() {
         unsigned tolerance = ui->lengthToleranceSearchInput->value();
         query.length = { length - tolerance, length + tolerance };
     }
-    if (ui->productTypeSearchInput->currentText() != "Any") {
+    if (ui->productTypeLabel->active()) {
         query.productType = DrawingComponentManager<Product>::getComponentByHandle(ui->productTypeSearchInput->currentData().toInt());
     }
     if (ui->numberOfBarsLabel->active()) {
         query.numberOfBars = ui->numberOfBarsSearchInput->value();
     }
-    if (ui->apertureSearchInput->currentText() != "Any") {
+    if (ui->apertureLabel->active()) {
         query.aperture = DrawingComponentManager<Aperture>::getComponentByHandle(ui->apertureSearchInput->currentData().toInt());
     }
-    if (ui->thickness1SearchInput->currentText() != "Any") {
+    if (ui->thickness1SearchLabel->active()) {
         query.topThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness1SearchInput->currentData().toInt());
     }
-    if (ui->thickness2SearchInput->currentText() != "Any") {
+    if (ui->thickness2SearchLabel->active()) {
         query.bottomThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness2SearchInput->currentData().toInt());
     }
     if (ui->startDateLabel->active()) {
@@ -415,16 +444,16 @@ void MainMenu::searchButtonPressed() {
             query.dateRange->upperBound = { (unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day() };
         }
     }
-    if (ui->sideIronTypeSearchInput->currentText() != "Any") {
-        query.sideIronType = (SideIronType) (ui->sideIronTypeSearchInput->currentIndex() - 1);
+    if (ui->sideIronTypeLabel->active()) {
+        query.sideIronType = (SideIronType) (ui->sideIronTypeSearchInput->currentIndex());
     }
     if (ui->sideIronLengthLabel->active()) {
         query.sideIronLength = ui->sideIronLengthSearchInput->value();
     }
-    if (ui->sidelapsSearchInput->currentText() != "Any") {
+    if (ui->sidelapsLabel->active()) {
         query.sidelapMode = (LapSetting) (ui->sidelapsSearchInput->currentIndex() - 1);
     }
-    if (ui->overlapsSearchInput->currentText() != "Any") {
+    if (ui->overlapsLabel->active()) {
         query.overlapMode = (LapSetting) (ui->overlapsSearchInput->currentIndex() - 1);
     }
     if (ui->sidelapWidthLabel->active()) {
@@ -437,13 +466,13 @@ void MainMenu::searchButtonPressed() {
         unsigned tolerance = ui->overlapWidthToleranceSearchInput->value();
         query.overlapWidth = { width - tolerance, width + tolerance };
     }
-    if (ui->sidelapAttachmentSearchInput->currentText() != "Any") {
+    if (ui->sidelapAttachmentLabel->active()) {
         query.sidelapAttachment = (LapAttachment) (ui->sidelapAttachmentSearchInput->currentIndex() - 1);
     }
-    if (ui->overlapAttachmentSearchInput->currentText() != "Any") {
+    if (ui->overlapAttachmentLabel->active()) {
         query.overlapAttachment = (LapAttachment) (ui->overlapAttachmentSearchInput->currentIndex() - 1);
     }
-    if (ui->machineSearchInput->currentText() != "Any") {
+    if (ui->machineLabel->active()) {
         query.machine = DrawingComponentManager<Machine>::getComponentByHandle(ui->machineSearchInput->currentData().toInt());
     }
     if (ui->quantityOnDeckLabel->active()) {
@@ -452,7 +481,7 @@ void MainMenu::searchButtonPressed() {
     if (ui->positionLabel->active()) {
         query.position = ui->positionSearchInput->text().toStdString();
     }
-    if (ui->deckSearchInput->currentText() != "Any") {
+    if (ui->deckLabel->active()) {
         query.machineDeck = DrawingComponentManager<MachineDeck>::getComponentByHandle(ui->deckSearchInput->currentData().toInt());
     }
 
@@ -534,6 +563,13 @@ void MainMenu::processDrawings() {
                 } else {
                     DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
                     Drawing &drawing = request->drawingData.value();
+
+                    // TEMP
+                    std::filesystem::path testOutputPath = "D:/Users/Matthew/Work/testing/test_drawing.pdf";
+                    DrawingPDFWriter pdfWriter;
+                    pdfWriter.createPDF(testOutputPath, drawing);
+                    // TEMP
+
                     drawingView->setUpdateDrawingCallback([this, drawing]() {
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, ui->mainTabs);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
@@ -567,7 +603,7 @@ void MainMenu::processDrawings() {
 }
 
 void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCode) {
-    switch ((DrawingInsert::InsertResponseType) responseType) {
+    switch ((DrawingInsert::InsertResponseCode) responseType) {
         case DrawingInsert::NONE:
             break;
         case DrawingInsert::SUCCESS:
@@ -585,7 +621,7 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
             if (questionResponse == QMessageBox::Yes) {
                 DrawingInsert insert;
                 insert.responseEchoCode = responseCode;
-                insert.insertResponseType = DrawingInsert::NONE;
+                insert.insertResponseCode = DrawingInsert::NONE;
                 insert.drawingData = *drawingInserts[responseCode];
                 insert.setForce(true);
 
@@ -596,6 +632,19 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
                 client->addMessageToSendQueue(buffer, bufferSize);
 
             }
+            break;
+    }
+}
+
+void MainMenu::insertComponentResponse(unsigned responseCode) {
+    switch ((ComponentInsert::ComponentInsertResponse)responseCode) {
+        case ComponentInsert::ComponentInsertResponse::SUCCESS:
+            QMessageBox::about(this, "Add Component", "Component successfully added to database.");
+            break;
+        case ComponentInsert::ComponentInsertResponse::FAILED:
+            QMessageBox::about(this, "Add Component", "There was an error while trying to add component to the database.");
+            break;
+        default:
             break;
     }
 }

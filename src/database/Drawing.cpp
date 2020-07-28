@@ -59,16 +59,21 @@ void readFromBitOffset(void *data, size_t bitOffset, void *target, size_t bitRea
     }
 }
 
+Date::Date(unsigned year, unsigned month, unsigned day) {
+    this->year = year;
+    this->month = month;
+    this->day = day;
+}
+
 std::string Date::toMySQLDateString() const {
     std::stringstream ss;
     ss << year << "-" << (unsigned) month << "-" << (unsigned) day << " 00:00:00";
     return ss.str();
 }
 
-Date Date::parse(const std::string &dateString) {
-    std::tm timePoint{};
-    std::stringstream(dateString) >> std::get_time(&timePoint, "%Y-%m-%d %H:%M:%S");
-    return { (unsigned short) (timePoint.tm_year + 1900), (unsigned char) timePoint.tm_mon, (unsigned char) timePoint.tm_mday };
+Date Date::parse(std::time_t rawDate) {
+    std::tm *timePoint = std::localtime(&rawDate);
+    return { (unsigned)(timePoint->tm_year + 1900), (unsigned)(timePoint->tm_mon + 1), (unsigned)timePoint->tm_mday };
 }
 
 Drawing::Drawing() = default;
@@ -112,8 +117,8 @@ void Drawing::setAsDefault() {
     this->apertureHandle = 0;
     this->__tensionType = TensionType::SIDE;
     this->__pressDrawingHyperlinks = std::vector<std::string>();
-    this->barSpacings = std::vector<float>();
-    this->barWidths = std::vector<float>();
+    this->barSpacings = { 0 };
+    this->barWidths = { 0, 0 };
     this->sideIronHandles[0] = 1;
     this->sideIronHandles[1] = 1;
     this->sideIronsInverted[0] = false;
@@ -296,6 +301,14 @@ float Drawing::leftBar() const {
 
 float Drawing::rightBar() const {
     return barWidths.back();
+}
+
+std::vector<float> Drawing::allBarSpacings() const {
+    return barSpacings;
+}
+
+std::vector<float> Drawing::allBarWidths() const {
+    return barWidths;
 }
 
 SideIron Drawing::sideIron(Drawing::Side side) const {

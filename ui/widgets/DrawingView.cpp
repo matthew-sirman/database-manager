@@ -22,6 +22,25 @@ DrawingView::~DrawingView() {
 
 void DrawingView::setDrawing(Drawing &d) {
     this->drawing = &d;
+    barSpacings = d.allBarSpacings();
+    barWidths = d.allBarWidths();
+    numberOfBars = d.numberOfBars();
+
+    switch (drawing->tensionType()) {
+        case Drawing::SIDE:
+            lapCache[0] = drawing->sidelap(Drawing::LEFT);
+            lapCache[1] = drawing->sidelap(Drawing::RIGHT);
+            lapCache[2] = drawing->overlap(Drawing::LEFT);
+            lapCache[3] = drawing->overlap(Drawing::RIGHT);
+            break;
+        case Drawing::END:
+            lapCache[2] = drawing->sidelap(Drawing::LEFT);
+            lapCache[3] = drawing->sidelap(Drawing::RIGHT);
+            lapCache[0] = drawing->overlap(Drawing::LEFT);
+            lapCache[1] = drawing->overlap(Drawing::RIGHT);
+            break;
+    }
+
     this->drawing->addUpdateCallback([this]() { redrawScene(); });
 }
 
@@ -61,8 +80,6 @@ void DrawingView::redrawScene() {
     QGraphicsScene *graphicsScene = scene();
 
     if (graphicsScene && drawing) {
-//        graphicsScene->clear();
-
         float width = drawing->width(), length = drawing->length();
 
         if (width != 0 && length != 0) {
@@ -82,6 +99,7 @@ void DrawingView::redrawScene() {
                     bottomLap = drawing->sidelap(Drawing::RIGHT);
                     leftLap = drawing->overlap(Drawing::LEFT);
                     rightLap = drawing->overlap(Drawing::RIGHT);
+                    break;
             }
 
             if (leftLap.has_value()) {

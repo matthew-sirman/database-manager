@@ -32,6 +32,7 @@
 
 enum TCPSocketCode {
     SOCKET_SUCCESS,
+    WAS_HEARTBEAT,
     ERR_CREATE_SOCKET,
     ERR_SET_SOCKET_OPTIONS,
     ERR_PARSE_IP,
@@ -103,6 +104,8 @@ public:
 
     void setAcceptCallback(const std::function<void(TCPSocket &)> &callback);
 
+    void setConnectionTimeout(float timeout);
+
 private:
     enum SocketFlags {
         SOCKET_OPEN = 0x01u,
@@ -127,7 +130,7 @@ private:
 
     std::chrono::system_clock::time_point lastHeard;
 
-    float connectionTimeout = 5.0f;
+    float connectionTimeout = 30.0f;
 
 #ifdef _WIN32
     // Windows Specific

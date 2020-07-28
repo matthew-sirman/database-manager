@@ -20,7 +20,7 @@
 struct DrawingComponent {
     virtual void serialise(void *buffer) const;
 
-    static unsigned deserialiseID(void *buffer);
+    static unsigned deserialise(void *buffer);
 
     constexpr size_t serialisedSize() const { return sizeof(unsigned); };
 

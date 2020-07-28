@@ -83,9 +83,11 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
         summaries.push_back(summary);
     }
 
-    beginInsertRows(QModelIndex(), 0, (int)recordCount - 1);
-    insertRows(0, (int)recordCount - 1);
-    endInsertRows();
+    if (summaries.size() != 0) {
+        beginInsertRows(QModelIndex(), 0, (int)recordCount - 1);
+        insertRows(0, (int)recordCount - 1);
+        endInsertRows();
+    }
 
     emit dataChanged(index(0, 0), index(rowCount(), columnCount()));
 }

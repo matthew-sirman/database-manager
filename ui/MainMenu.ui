@@ -152,6 +152,9 @@ QLabel[hovering=true] {
                  </item>
                  <item row="1" column="7">
                   <widget class="DynamicComboBox" name="thickness1SearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -164,11 +167,6 @@ QLabel[hovering=true] {
                    <property name="insertPolicy">
                     <enum>QComboBox::NoInsert</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                  <item row="1" column="4">
@@ -281,6 +279,9 @@ QLabel[hovering=true] {
                  </item>
                  <item row="2" column="7">
                   <widget class="DynamicComboBox" name="thickness2SearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -293,11 +294,6 @@ QLabel[hovering=true] {
                    <property name="insertPolicy">
                     <enum>QComboBox::NoInsert</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                  <item row="1" column="1">
@@ -317,7 +313,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="2" column="6">
-                  <widget class="QLabel" name="thickness2SearchLabel">
+                  <widget class="ActivatorLabel" name="thickness2SearchLabel">
                    <property name="styleSheet">
                     <string notr="true">QLabel {
 	padding: 3px;
@@ -330,7 +326,7 @@ QLabel[hovering=true] {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Thickness 2</string>
+                    <string>Bottom Thickness</string>
                    </property>
                   </widget>
                  </item>
@@ -351,7 +347,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="1" column="6">
-                  <widget class="QLabel" name="thickness1SearchLabel">
+                  <widget class="ActivatorLabel" name="thickness1SearchLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -370,7 +366,7 @@ QLabel[hovering=true] {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Thickness 1</string>
+                    <string>Top Thickness</string>
                    </property>
                   </widget>
                  </item>
@@ -474,7 +470,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="2" column="4">
-                  <widget class="QLabel" name="apertureLabel">
+                  <widget class="ActivatorLabel" name="apertureLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -499,6 +495,9 @@ QLabel[hovering=true] {
                  </item>
                  <item row="2" column="5">
                   <widget class="DynamicComboBox" name="apertureSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -511,15 +510,10 @@ QLabel[hovering=true] {
                    <property name="insertPolicy">
                     <enum>QComboBox::NoInsert</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                  <item row="0" column="4">
-                  <widget class="QLabel" name="productTypeLabel">
+                  <widget class="ActivatorLabel" name="productTypeLabel">
                    <property name="styleSheet">
                     <string notr="true">QLabel {
 	padding: 3px;
@@ -538,6 +532,9 @@ QLabel[hovering=true] {
                  </item>
                  <item row="0" column="5">
                   <widget class="DynamicComboBox" name="productTypeSearchInput">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="editable">
                     <bool>true</bool>
                    </property>
@@ -547,11 +544,6 @@ QLabel[hovering=true] {
                    <property name="sizeAdjustPolicy">
                     <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                 </layout>
@@ -566,7 +558,7 @@ QLabel[hovering=true] {
                <item>
                 <layout class="QGridLayout" name="overlapsSideIronsGridLayout">
                  <item row="0" column="0">
-                  <widget class="QLabel" name="sideIronTypeLabel">
+                  <widget class="ActivatorLabel" name="sideIronTypeLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -593,11 +585,6 @@ QLabel[hovering=true] {
                   <widget class="QComboBox" name="sidelapsSearchInput">
                    <item>
                     <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
                      <string>Has no sidelaps</string>
                     </property>
                    </item>
@@ -621,11 +608,6 @@ QLabel[hovering=true] {
                      <verstretch>0</verstretch>
                     </sizepolicy>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                    <item>
                     <property name="text">
                      <string>None</string>
@@ -659,7 +641,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="2" column="0">
-                  <widget class="QLabel" name="sidelapsLabel">
+                  <widget class="ActivatorLabel" name="sidelapsLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -690,7 +672,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="5" column="4">
-                  <widget class="QLabel" name="overlapAttachmentLabel">
+                  <widget class="ActivatorLabel" name="overlapAttachmentLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -715,11 +697,6 @@ QLabel[hovering=true] {
                  </item>
                  <item row="3" column="1">
                   <widget class="QComboBox" name="overlapsSearchInput">
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                    <item>
                     <property name="text">
                      <string>Has no overlaps</string>
@@ -778,11 +755,6 @@ QLabel[hovering=true] {
                    </property>
                    <item>
                     <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
                      <string>Integral</string>
                     </property>
                    </item>
@@ -831,7 +803,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="3" column="0">
-                  <widget class="QLabel" name="overlapsLabel">
+                  <widget class="ActivatorLabel" name="overlapsLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -855,7 +827,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="4" column="4">
-                  <widget class="QLabel" name="sidelapAttachmentLabel">
+                  <widget class="ActivatorLabel" name="sidelapAttachmentLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -958,11 +930,6 @@ QLabel[hovering=true] {
                    </property>
                    <item>
                     <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
-                   <item>
-                    <property name="text">
                      <string>Integral</string>
                     </property>
                    </item>
@@ -992,7 +959,7 @@ QLabel[hovering=true] {
                <item>
                 <layout class="QGridLayout" name="gridLayout">
                  <item row="0" column="0">
-                  <widget class="QLabel" name="machineLabel">
+                  <widget class="ActivatorLabel" name="machineLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -1016,7 +983,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="3" column="0">
-                  <widget class="QLabel" name="DeckLabel">
+                  <widget class="ActivatorLabel" name="deckLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -1121,11 +1088,6 @@ QLabel[hovering=true] {
                    <property name="insertPolicy">
                     <enum>QComboBox::NoInsert</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                  <item row="1" column="4">
@@ -1155,11 +1117,6 @@ QLabel[hovering=true] {
                    <property name="insertPolicy">
                     <enum>QComboBox::NoInsert</enum>
                    </property>
-                   <item>
-                    <property name="text">
-                     <string>Any</string>
-                    </property>
-                   </item>
                   </widget>
                  </item>
                 </layout>
@@ -1243,7 +1200,7 @@ color: rgb(70, 70, 70);
     <addaction name="componentsMenu_addApertureAction"/>
     <addaction name="componentsMenu_addMachineAction"/>
     <addaction name="componentsMenu_addSideIronAction"/>
-    <addaction name="actionAdd_new_Material"/>
+    <addaction name="componentsMenu_addMaterialAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
@@ -1275,7 +1232,7 @@ color: rgb(70, 70, 70);
     <string>Add new Side Iron</string>
    </property>
   </action>
-  <action name="actionAdd_new_Material">
+  <action name="componentsMenu_addMaterialAction">
    <property name="text">
     <string>Add new Material</string>
    </property>

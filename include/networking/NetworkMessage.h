@@ -24,13 +24,18 @@
  * Data of size Message Size
  */
 
-enum MessageProtocol {
+enum class MessageProtocol {
     KEY_MESSAGE,
     RSA_MESSAGE,
     AES_MESSAGE,
     RAW_MESSAGE,
     CONNECTION_RESPONSE_MESSAGE,
     HEARTBEAT
+};
+
+enum class HeartbeatMode {
+    REQUEST,
+    RESPONSE
 };
 
 enum class AuthMode {
@@ -43,7 +48,7 @@ enum class ConnectionResponse {
     FAILED
 };
 
-enum DecodeStatus {
+enum class DecodeStatus {
     DECODED,
     DECODING,
     DECODE_ERROR

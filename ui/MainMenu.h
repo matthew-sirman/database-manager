@@ -19,6 +19,10 @@
 
 #include "widgets/AddDrawingPageWidget.h"
 #include "widgets/DrawingViewWidget.h"
+#include "AddApertureWindow.h"
+#include "AddMachineWindow.h"
+#include "AddSideIronWindow.h"
+#include "AddMaterialWindow.h"
 
 #define DEFAULT_REFRESH_RATE 16
 
@@ -98,10 +102,14 @@ private slots:
 
     void insertDrawingResponse(unsigned responseType, unsigned responseCode);
 
+    void insertComponentResponse(unsigned responseCode);
+
 signals:
     void itemAddedToDrawingQueue();
 
     void insertDrawingResponseReceived(unsigned responseType, unsigned responseCode);
+
+    void addComponentResponseReceived(unsigned responseCode);
 
 };
 

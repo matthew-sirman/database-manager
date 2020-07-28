@@ -23,7 +23,7 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
     case RequestType::DRAWING_INSERT: {
         DrawingInsert response = DrawingInsert::deserialise(message);
         if (drawingInsertCallback) {
-            drawingInsertCallback(response.insertResponseType, response.responseEchoCode);
+            drawingInsertCallback(response.insertResponseCode, response.responseEchoCode);
         }
         break;
     }
@@ -53,6 +53,11 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
             drawingReceivedCallback(DrawingRequest::deserialise(message));
         }
         break;
+    case RequestType::ADD_NEW_COMPONENT:
+        if (addComponentCallback) {
+            addComponentCallback(ComponentInsert::deserialise(message).responseCode);
+        }
+        break;
     }
 }
 
@@ -64,12 +69,16 @@ void DatabaseResponseHandler::setDrawingReceivedHandler(const std::function<void
     drawingReceivedCallback = callback;
 }
 
-void DatabaseResponseHandler::setDrawingInsertResponseHandler(const std::function<void(DrawingInsert::InsertResponseType, unsigned)> &callback) {
+void DatabaseResponseHandler::setDrawingInsertResponseHandler(const std::function<void(DrawingInsert::InsertResponseCode, unsigned)> &callback) {
     drawingInsertCallback = callback;
 }
 
 void DatabaseResponseHandler::setRepeatTokenResponseCallback(const std::function<void(const uint256 &token)> &callback) {
     repeatTokenCallback = callback;
+}
+
+void DatabaseResponseHandler::setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback) {
+    addComponentCallback = callback;
 }
 
 RequestType DatabaseResponseHandler::getDeserialiseType(void *data) {

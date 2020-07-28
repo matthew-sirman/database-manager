@@ -69,38 +69,43 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
         readIndex += sizeof(uint8) + sizeof(uint16);
 
         switch (_protocol) {
-            case KEY_MESSAGE:
+            case MessageProtocol::KEY_MESSAGE:
                 // If we are receiving a key, the message should be exactly the size of a public key.
                 // Otherwise, there is an error, so break out.
                 if (messageSize != sizeof(RSAKeyPair::Public)) {
-                    return DECODE_ERROR;
+                    return DecodeStatus::DECODE_ERROR;
                 }
                 break;
-            case RSA_MESSAGE:
+            case MessageProtocol::RSA_MESSAGE:
                 // If we are receiving an RSA encrypted message, the encrypted message should be exactly the
                 // size of a uin2048, otherwise there is an error
                 if (messageSize != sizeof(uint2048)) {
-                    return DECODE_ERROR;
+                    return DecodeStatus::DECODE_ERROR;
                 }
                 break;
-            case AES_MESSAGE:
-            case RAW_MESSAGE:
+            case MessageProtocol::AES_MESSAGE:
+            case MessageProtocol::RAW_MESSAGE:
                 // If we are receiving an AES encrypted message, or a raw message, we must simply check that the
                 // message is not too large
                 if (messageSize > MAX_MESSAGE_LENGTH) {
-                    return DECODE_ERROR;
+                    return DecodeStatus::DECODE_ERROR;
                 }
                 break;
-            case CONNECTION_RESPONSE_MESSAGE:
+            case MessageProtocol::CONNECTION_RESPONSE_MESSAGE:
                 // If we are receiving a key, the message should be exactly the size of a ConnectionResponse.
                 // Otherwise, there is an error, so break out.
                 if (messageSize != sizeof(ConnectionResponse)) {
-                    return DECODE_ERROR;
+                    return DecodeStatus::DECODE_ERROR;
+                }
+                break;
+            case MessageProtocol::HEARTBEAT:
+                if (messageSize != sizeof(HeartbeatMode)) {
+                    return DecodeStatus::DECODE_ERROR;
                 }
                 break;
             default:
                 // If we didn't receive any protocol type from above, the protocol was invalid.
-                return DECODE_ERROR;
+                return DecodeStatus::DECODE_ERROR;
         }
 
         // Set that we have the entire message left to read
@@ -124,7 +129,7 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
     readLeft -= readAmount;
 
     // Return true if and only if we have nothing left to read - we are done reading
-    return (readLeft == 0) ? DECODED : DECODING;
+    return (readLeft == 0) ? DecodeStatus::DECODED : DecodeStatus::DECODING;
 }
 
 const void *NetworkMessage::getMessageData() const {
@@ -154,7 +159,7 @@ EncryptedNetworkMessage::EncryptedNetworkMessage(const void *messageData, uint32
     }
 
     // The protocol will always be AES for an encrypted message
-    this->_protocol = AES_MESSAGE;
+    this->_protocol = MessageProtocol::AES_MESSAGE;
 
     size_t encryptedMessageSize = PADDED_SIZE(messageSize, AES_CHUNK_SIZE);
     CryptoSafeRandom::random(&initialisationVector, sizeof(uint64));
@@ -200,21 +205,26 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
         readIndex += sizeof(uint8) + sizeof(uint16);
 
         switch (_protocol) {
-            case AES_MESSAGE:
+            case MessageProtocol::AES_MESSAGE:
                 // If we are receiving an AES encrypted message, or a raw message, we must simply check that the
                 // message is not too large
                 if (messageSize > MAX_MESSAGE_LENGTH) {
-                    return DECODE_ERROR;
+                    return DecodeStatus::DECODE_ERROR;
                 }
                 break;
-            case KEY_MESSAGE:
-            case RSA_MESSAGE:
-            case RAW_MESSAGE:
-            case CONNECTION_RESPONSE_MESSAGE:
+                if (messageSize != sizeof(HeartbeatMode)) {
+                    return DecodeStatus::DECODE_ERROR;
+                }
+            case MessageProtocol::HEARTBEAT:
+                return NetworkMessage::decode(buffer, bufferSize);
+            case MessageProtocol::KEY_MESSAGE:
+            case MessageProtocol::RSA_MESSAGE:
+            case MessageProtocol::RAW_MESSAGE:
+            case MessageProtocol::CONNECTION_RESPONSE_MESSAGE:
             default:
                 // If we received anything other than the AES message protocol, the protocol was invalid, as this is
                 // supposed to be an encrypted message.
-                return DECODE_ERROR;
+                return DecodeStatus::DECODE_ERROR;
         }
 
         // Copy the next bytes into the init vector
@@ -241,7 +251,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
     readLeft -= readAmount;
 
     // Return true if and only if we have nothing left to read - we are done reading
-    return (readLeft == 0) ? DECODED : DECODING;
+    return (readLeft == 0) ? DecodeStatus::DECODED : DecodeStatus::DECODING;
 }
 
 const void *EncryptedNetworkMessage::decryptMessageData(AESKey decryptionKey) const {

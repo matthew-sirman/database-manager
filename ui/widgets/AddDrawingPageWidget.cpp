@@ -312,14 +312,16 @@ void AddDrawingPageWidget::loadDrawing() {
     ui->dateInput->setDate(QDate(drawing.date().year, drawing.date().month, drawing.date().day));
     ui->widthInput->setValue(drawing.width());
     ui->lengthInput->setValue(drawing.length());
-    std::cout << drawing.material(Drawing::TOP)->handle() << std::endl;
-    std::cout << ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()) << std::endl;
-    ui->topMaterialInput->setCurrentIndex(ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()));
-    if (drawing.material(Drawing::BOTTOM).has_value()) {
-        ui->bottomMaterialLabel->setActive();
-        ui->bottomMaterialInput->setCurrentIndex(ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
+    if (!drawing.loadWarning(Drawing::MISSING_MATERIAL_DETECTED)) {
+        ui->topMaterialInput->setCurrentIndex(ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()));
+        if (drawing.material(Drawing::BOTTOM).has_value()) {
+            ui->bottomMaterialLabel->setActive();
+            ui->bottomMaterialInput->setCurrentIndex(ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
+        }
     }
-    ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
+    if (!drawing.loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
+        ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
+    }
     ui->numberOfBarsInput->setValue(drawing.numberOfBars());
     switch (drawing.tensionType()) {
     case Drawing::TensionType::SIDE:
@@ -331,23 +333,23 @@ void AddDrawingPageWidget::loadDrawing() {
     }
     ui->notesInput->setPlainText(drawing.notes().c_str());
 
-    SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
-    ui->leftSideIronDrawingInput->setCurrentIndex(ui->leftSideIronDrawingInput->findData(leftSideIron.handle()));
-    ui->leftSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::LEFT));
-    ui->rightSideIronDrawingInput->setCurrentIndex(ui->rightSideIronDrawingInput->findData(rightSideIron.handle()));
-    ui->rightSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::RIGHT));
-    if (leftSideIron.handle() == rightSideIron.handle()) {
-        ui->rightSideIronLabel->setActive(false);
+    if (!drawing.loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
+        SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+        ui->leftSideIronDrawingInput->setCurrentIndex(ui->leftSideIronDrawingInput->findData(leftSideIron.handle()));
+        ui->leftSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::LEFT));
+        ui->rightSideIronDrawingInput->setCurrentIndex(ui->rightSideIronDrawingInput->findData(rightSideIron.handle()));
+        ui->rightSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::RIGHT));
+        if (leftSideIron.handle() == rightSideIron.handle()) {
+            ui->rightSideIronLabel->setActive(false);
 
-        if (leftSideIron.componentID() == 1) {
-            ui->leftSideIronLabel->setActive(false);
+            if (leftSideIron.componentID() == 1) {
+                ui->leftSideIronLabel->setActive(false);
+            } else {
+                ui->leftSideIronLabel->setActive(true);
+            }
+        } else {
+            ui->rightSideIronLabel->setActive(true);
         }
-        else {
-            ui->leftSideIronLabel->setActive(true);
-        }
-    }
-    else {
-        ui->rightSideIronLabel->setActive(true);
     }
 
     Drawing::MachineTemplate machineTemplate = drawing.machineTemplate();

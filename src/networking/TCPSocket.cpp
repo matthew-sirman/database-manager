@@ -18,6 +18,7 @@ void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
         case ERR_SOCKET_DEAD:
         case ERR_SEND_FAILED:
         case S_NO_DATA:
+        case WAS_HEARTBEAT:
         case SOCKET_SUCCESS:
             return;
         case ERR_CREATE_SOCKET: SOCK_ERROR_TO("Failed to create socket", errorStream)
@@ -38,6 +39,7 @@ bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
         case ERR_SOCKET_DEAD:
         case ERR_SEND_FAILED:
         case S_NO_DATA:
+        case WAS_HEARTBEAT:
         case SOCKET_SUCCESS:
             return true;
         case ERR_CREATE_SOCKET: SAFE_SOCK_ERROR_TO("Failed to create socket", errorStream)
@@ -362,10 +364,30 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
     while (true) {
         DecodeStatus status = message.decode(readBuffer, BUFFER_CHUNK_SIZE);
 
-        if (status == DECODED) {
+        if (message.protocol() == MessageProtocol::HEARTBEAT && status == DecodeStatus::DECODED) {
+            switch (*((HeartbeatMode *)message.getMessageData())) {
+                case HeartbeatMode::REQUEST: {
+                    HeartbeatMode response = HeartbeatMode::RESPONSE;
+                    sendMessage(NetworkMessage(&response, sizeof(HeartbeatMode), MessageProtocol::HEARTBEAT));
+                    return WAS_HEARTBEAT;
+                }
+                case HeartbeatMode::RESPONSE:
+                    flags &= (unsigned char)(~SOCKET_WAITING);
+                    return WAS_HEARTBEAT;
+            }
+        }
+
+        if (message.protocol() != expectedProtocol) {
+            // If the message we are receiving isn't using the correct protocol, then there is an error
+            message.clear();
+            message.setError();
+            return ERR_RECEIVE_FAILED;
+        }
+
+        if (status == DecodeStatus::DECODED) {
             break;
         }
-        if (status == DECODE_ERROR) {
+        if (status == DecodeStatus::DECODE_ERROR) {
             // If the decoding was erroneous, clear the message and set the error bit. We clear the message
             // to avoid attacks which flood the server's memory by sending messages with large sized headers
             // but no content
@@ -388,17 +410,6 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
             return ERR_RECEIVE_FAILED;
         }
 #endif
-
-        if (message.protocol() != expectedProtocol) {
-            // If the message we are receiving isn't using the correct protocol, then there is an error
-            message.clear();
-            message.setError();
-            return ERR_RECEIVE_FAILED;
-        }
-    }
-
-    if (message.protocol() == HEARTBEAT) {
-        flags &= (unsigned char) (~SOCKET_WAITING);
     }
 
     return SOCKET_SUCCESS;
@@ -434,7 +445,8 @@ TCPSocketCode TCPSocket::waitForMessage(NetworkMessage &message, MessageProtocol
 }
 
 void TCPSocket::heartbeat() {
-    sendMessage(NetworkMessage("heartbeat", HEARTBEAT));
+    HeartbeatMode mode = HeartbeatMode::REQUEST;
+    sendMessage(NetworkMessage(&mode, sizeof(HeartbeatMode), MessageProtocol::HEARTBEAT));
     flags |= SOCKET_WAITING;
     lastHeard = std::chrono::system_clock::now();
 }
@@ -465,6 +477,10 @@ bool TCPSocket::dead() const {
 
 void TCPSocket::setAcceptCallback(const std::function<void(TCPSocket &)> &callback) {
     this->acceptCallback = callback;
+}
+
+void TCPSocket::setConnectionTimeout(float timeout) {
+    connectionTimeout = timeout;
 }
 
 #ifdef _WIN32

@@ -31,11 +31,16 @@ std::string to_str(const T &t) {
 
 PACK_START
 struct Date {
-    unsigned year, month, day;
+    unsigned short year;
+    unsigned char month, day;
+
+    Date() = default;
+
+    Date(unsigned year, unsigned month, unsigned day);
 
     std::string toMySQLDateString() const;
 
-    static Date parse(const std::string &dateString);
+    static Date parse(std::time_t rawDate);
 }
 PACK_END
 
@@ -49,7 +54,8 @@ public:
         LOAD_FAILED = 0x01,
         INVALID_LAPS_DETECTED = 0x02,
         MISSING_SIDE_IRONS_DETECTED = 0x04,
-        MISSING_MATERIAL_DETECTED = 0x08
+        MISSING_MATERIAL_DETECTED = 0x08,
+        INVALID_APERTURE_DETECTED = 0x10
     };
 
     enum BuildWarning {
@@ -240,6 +246,10 @@ public:
     float leftBar() const;
 
     float rightBar() const;
+
+    std::vector<float> allBarSpacings() const;
+
+    std::vector<float> allBarWidths() const;
 
     SideIron sideIron(Side side) const;
 

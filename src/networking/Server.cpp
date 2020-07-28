@@ -102,7 +102,7 @@ void Server::startServer() {
 
             EncryptedNetworkMessage message;
             // If we haven't received a message, continue
-            if (connectedClient.clientSocket.receiveMessage(message, AES_MESSAGE) != SOCKET_SUCCESS) {
+            if (connectedClient.clientSocket.receiveMessage(message, MessageProtocol::AES_MESSAGE) != SOCKET_SUCCESS) {
                 continue;
             }
 
@@ -285,9 +285,9 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     NetworkMessage clientKeyMessage;
 
     // If the client socket doesn't send us a message, close the connection and return
-    if (clientSocket.receiveMessage(clientKeyMessage, KEY_MESSAGE) != SOCKET_SUCCESS) {
+    if (clientSocket.receiveMessage(clientKeyMessage, MessageProtocol::KEY_MESSAGE) != SOCKET_SUCCESS) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -297,7 +297,7 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     // If this message was in any way erroneous, close the connection and return
     if (clientKeyMessage.error()) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -307,10 +307,10 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     memcpy(&clientKey, clientKeyMessage.getMessageData(), clientKeyMessage.getMessageSize());
 
     // 2: Send server's public key
-    if (clientSocket.sendMessage(NetworkMessage(&serverKey.publicKey, sizeof(RSAKeyPair::Public), KEY_MESSAGE)) !=
+    if (clientSocket.sendMessage(NetworkMessage(&serverKey.publicKey, sizeof(RSAKeyPair::Public), MessageProtocol::KEY_MESSAGE)) !=
         SOCKET_SUCCESS) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -321,9 +321,9 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     uint2048 encryptedChallenge;
     NetworkMessage challengeMessage;
 
-    if (clientSocket.waitForMessage(challengeMessage, RSA_MESSAGE) != SOCKET_SUCCESS) {
+    if (clientSocket.waitForMessage(challengeMessage, MessageProtocol::RSA_MESSAGE) != SOCKET_SUCCESS) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -333,7 +333,7 @@ void Server::acceptClient(TCPSocket &clientSocket) {
     // If this message was in any way erroneous, close the connection and return
     if (challengeMessage.error()) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -350,7 +350,7 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     if ((decryptedChallenge & (~mask)) != 0) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -373,10 +373,10 @@ void Server::acceptClient(TCPSocket &clientSocket) {
 
     uint2048 signedEncryptedResponse = encrypt(sign(response, serverSignature.privateKey), clientKey);
 
-    if (clientSocket.sendMessage(NetworkMessage(signedEncryptedResponse.rawData(), sizeof(uint2048), RSA_MESSAGE)) !=
+    if (clientSocket.sendMessage(NetworkMessage(signedEncryptedResponse.rawData(), sizeof(uint2048), MessageProtocol::RSA_MESSAGE)) !=
         SOCKET_SUCCESS) {
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientSocket.sendMessage(failedMessage);
 
         clientSocket.closeSocket();
@@ -418,7 +418,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
     // Attempt to receive a message from the client. If they aren't sending anything, or they send an erroneous message,
     // just return false.
     EncryptedNetworkMessage authMessage;
-    if (clientData.clientSocket.receiveMessage(authMessage, AES_MESSAGE) == S_NO_DATA) {
+    if (clientData.clientSocket.receiveMessage(authMessage, MessageProtocol::AES_MESSAGE) == S_NO_DATA) {
         return false;
     }
 
@@ -452,7 +452,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
             *logStream << "Client " << clientData.clientEmail << " successfully authenticated themselves."
                 << std::endl;
             ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
-            NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+            NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
             clientData.clientSocket.sendMessage(succeededMessage);
 
             return true;
@@ -465,7 +465,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
             // their connection. If they wish to retry, they must reconnect to the server.
             *logStream << "Client failed to authenticate themselves: Bad JWT. Terminating connection." << std::endl;
             ConnectionResponse failResponse = ConnectionResponse::FAILED;
-            NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+            NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
             clientData.clientSocket.sendMessage(failedMessage);
 
             clientData.clientSocket.closeSocket();
@@ -485,7 +485,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
                 *logStream << "Client " << clientData.clientEmail << " successfully authenticated themselves."
                     << std::endl;
                 ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
-                NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+                NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
                 clientData.clientSocket.sendMessage(succeededMessage);
 
                 return true;
@@ -495,7 +495,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
         // There is no client with this repeat token
         *logStream << "Client failed to authenticate themselves: Invalid Repeat Token. Terminating connection." << std::endl;
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
-        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), CONNECTION_RESPONSE_MESSAGE);
+        NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientData.clientSocket.sendMessage(failedMessage);
 
         clientData.clientSocket.closeSocket();

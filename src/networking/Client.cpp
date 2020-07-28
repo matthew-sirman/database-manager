@@ -48,13 +48,13 @@ Client::ConnectionStatus Client::connectToServer(const std::string& ipAddress, u
     // Both communicate with AES key from here, with messages starting with token
 
     // 1: Send client's public key to server
-    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), KEY_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), MessageProtocol::KEY_MESSAGE));
 
     // 2: Receive server's public key
     RSAKeyPair::Public serverKey;
     NetworkMessage serverKeyMessage;
 
-    if (clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE) != SOCKET_SUCCESS) {
+    if (clientSocket.waitForMessage(serverKeyMessage, MessageProtocol::KEY_MESSAGE) != SOCKET_SUCCESS) {
         std::cerr << "ERROR::Client.cpp: Server key message transfer failed." << std::endl;
         clientSocket.closeSocket();
         return ConnectionStatus::CREDS_EXCHANGE_FAILED;
@@ -75,13 +75,13 @@ Client::ConnectionStatus Client::connectToServer(const std::string& ipAddress, u
     // We only want a 64 bit challenge, so leave the rest as 0s
     CryptoSafeRandom::random(challenge, sizeof(uint64));
     uint2048 encryptedChallenge = encrypt(challengeMessage, serverKey);
-    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), RSA_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), MessageProtocol::RSA_MESSAGE));
 
     // 4: Receive signed challenge, nonce, session key and token, encrypted under client's public key
     uint2048 signedEncryptedResponse;
     NetworkMessage signedEncryptedResponseMessage;
 
-    if (clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE) != SOCKET_SUCCESS) {
+    if (clientSocket.waitForMessage(signedEncryptedResponseMessage, MessageProtocol::RSA_MESSAGE) != SOCKET_SUCCESS) {
         std::cerr << "ERROR::Client.cpp: Failed to retrieve signed response from the server." << std::endl;
         clientSocket.closeSocket();
         return ConnectionStatus::CREDS_EXCHANGE_FAILED;
@@ -131,7 +131,7 @@ Client::ConnectionStatus Client::connectToServer(const std::string& ipAddress, u
 
     NetworkMessage authResponse;
 
-    if (clientSocket.receiveMessage(authResponse, CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
+    if (clientSocket.receiveMessage(authResponse, MessageProtocol::CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
         if (!authResponse.error()) {
             ConnectionResponse response = *((ConnectionResponse *)authResponse.getMessageData());
 
@@ -164,20 +164,20 @@ Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, 
     //    if NC invalid:
     //      client terminates connection
     //      end
-    // 5. C -> S: {T, JWT}_K
-    //    if JWT invalid:
+    // 5. C -> S: {T, RT}_K
+    //    if RT invalid:
     //      S -> C: ERROR
     //      server terminates connection
     // Both communicate with AES key from here, with messages starting with token
 
     // 1: Send client's public key to server
-    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), KEY_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(&clientKey.publicKey, sizeof(RSAKeyPair::Public), MessageProtocol::KEY_MESSAGE));
 
     // 2: Receive server's public key
     RSAKeyPair::Public serverKey;
     NetworkMessage serverKeyMessage;
 
-    clientSocket.waitForMessage(serverKeyMessage, KEY_MESSAGE);
+    clientSocket.waitForMessage(serverKeyMessage, MessageProtocol::KEY_MESSAGE);
 
     // If the received message was in any way erroneous, terminate the connection
     if (serverKeyMessage.error()) {
@@ -194,13 +194,13 @@ Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, 
     // We only want a 64 bit challenge, so leave the rest as 0s
     CryptoSafeRandom::random(challenge, sizeof(uint64));
     uint2048 encryptedChallenge = encrypt(challengeMessage, serverKey);
-    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), RSA_MESSAGE));
+    clientSocket.sendMessage(NetworkMessage(encryptedChallenge.rawData(), sizeof(uint2048), MessageProtocol::RSA_MESSAGE));
 
     // 4: Receive signed challenge, nonce, session key and token, encrypted under client's public key
     uint2048 signedEncryptedResponse;
     NetworkMessage signedEncryptedResponseMessage;
 
-    clientSocket.waitForMessage(signedEncryptedResponseMessage, RSA_MESSAGE);
+    clientSocket.waitForMessage(signedEncryptedResponseMessage, MessageProtocol::RSA_MESSAGE);
 
     // If the received message was in any way erroneous, terminate the connection
     if (signedEncryptedResponseMessage.error()) {
@@ -239,7 +239,7 @@ Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, 
 
     NetworkMessage authResponse;
 
-    if (clientSocket.receiveMessage(authResponse, CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
+    if (clientSocket.receiveMessage(authResponse, MessageProtocol::CONNECTION_RESPONSE_MESSAGE) == SOCKET_SUCCESS) {
         if (!authResponse.error()) {
             ConnectionResponse response = *((ConnectionResponse *)authResponse.getMessageData());
 
@@ -330,7 +330,7 @@ void Client::clientLoop() {
         sendQueueMutex.unlock();
 
         EncryptedNetworkMessage rMessage;
-        if (clientSocket.receiveMessage(rMessage, AES_MESSAGE) == SOCKET_SUCCESS) {
+        if (clientSocket.receiveMessage(rMessage, MessageProtocol::AES_MESSAGE) == SOCKET_SUCCESS) {
             if (!rMessage.error()) {
                 uint8 *decryptedMessage = (uint8 *) rMessage.decryptMessageData(sessionKey);
 

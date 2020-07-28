@@ -11,6 +11,7 @@
 #include <QMessageBox>
 
 #include "../../include/database/Drawing.h"
+#include "../../include/database/DrawingPDFWriter.h"
 
 namespace Ui {
     class AddDrawingPageWidget;

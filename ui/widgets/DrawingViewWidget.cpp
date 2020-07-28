@@ -15,7 +15,7 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
 
     updateFields();
 
-    connect(ui->editDrawingButton, &QPushButton::pressed, [this]() {
+    connect(ui->editDrawingButton, &QPushButton::clicked, [this]() {
         if (updateDrawingCallback) {
             updateDrawingCallback();
         }
@@ -34,7 +34,13 @@ void DrawingViewWidget::updateFields() {
     ui->productTextbox->setText(drawing->product().productName.c_str());
     ui->widthTextbox->setText(to_str(drawing->width()).c_str());
     ui->lengthTextbox->setText(to_str(drawing->length()).c_str());
-    ui->apertureTextbox->setText(drawing->aperture().apertureName().c_str());
+
+    if (drawing->loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
+        QMessageBox::about(this, "Invalid Aperture Detected", "When loading this drawing from the database, the aperture "
+            "was found to be invalid or broken.");
+    } else {
+        ui->apertureTextbox->setText(drawing->aperture().apertureName().c_str());
+    }
 
     if (drawing->loadWarning(Drawing::INVALID_LAPS_DETECTED)) {
         QMessageBox::about(this, "Invalid Sidelaps/Overlaps Detected", "When loading this drawing from the database, "
@@ -103,14 +109,24 @@ void DrawingViewWidget::updateFields() {
     // Drawings page
     ui->drawingPDFSelectorInput->clear();
     ui->drawingPDFSelectorInput->addItem((drawing->drawingNumber() + " PDF").c_str(), drawing->hyperlink().c_str());
-    // TODO: Add side iron PDFs
+
     for (const std::string &pdf : drawing->pressDrawingHyperlinks()) {
         ui->drawingPDFSelectorInput->addItem(pdf.c_str(), pdf.c_str());
+    }
+
+    if (!drawing->loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
+        SideIron leftSideIron = drawing->sideIron(Drawing::LEFT),
+            rightSideIron = drawing->sideIron(Drawing::RIGHT);
+        ui->drawingPDFSelectorInput->addItem(("Left Side Iron: " + leftSideIron.drawingNumber).c_str(), leftSideIron.hyperlink.c_str());
+        ui->drawingPDFSelectorInput->addItem(("Right Side Iron: " + rightSideIron.drawingNumber).c_str(), rightSideIron.hyperlink.c_str());
     }
 
     // TODO: Embed PDF viewer
 
     pdfViewer = new QPdfView(this);
+    QPdfDocumentRenderOptions renderOptions;
+    renderOptions.setRenderFlags(QPdf::RenderAnnotations);
+    pdfViewer->setDocumentRenderOptions(renderOptions);
 
     connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
         pdfDocument->load(ui->drawingPDFSelectorInput->itemData(index).toString());
