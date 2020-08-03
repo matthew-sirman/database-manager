@@ -11,6 +11,43 @@
 template<typename T, typename IType>
 class DataSource;
 
+template<typename IType>
+class SourceFilter {
+public:
+    bool filter(IType element) const;
+
+    void setEndpoint(IType endpoint);
+
+    void attachFilterUpdateCallback(const std::function<void()> &callback);
+
+protected:
+    std::function<void()> filterUpdateCallback = nullptr;
+
+private:
+    virtual bool __filter(IType element) const = 0;
+
+    IType __iterEndpoint;
+};
+
+template<typename IType>
+inline bool SourceFilter<IType>::filter(IType element) const {
+    if (element == __iterEndpoint) {
+        return true;
+    }
+
+    return __filter(element);
+}
+
+template<typename IType>
+inline void SourceFilter<IType>::setEndpoint(IType endpoint) {
+    __iterEndpoint = endpoint;
+}
+
+template<typename IType>
+inline void SourceFilter<IType>::attachFilterUpdateCallback(const std::function<void()> &callback) {
+    filterUpdateCallback = callback;
+}
+
 template<typename T, typename IType>
 class DataSourceIterator {
     friend class DataSource<T, IType>;
@@ -52,7 +89,11 @@ public:
 protected:
     DataSourceIterator(IType iter, const std::function<T(IType)> &adapter);
 
-    std::function<T(IType)> __adapter;
+    DataSourceIterator(IType iter, const std::function<T(IType)> &adapter, const SourceFilter<IType> &filter);
+
+    std::function<T(IType)> __adapter = nullptr;
+
+    const SourceFilter<IType> *__filter = nullptr;
 
     IType iter;
 };
@@ -70,9 +111,18 @@ DataSourceIterator<T, IType>::DataSourceIterator(const DataSourceIterator<T, ITy
 }
 
 template<typename T, typename IType>
-DataSourceIterator<T, IType>::DataSourceIterator(IType iter, const std::function<T(IType)> &adapter)
-        : DataSourceIterator<T, IType>(iter) {
+inline DataSourceIterator<T, IType>::DataSourceIterator(IType iter, const std::function<T(IType)> &adapter) 
+    : DataSourceIterator<T, IType>(iter) {
     __adapter = adapter;
+}
+
+template<typename T, typename IType>
+DataSourceIterator<T, IType>::DataSourceIterator(IType iter, const std::function<T(IType)> &adapter, const SourceFilter<IType> &filter)
+        : DataSourceIterator<T, IType>(iter, adapter) {
+    __filter = &filter;
+    while (!__filter->filter(this->iter)) {
+        this->iter++;
+    }
 }
 
 template<typename T, typename IType>
@@ -97,12 +147,22 @@ template<typename T, typename IType>
 typename DataSourceIterator<T, IType>::DataHolder DataSourceIterator<T, IType>::operator++(int) {
     DataHolder ret(**this);
     iter++;
+    if (__filter) {
+        while (!__filter->filter(iter)) {
+            iter++;
+        }
+    }
     return ret;
 }
 
 template<typename T, typename IType>
 DataSourceIterator<T, IType> &DataSourceIterator<T, IType>::operator++() {
     iter++;
+    if (__filter) {
+        while (!__filter->filter(iter)) {
+            iter++;
+        }
+    }
     return *this;
 }
 
@@ -127,12 +187,19 @@ public:
 
     virtual void setAdapter(const std::function<T(IType)> &adapter);
 
+    template<typename Filter>
+    Filter *setFilter();
+
+    void removeFilter();
+
     unsigned state() const;
 
 protected:
     IType __begin, __end;
 
     std::function<T(IType)> __adapter = nullptr;
+
+    SourceFilter<IType> *__filter = nullptr;
 
     unsigned stateID = 0;
 };
@@ -145,7 +212,12 @@ DataSource<T, IType>::DataSource(IType begin, IType end) {
 
 template<typename T, typename IType>
 DataSourceIterator<T, IType> DataSource<T, IType>::begin() const {
-    return DataSourceIterator<T, IType>(__begin, __adapter);
+    if (__filter) {
+        __filter->setEndpoint(__end);
+        return DataSourceIterator<T, IType>(__begin, __adapter, *__filter);
+    } else {
+        return DataSourceIterator<T, IType>(__begin, __adapter);
+    }
 }
 
 template<typename T, typename IType>
@@ -161,6 +233,22 @@ void DataSource<T, IType>::updateSource() {
 template<typename T, typename IType>
 void DataSource<T, IType>::setAdapter(const std::function<T(IType)> &adapter) {
     __adapter = adapter;
+}
+
+template<typename T, typename IType>
+template<typename Filter>
+Filter *DataSource<T, IType>::setFilter() {
+    static_assert(std::is_base_of<SourceFilter<IType>, Filter>::value, "Filter must derive from SourceFilter<IType>");
+    __filter = new Filter();
+    __filter->attachFilterUpdateCallback([this]() { updateSource(); });
+    updateSource();
+    return (Filter *)__filter;
+}
+
+template<typename T, typename IType>
+inline void DataSource<T, IType>::removeFilter() {
+    __filter = nullptr;
+    updateSource();
 }
 
 template<typename T, typename IType>

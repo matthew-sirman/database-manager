@@ -1644,8 +1644,58 @@ std::string ComponentInsert::toSQLQueryString() const {
     return insert.str();
 }
 
+RequestType ComponentInsert::getSourceTableCode() const {
+    switch (insertType) {
+        case InsertType::APERTURE:
+            return RequestType::SOURCE_APERTURE_TABLE;
+        case InsertType::MACHINE:
+            return RequestType::SOURCE_MACHINE_TABLE;
+        case InsertType::SIDE_IRON:
+            return RequestType::SOURCE_SIDE_IRON_TABLE;
+        case InsertType::MATERIAL:
+            return RequestType::SOURCE_MATERIAL_TABLE;
+        default:
+            return (RequestType)(-1);
+    }
+}
+
 void ComponentInsert::clearComponentData() {
     insertType = InsertType::NONE;
 }
 
+void DatabaseBackup::serialise(void *target) const {
+    unsigned char *buff = (unsigned char *)target;
+
+    *((RequestType *)buff) = RequestType::CREATE_DATABASE_BACKUP;
+    buff += sizeof(RequestType);
+
+    *((BackupResponse *)buff) = responseCode;
+    buff += sizeof(BackupResponse);
+
+    unsigned char backupNameSize = MIN(255, backupName.size());
+    *buff++ = backupNameSize;
+    memcpy(buff, backupName.c_str(), backupNameSize);
+}
+
+unsigned int DatabaseBackup::serialisedSize() const {
+    return sizeof(RequestType) + sizeof(BackupResponse) + sizeof(unsigned char) + backupName.size();
+}
+
+DatabaseBackup &DatabaseBackup::deserialise(void *data) {
+    DatabaseBackup *backup = new DatabaseBackup();
+
+    unsigned char *buff = (unsigned char *)data + sizeof(RequestType);
+
+    backup->responseCode = *((BackupResponse *)buff);
+    buff += sizeof(BackupResponse);
+
+    unsigned char backupNameSize = *buff++;
+    backup->backupName = std::string((const char *)buff, backupNameSize);
+
+    return *backup;
+}
+
+
+
 #pragma clang diagnostic pop
+

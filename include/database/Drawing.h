@@ -59,21 +59,21 @@ public:
     };
 
     enum BuildWarning {
-        SUCCESS,
-        INVALID_DRAWING_NUMBER,
-        INVALID_PRODUCT,
-        INVALID_WIDTH,
-        INVALID_LENGTH,
-        INVALID_TOP_MATERIAL,
-        INVALID_BOTTOM_MATERIAL,
-        INVALID_APERTURE,
-        INVALID_BAR_SPACINGS,
-        INVALID_BAR_WIDTHS,
-        INVALID_SIDE_IRONS,
-        INVALID_MACHINE,
-        INVALID_MACHINE_POSITION,
-        INVALID_MACHINE_DECK,
-        INVALID_HYPERLINK
+        SUCCESS = 0x0000,
+        INVALID_DRAWING_NUMBER = 0x0001,
+        INVALID_PRODUCT = 0x0002,
+        INVALID_WIDTH = 0x0004,
+        INVALID_LENGTH = 0x0008,
+        INVALID_TOP_MATERIAL = 0x0010,
+        INVALID_BOTTOM_MATERIAL = 0x0020,
+        INVALID_APERTURE = 0x0040,
+        INVALID_BAR_SPACINGS = 0x0080,
+        INVALID_BAR_WIDTHS = 0x0100,
+        INVALID_SIDE_IRONS = 0x0200,
+        INVALID_MACHINE = 0x0400,
+        INVALID_MACHINE_POSITION = 0x0800,
+        INVALID_MACHINE_DECK = 0x1000,
+        INVALID_HYPERLINK = 0x2000
     };
 
     struct MachineTemplate {
@@ -281,7 +281,7 @@ public:
 
     bool hasOverlaps() const;
 
-    BuildWarning checkDrawingValidity() const;
+    BuildWarning checkDrawingValidity(unsigned exclusions = 0) const;
 
     bool loadWarning(LoadWarning warning) const;
 

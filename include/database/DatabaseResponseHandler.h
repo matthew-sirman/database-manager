@@ -22,6 +22,8 @@ public:
     void setRepeatTokenResponseCallback(const std::function<void(const uint256 &token)> &callback);
 
     void setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback);
+
+    void setBackupResponseCallback(const std::function<void(DatabaseBackup::BackupResponse)> &callback);
 private:
     static RequestType getDeserialiseType(void *data);
 
@@ -34,6 +36,8 @@ private:
     std::function<void(const uint256 &token)> repeatTokenCallback = nullptr;
 
     std::function<void(ComponentInsert::ComponentInsertResponse)> addComponentCallback = nullptr;
+
+    std::function<void(DatabaseBackup::BackupResponse)> backupResponseCallback = nullptr;
 };
 
 

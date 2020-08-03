@@ -98,6 +98,11 @@ DecodeStatus NetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
                     return DecodeStatus::DECODE_ERROR;
                 }
                 break;
+            case MessageProtocol::DISCONNECT_MESSAGE:
+                if (messageSize != sizeof(DisconnectCode)) {
+                    return DecodeStatus::DECODE_ERROR;
+                }
+                break;
             case MessageProtocol::HEARTBEAT:
                 if (messageSize != sizeof(HeartbeatMode)) {
                     return DecodeStatus::DECODE_ERROR;
@@ -215,6 +220,7 @@ DecodeStatus EncryptedNetworkMessage::decode(uint8 *buffer, uint32 bufferSize) {
                 if (messageSize != sizeof(HeartbeatMode)) {
                     return DecodeStatus::DECODE_ERROR;
                 }
+            case MessageProtocol::DISCONNECT_MESSAGE:
             case MessageProtocol::HEARTBEAT:
                 return NetworkMessage::decode(buffer, bufferSize);
             case MessageProtocol::KEY_MESSAGE:

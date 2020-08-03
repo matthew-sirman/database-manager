@@ -9,7 +9,9 @@
 #include <QPainter>
 #include <QSvgRenderer>
 #include <QImage>
-#include <QPaintEngine>
+#include <QPainterPath>
+#include <QtMath>
+#include <QMessageBox>
 
 #include <filesystem>
 
@@ -19,16 +21,23 @@ class DrawingPDFWriter {
 public:
 	DrawingPDFWriter();
 
-	void createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing) const;
+	bool createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing) const;
 
 private:
 	void drawStandardTemplate(QPainter &painter, QSvgRenderer &svgTemplateRenderer) const;
 
 	void drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing) const;
 
-	void drawMat(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const;
+	void drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const;
 
-	void drawVerticallyCentredText(QPainter &painter, QPointF leftCentre, const QString &text) const;
+	enum ArrowMode {
+		NO_HEAD,
+		SINGLE_HEADED,
+		DOUBLE_HEADED
+	};
+
+	static void drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label = QString(), ArrowMode mode = SINGLE_HEADED,
+		bool flipLabel = false, QPen tailPen = QPen(), QPen headPen = QPen(), double headSize = 50, double angle = 30);
 };
 
 #endif //DATABASE_MANAGER_DRAWINGPDFWRITER_H

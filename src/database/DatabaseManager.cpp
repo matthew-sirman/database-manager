@@ -9,7 +9,8 @@
 /// Constructor taking the connection information
 DatabaseManager::DatabaseManager(const std::string &database, const std::string &user, const std::string &password,
 	const std::string &host) : sess(host, 33060, user, password) {
-
+	this->username = user;
+	this->password = password;
 }
 
 // Method to generate details for the DrawingSummaryCompressionSchema used in compression with summaries for a search
@@ -35,7 +36,7 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 		// If there was an error, print it to the console and exit the program.
 		// This error is fatal - if we are unable to create a compression schema, the database cannot
 		// be used.
-		SQL_ERROR(e)
+		SQL_ERROR(e, *errStream)
 	}
 }
 
@@ -52,7 +53,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
 		// The client will receive no data, but there is no reason to exit the entire system.
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
 		return {};
 	}
 }
@@ -143,14 +144,14 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				if (!found) {
 					// If apertures are broken for this drawing, print a safe error to the console and set a load warning on
 					// the drawing
-					ERROR_RAW_SAFE("Invalid aperture detected for: " + drawing->drawingNumber());
+					ERROR_RAW_SAFE("Invalid aperture detected for: " + drawing->drawingNumber(), *errStream);
 					drawing->setLoadWarning(Drawing::LoadWarning::INVALID_APERTURE_DETECTED);
 				}
 			}
 		} else {
 			// If the drawing we read from the database was null, print a safe error to the console and set a load warning
 			// on the drawing, indicating that we failed to load the drawing.
-			ERROR_RAW_SAFE("Failed to load drawing with mat_id: " + std::to_string(query.matID));
+			ERROR_RAW_SAFE("Failed to load drawing with mat_id: " + std::to_string(query.matID), *errStream);
 			drawing->setLoadWarning(Drawing::LoadWarning::LOAD_FAILED);
 			// Return the drawing. If we could not gather the critical information, there is no point in gathering any more data.
 			return drawing;
@@ -175,7 +176,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			}
 		} else {
 			// If we didn't find a material, this is an error. All drawings should have a material.
-			ERROR_RAW_SAFE("Missing material for drawing: " + drawing->drawingNumber());
+			ERROR_RAW_SAFE("Missing material for drawing: " + drawing->drawingNumber(), *errStream);
 			// Set a load warning for the drawing that the material was missing
 			drawing->setLoadWarning(Drawing::LoadWarning::MISSING_MATERIAL_DETECTED);
 		}
@@ -223,14 +224,14 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			} else {
 				// If this side iron was missing, set the associated bar spacing to 0 and send a load warning
 				// that there were missing side irons.
-				ERROR_RAW_SAFE("Missing right side iron for drawing: " + drawing->drawingNumber());
+				ERROR_RAW_SAFE("Missing right side iron for drawing: " + drawing->drawingNumber(), *errStream);
 				barWidths.push_back(0);
 				drawing->setLoadWarning(Drawing::LoadWarning::MISSING_SIDE_IRONS_DETECTED);
 			}
 		} else {
 			// If this side iron was missing, set the associated bar spacing to 0 and send a load warning
 			// that there were missing side irons.
-			ERROR_RAW_SAFE("Missing side irons for drawing: " + drawing->drawingNumber());
+			ERROR_RAW_SAFE("Missing side irons for drawing: " + drawing->drawingNumber(), *errStream);
 			barWidths.insert(barWidths.begin(), 0);
 			barWidths.push_back(0);
 			drawing->setLoadWarning(Drawing::LoadWarning::MISSING_SIDE_IRONS_DETECTED);
@@ -259,6 +260,15 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		for (const mysqlx::Row &lap : laps) {
 			// Enum variable to store how this lap is attached (Integral or Bonded)
 			LapAttachment attachment;
+			if (lap[3].isNull()) {
+				// If the attachmentString wasn't valid, indicate that there was an error with the lap.
+				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap side): " + drawing->drawingNumber(), *errStream);
+				// Set a load warning.
+				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
+				// Continue - this lap is invalid so we just ignore it. The user will be notified that there was an 
+				// error
+				continue;
+			}
 			// This data is encoded by a MySQL enum which returns a string in the query
 			std::string attachmentString = lap[3].get<std::string>();
 			// If the attachmentString is the string "Bonded", set that this is a bonded
@@ -269,7 +279,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				attachment = LapAttachment::INTEGRAL;
 			} else {
 				// If the attachmentString wasn't valid, indicate that there was an error with the attachment.
-				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap attachment): " + drawing->drawingNumber());
+				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap attachment): " + drawing->drawingNumber(), *errStream);
 				// Set a load warning.
 				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
 				// Continue - this lap is invalid so we just ignore it. The user will be notified that there was an 
@@ -280,14 +290,23 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			// Next we find out which lap we are looking at. This depends on the side value in the table, the tension
 			// type of the mat and whether it was a sidelap or overlap
 			Drawing::Side side;
+			if (lap[1].isNull()) {
+				// If the side is null, indicate that there was an error with the lap.
+				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap side): " + drawing->drawingNumber(), *errStream);
+				// Set a load warning.
+				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
+				// Continue - this lap is invalid so we just ignore it. The user will be notified that there was an 
+				// error
+				continue;
+			}
 			std::string sideString = lap[1].get<std::string>();
 			if (sideString == "Left") {
 				side = Drawing::Side::LEFT;
 			} else if (sideString == "Right") {
 				side = Drawing::Side::RIGHT;
 			} else {
-				// If the attachmentString wasn't valid, indicate that there was an error with the lap.
-				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap side): " + drawing->drawingNumber());
+				// If the sideString wasn't valid, indicate that there was an error with the lap.
+				ERROR_RAW_SAFE("Invalid drawing discovered (invalid lap side): " + drawing->drawingNumber(), *errStream);
 				// Set a load warning.
 				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_LAPS_DETECTED);
 				// Continue - this lap is invalid so we just ignore it. The user will be notified that there was an 
@@ -326,7 +345,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return a nullptr
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
 		return nullptr;
 	}
 }
@@ -338,7 +357,7 @@ mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, con
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return an empty row set
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
 		return mysqlx::RowResult();
 	}
 }
@@ -359,6 +378,8 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			return false;
 		}
 
+		sess.startTransaction();
+
 		// Before adding the drawing, we must check if it exists in the database, so we select any records with
 		// the same drawing number.
 		mysqlx::Row existingDrawing = sess.getSchema("scs_drawings").getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
@@ -369,6 +390,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			// If we are not in forcing mode (which indicates we should remove and reinsert the drawing)
 			// then we return failure as the drawing exists
 			if (!insert.forcing()) {
+				sess.rollback();
 				return false;
 			}
 			// Otherwise, delete the old drawing from the database.
@@ -436,12 +458,14 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			sess.sql(punchProgramInsert).execute();
 		}
 
-		// Finally, if all insertions were successful, we return that the drawing insert was successful.
+		// Finally, if all insertions were successful, we commit and return that the drawing insert was successful.
+		sess.commit();
 		return true;
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that insertion failed
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
+		sess.rollback();
 		return false;
 	}
 }
@@ -460,7 +484,7 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the test failed
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
 		return DrawingExistsResponse::R_ERROR;
 	}
 }
@@ -485,9 +509,38 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the insertion failed
-		SQL_ERROR_SAFE(e);
+		SQL_ERROR_SAFE(e, *errStream);
 		return false;
 	}
+}
+
+bool DatabaseManager::createBackup(const std::filesystem::path &backupLocation) {
+	std::stringstream command;
+
+	command << "mysqldump";
+	command << " -u " << username;
+	command << " -p\"" << password << "\"";
+	command << " --result-file " << backupLocation;
+	command << " --no-tablespaces ";
+	command << " scs_drawings";
+
+#ifdef _WIN32
+	FILE *pipe = _popen(command.str().c_str(), "r");
+#else
+	FILE *pipe = popen(command.str().c_str(), "r");
+#endif
+
+	if (!pipe) {
+		return false;
+	}
+
+#ifdef _WIN32
+	_pclose(pipe);
+#else
+	pclose(pipe);
+#endif
+
+	return true;
 }
 
 void DatabaseManager::closeConnection() {
@@ -500,8 +553,12 @@ void DatabaseManager::closeConnection() {
 		// This is not considered a fatal error, though this function will generally only
 		// be called during shutdown, so it is likely that no further operations will be
 		// performed afterwards anyway.
-		SQL_ERROR_SAFE(e)
+		SQL_ERROR_SAFE(e, *errStream)
 	}
+}
+
+void DatabaseManager::setErrorStream(std::ostream &stream) {
+	errStream = &stream;
 }
 
 #pragma clang diagnostic pop

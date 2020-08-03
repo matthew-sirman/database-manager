@@ -25,6 +25,10 @@ public:
 
     void setNumberOfBars(unsigned bars);
 
+    void enableLaps();
+
+    void disableLaps();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -35,19 +39,26 @@ private:
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
 
-    const float sceneSize = 2000;
-    const float maxMatDimensionPercentage = 0.9;
-    const float matSectionInset = 0.03;
-    const float dimensionLineOffset = 0.05;
-    const float barSpacingDimensionHeight = 0.4;
-    const float barWidthDimensionHeight = 0.2;
-    const float barDimensionHeight = 0.1;
-    const float lapHintWidth = 0.02;
-    const float defaultLapSize = 0.01;
+    const double sceneSize = 2000;
+    const double maxMatDimensionPercentage = 0.9;
+    const double matSectionInset = 0.03;
+    const double dimensionLineOffset = 0.05;
+    const double barSpacingDimensionHeight = 0.7;
+    const double barWidthDimensionHeight = 0.8;
+    const double barDimensionHeight = 0.1;
+    const double lapHintWidth = 0.02;
+    const double defaultLapSize = 0.01;
+    const double defaultBarSize = 50;
 
     std::optional<Drawing::Lap> lapCache[4];
 
     void redrawScene();
+
+    void updateProxies();
+
+    void lapActivationCallback(bool active, unsigned lapIndex);
+
+    void lapChangedCallback(const Drawing::Lap &lap, unsigned lapIndex);
 
     QGraphicsRectItem *drawingBorderRect = nullptr;
     AddLapWidget *leftLapHint = nullptr, *rightLapHint = nullptr, *topLapHint = nullptr, *bottomLapHint = nullptr;
@@ -55,6 +66,8 @@ private:
     std::vector<QGraphicsProxyWidget *> spacingProxies, barProxies;
     std::vector<WidgetDimensionLine *> spacingDimensions, barDimensions;
     std::vector<QGraphicsRectItem *> matSectionRects;
+
+    bool lapsDisabled = false;
 };
 
 

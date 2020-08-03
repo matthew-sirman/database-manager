@@ -196,6 +196,42 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
 
     connect(this, SIGNAL(addComponentResponseReceived(unsigned)), this, SLOT(insertComponentResponse(unsigned)));
 
+    connect(ui->fileMenu_createBackupAction, &QAction::triggered, [this]() {
+        std::time_t currentTimePoint = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::tm *currentTime = std::localtime(&currentTimePoint);
+
+        std::stringstream dateString;
+        dateString << std::put_time(currentTime, "%Y-%m-%d_%H-%M-%S");
+
+        QString backupName = QInputDialog::getText(this, "Database Backup", "Enter name for backup", 
+            QLineEdit::Normal, dateString.str().c_str());
+
+        if (backupName.isEmpty()) {
+            QMessageBox::about(this, "Invalid Backup Name", "Backup name must not be empty.");
+            return;
+        }
+        if (backupName.contains(QRegExp("\\|/"))) {
+            QMessageBox::about(this, "Invalid Backup Name", "Backup name must not contain slashes.");
+            return;
+        }
+
+        DatabaseBackup backup;
+        backup.backupName = backupName.toStdString();
+        backup.responseCode = DatabaseBackup::BackupResponse::NONE;
+
+        unsigned bufferSize = backup.serialisedSize();
+        void *requestBuffer = alloca(bufferSize);
+        backup.serialise(requestBuffer);
+
+        client->addMessageToSendQueue(requestBuffer, bufferSize);
+    });
+
+    handler->setBackupResponseCallback([this](DatabaseBackup::BackupResponse responseCode) {
+        emit backupResponseReceived((unsigned)responseCode);
+    });
+
+    connect(this, SIGNAL(backupResponseReceived(unsigned)), this, SLOT(backupResponse(unsigned)));
+
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::LeftSide, nullptr);
 
@@ -218,6 +254,7 @@ MainMenu::~MainMenu() = default;
 
 void MainMenu::closeEvent(QCloseEvent *event) {
     client->stopClientLoop();
+    client->disconnect();
 }
 
 void MainMenu::sendSourceTableRequests() const {
@@ -564,12 +601,6 @@ void MainMenu::processDrawings() {
                     DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
                     Drawing &drawing = request->drawingData.value();
 
-                    // TEMP
-                    std::filesystem::path testOutputPath = "D:/Users/Matthew/Work/testing/test_drawing.pdf";
-                    DrawingPDFWriter pdfWriter;
-                    pdfWriter.createPDF(testOutputPath, drawing);
-                    // TEMP
-
                     drawingView->setUpdateDrawingCallback([this, drawing]() {
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, ui->mainTabs);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
@@ -645,6 +676,17 @@ void MainMenu::insertComponentResponse(unsigned responseCode) {
             QMessageBox::about(this, "Add Component", "There was an error while trying to add component to the database.");
             break;
         default:
+            break;
+    }
+}
+
+void MainMenu::backupResponse(unsigned responseCode) {
+    switch ((DatabaseBackup::BackupResponse)responseCode) {
+        case DatabaseBackup::BackupResponse::SUCCESS:
+            QMessageBox::about(this, "Database Backup", "Backup created successfully.");
+            break;
+        case DatabaseBackup::BackupResponse::FAILED:
+            QMessageBox::about(this, "Database Backup", "There was an error while trying to create the backup.");
             break;
     }
 }

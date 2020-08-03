@@ -271,6 +271,8 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
         delete component.second;
     }
     componentLookup.clear();
+    indexSet.clear();
+    handleToIDMap.clear();
 
     componentLookup[0] = new T(0);
     componentLookup[0]->__handle = 0;
@@ -320,7 +322,7 @@ void DrawingComponentManager<T>::setDirty() {
 template<typename T>
 T &DrawingComponentManager<T>::getComponentByHandle(unsigned handle) {
     if (!validComponentHandle(handle)) {
-        ERROR_RAW("Invalid component lookup handle.")
+        ERROR_RAW("Invalid component lookup handle.", std::cerr)
     }
 
     return *componentLookup[handle];
@@ -338,7 +340,7 @@ T &DrawingComponentManager<T>::findComponentByID(unsigned id) {
             return *componentLookup[handleMap.first];
         }
     }
-    ERROR_RAW("Component was not found. (" + to_str(id) + ")")
+    ERROR_RAW("Component was not found. (" + to_str(id) + ")", std::cerr)
 }
 
 template<typename T>

@@ -40,13 +40,13 @@
 
 #endif
 
-#define ERROR_RAW(errorMessage) { \
-    std::cerr << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << errorMessage << std::endl; \
+#define ERROR_RAW(errorMessage, stream) { \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << errorMessage << std::endl; \
     exit(1); \
 }
 
-#define ERROR_RAW_SAFE(errorMessage) { \
-    std::cerr << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << errorMessage << std::endl; \
+#define ERROR_RAW_SAFE(errorMessage, stream) { \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << errorMessage << std::endl; \
 }
 
 /*#define SQL_ERROR(error) { \
@@ -58,13 +58,13 @@
     std::cerr << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << "SQL Error " << error << std::endl; \
 }*/
 
-#define SQL_ERROR(error) { \
-    std::cerr << "ERROR::" << __FILENAME__ << ":" << __LINE__ << ": " << "SQL Error " << error.what() << std::endl; \
+#define SQL_ERROR(error, stream) { \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ << ": " << "SQL Error " << error.what() << std::endl; \
     exit(1); \
 }
 
-#define SQL_ERROR_SAFE(error) { \
-    std::cerr << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << "SQL Error " << error.what() << std::endl; \
+#define SQL_ERROR_SAFE(error, stream) { \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << "SQL Error " << error.what() << std::endl; \
 }
 
 #endif //DATABASE_SERVER_GUARD_H

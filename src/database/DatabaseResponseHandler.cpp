@@ -58,6 +58,11 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
             addComponentCallback(ComponentInsert::deserialise(message).responseCode);
         }
         break;
+    case RequestType::CREATE_DATABASE_BACKUP:
+        if (backupResponseCallback) {
+            backupResponseCallback(DatabaseBackup::deserialise(message).responseCode);
+        }
+        break;
     }
 }
 
@@ -79,6 +84,10 @@ void DatabaseResponseHandler::setRepeatTokenResponseCallback(const std::function
 
 void DatabaseResponseHandler::setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback) {
     addComponentCallback = callback;
+}
+
+void DatabaseResponseHandler::setBackupResponseCallback(const std::function<void(DatabaseBackup::BackupResponse)> &callback) {
+    backupResponseCallback = callback;
 }
 
 RequestType DatabaseResponseHandler::getDeserialiseType(void *data) {

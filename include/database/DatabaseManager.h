@@ -107,14 +107,26 @@ public:
     bool insertComponent(const ComponentInsert &insert);
 
     /// <summary>
+    /// Creates a backup of the drawings database
+    /// </summary>
+    /// <param name="backupLocation">The file to create the backup in.</param>
+    /// <returns>A boolean indicating whether the backup creation was successful.</returns>
+    bool createBackup(const std::filesystem::path &backupLocation);
+
+    /// <summary>
     /// Closes the connection to the database.
     /// </summary>
     void closeConnection();
+
+    void setErrorStream(std::ostream &stream = std::cerr);
 
 private:
     // A session object for use during the lifetime of the DatabaseManager object.
     // This allows the manager to interact with the database.
     mysqlx::Session sess;
+    std::string username, password;
+
+    std::ostream *errStream = &std::cerr;
 };
 
 

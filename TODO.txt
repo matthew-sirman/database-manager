@@ -1,25 +1,16 @@
 HIGH PRIORITY
-Backup
-Dynamic bar width sizes
-PDF display (needs work)
-PDF outputting
 
 MEDIUM PRIORITY
-Disconnect codes and messages
-Stream log to file for silent mode
 Proper database password
 Fix broken calculations on other PC
 Comment code
-Component updating - translation between old and new handle sets
-Saving database state before inserting drawing (in case of error?)
+Server send to all for updates
 Find out if two layered mats have top or bottom layer laps
-Clean up the drawing view
 PyAPI
 Permissions
 
 LOW PRIORITY
-Make all search labels activators
 Auto text selecting line edits
 Dev mode
 Tidy DatabaseManager - less hard coded values
-Dynamic serialisation system (?) 
+Dynamic serialisation system (?)

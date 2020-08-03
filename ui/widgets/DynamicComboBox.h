@@ -22,10 +22,6 @@ public:
 
     void setDataSource(ComboboxDataSource &dataSource);
 
-    void setFilter(const std::function<bool(const ComboboxDataElement &)> &filter);
-
-    void removeFilter();
-
     void updateSourceList();
 
 protected:
@@ -37,8 +33,6 @@ private:
     ComboboxDataSource *source = nullptr;
 
     std::vector<ComboboxDataElement> elementsBeforeSource, elementsAfterSource;
-
-    std::function<bool(const ComboboxDataElement &)> sourceFilter = nullptr;
 
     unsigned sourceState = 0;
 };

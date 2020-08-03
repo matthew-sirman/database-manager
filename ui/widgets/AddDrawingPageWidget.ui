@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1090</width>
-    <height>543</height>
+    <width>1083</width>
+    <height>589</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -1006,6 +1006,13 @@ QLabel[hovering=true] {
             <widget class="QLineEdit" name="hyperlinkDisplay">
              <property name="readOnly">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="generatePDFButton">
+             <property name="text">
+              <string>Generate PDF</string>
              </property>
             </widget>
            </item>

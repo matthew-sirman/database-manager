@@ -10,8 +10,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QTableWidgetItem>
-#include <QProgressDialog>
-#include <QSystemTrayIcon.h>
+#include <QInputDialog>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
@@ -104,12 +103,16 @@ private slots:
 
     void insertComponentResponse(unsigned responseCode);
 
+    void backupResponse(unsigned responseCode);
+
 signals:
     void itemAddedToDrawingQueue();
 
     void insertDrawingResponseReceived(unsigned responseType, unsigned responseCode);
 
     void addComponentResponseReceived(unsigned responseCode);
+
+    void backupResponseReceived(unsigned resposneCode);
 
 };
 

@@ -18,13 +18,13 @@ void DynamicComboBox::setDataSource(ComboboxDataSource &dataSource) {
     updateSourceList();
 }
 
-void DynamicComboBox::setFilter(const std::function<bool(const ComboboxDataElement &)> &filter) {
-    sourceFilter = filter;
-}
-
-void DynamicComboBox::removeFilter() {
-    sourceFilter = nullptr;
-}
+//void DynamicComboBox::setFilter(const std::function<bool(const ComboboxDataElement &)> &filter) {
+//    sourceFilter = filter;
+//}
+//
+//void DynamicComboBox::removeFilter() {
+//    sourceFilter = nullptr;
+//}
 
 void DynamicComboBox::showPopup() {
     updateSourceList();
@@ -45,11 +45,11 @@ void DynamicComboBox::updateSourceList() {
         clear();
 
         for (const ComboboxDataElement &element : elementsBeforeSource) {
-            if (sourceFilter) {
+            /*if (sourceFilter) {
                 if (!sourceFilter(element)) {
                     continue;
                 }
-            }
+            }*/
             if (element.index.has_value()) {
                 addItem(element.text.c_str(), element.index.value());
             } else {
@@ -58,11 +58,11 @@ void DynamicComboBox::updateSourceList() {
         }
 
         for (const ComboboxDataElement &element : *source) {
-            if (sourceFilter) {
+            /*if (source->filter()) {
                 if (!sourceFilter(element)) {
                     continue;
                 }
-            }
+            }*/
             if (element.index.has_value()) {
                 addItem(element.text.c_str(), element.index.value());
             } else {
@@ -71,11 +71,11 @@ void DynamicComboBox::updateSourceList() {
         }
 
         for (const ComboboxDataElement &element : elementsAfterSource) {
-            if (sourceFilter) {
+            /*if (sourceFilter) {
                 if (!sourceFilter(element)) {
                     continue;
                 }
-            }
+            }*/
             if (element.index.has_value()) {
                 addItem(element.text.c_str(), element.index.value());
             } else {

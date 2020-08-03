@@ -349,6 +349,10 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
         }
     }
 
+    if (dead()) {
+        return ERR_SOCKET_DEAD;
+    }
+
 #ifdef _WIN32
     if (recv(sock, (char *) readBuffer, BUFFER_CHUNK_SIZE, 0) <= 0) {
         return S_NO_DATA;
@@ -375,6 +379,10 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
                     flags &= (unsigned char)(~SOCKET_WAITING);
                     return WAS_HEARTBEAT;
             }
+        }
+        if (message.protocol() == MessageProtocol::DISCONNECT_MESSAGE && status == DecodeStatus::DECODED) {
+            flags &= ~(SOCKET_CONNECTED);
+            return SOCKET_DISCONNECTED;
         }
 
         if (message.protocol() != expectedProtocol) {

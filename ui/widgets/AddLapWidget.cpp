@@ -16,7 +16,6 @@ AddLapWidget::AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionL
     this->usedColour = usedColour;
     this->orientation = orientation;
 
-
     hovering = false;
 
     if (currentLap.has_value()) {
@@ -70,6 +69,8 @@ AddLapWidget::AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionL
 
     DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); });
     materialSource.updateSource();
+
+    setToolTip("Click to add overlap");
 }
 
 void AddLapWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
@@ -160,6 +161,12 @@ void AddLapWidget::setUsed(bool val) {
 
     widthProxy->setVisible(used);
     widthDimension->setVisible(used);
+
+    if (used) {
+        setToolTip("");
+    } else {
+        setToolTip("Click to add overlap");
+    }
 
     if (activateCallback) {
         activateCallback(used);

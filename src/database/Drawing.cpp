@@ -278,7 +278,7 @@ void Drawing::removeBottomLayer() {
 }
 
 unsigned Drawing::numberOfBars() const {
-    return barWidths.size() - 2;
+    return MAX(0, barWidths.size() - 2);
 }
 
 void Drawing::setBars(const std::vector<float> &spacings, const std::vector<float> &widths) {
@@ -318,7 +318,7 @@ SideIron Drawing::sideIron(Drawing::Side side) const {
         case RIGHT:
             return DrawingComponentManager<SideIron>::getComponentByHandle(sideIronHandles[1]);
     }
-    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right")
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
 }
 
 bool Drawing::sideIronInverted(Drawing::Side side) const {
@@ -328,7 +328,7 @@ bool Drawing::sideIronInverted(Drawing::Side side) const {
         case RIGHT:
             return sideIronsInverted[1];
     }
-    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right")
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
 }
 
 void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
@@ -457,52 +457,53 @@ bool Drawing::hasOverlaps() const {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCSimplifyInspection"
 
-Drawing::BuildWarning Drawing::checkDrawingValidity() const {
-    if (!std::regex_match(__drawingNumber, std::regex(drawingNumberRegexPattern))) {
+Drawing::BuildWarning Drawing::checkDrawingValidity(unsigned exclusions) const {
+    if (!std::regex_match(__drawingNumber, std::regex(drawingNumberRegexPattern)) && !(exclusions & INVALID_DRAWING_NUMBER)) {
         return INVALID_DRAWING_NUMBER;
     }
-    if (!DrawingComponentManager<Product>::validComponentHandle(productHandle)) {
+    if (!DrawingComponentManager<Product>::validComponentHandle(productHandle) && !(exclusions & INVALID_PRODUCT)) {
         return INVALID_PRODUCT;
     }
-    if (__width <= 0) {
+    if (__width <= 0 && !(exclusions & INVALID_WIDTH)) {
         return INVALID_WIDTH;
     }
-    if (__length <= 0) {
+    if (__length <= 0 && !(exclusions & INVALID_LENGTH)) {
         return INVALID_LENGTH;
     }
-    if (!DrawingComponentManager<Material>::validComponentHandle(topLayerThicknessHandle)) {
+    if (!DrawingComponentManager<Material>::validComponentHandle(topLayerThicknessHandle) && !(exclusions & INVALID_TOP_MATERIAL)) {
         return INVALID_TOP_MATERIAL;
     }
     if (bottomLayerThicknessHandle.has_value()) {
-        if (!DrawingComponentManager<Material>::validComponentHandle(bottomLayerThicknessHandle.value())) {
+        if (!DrawingComponentManager<Material>::validComponentHandle(bottomLayerThicknessHandle.value()) && 
+            !(exclusions & INVALID_BOTTOM_MATERIAL)) {
             return INVALID_BOTTOM_MATERIAL;
         }
     }
-    if (!DrawingComponentManager<Aperture>::validComponentHandle(apertureHandle)) {
+    if (!DrawingComponentManager<Aperture>::validComponentHandle(apertureHandle) && !(exclusions & INVALID_APERTURE)) {
         return INVALID_APERTURE;
     }
-    if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) != __width) {
+    if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) != __width && !(exclusions & INVALID_BAR_SPACINGS)) {
         return INVALID_BAR_SPACINGS;
     }
-    if (std::find(barWidths.begin(), barWidths.end(), 0.0f) != barWidths.end()) {
+    if (std::find(barWidths.begin(), barWidths.end(), 0.0f) != barWidths.end() && !(exclusions & INVALID_BAR_WIDTHS)) {
         return INVALID_BAR_WIDTHS;
     }
-    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[0])) {
+    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[0]) && !(exclusions & INVALID_SIDE_IRONS)) {
         return INVALID_SIDE_IRONS;
     }
-    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[1])) {
+    if (!DrawingComponentManager<SideIron>::validComponentHandle(sideIronHandles[1]) && !(exclusions & INVALID_SIDE_IRONS)) {
         return INVALID_SIDE_IRONS;
     }
-    if (!DrawingComponentManager<Machine>::validComponentHandle(__machineTemplate.machineHandle)) {
+    if (!DrawingComponentManager<Machine>::validComponentHandle(__machineTemplate.machineHandle) && !(exclusions & INVALID_MACHINE)) {
         return INVALID_MACHINE;
     }
-    if (!std::regex_match(__machineTemplate.position, std::regex(positionRegexPattern))) {
+    if (!std::regex_match(__machineTemplate.position, std::regex(positionRegexPattern)) && !(exclusions & INVALID_MACHINE_POSITION)) {
         return INVALID_MACHINE_POSITION;
     }
-    if (!DrawingComponentManager<MachineDeck>::validComponentHandle(__machineTemplate.deckHandle)) {
+    if (!DrawingComponentManager<MachineDeck>::validComponentHandle(__machineTemplate.deckHandle) && !(exclusions & INVALID_MACHINE_DECK)) {
         return INVALID_MACHINE_DECK;
     }
-    if (__hyperlink.empty()) {
+    if (__hyperlink.empty() && !(exclusions & INVALID_HYPERLINK)) {
         return INVALID_HYPERLINK;
     }
 
@@ -994,14 +995,14 @@ void DrawingSummary::setLength(float length) {
 
 float DrawingSummary::lapSize(unsigned index) const {
     if (index < 0 || index > 3) {
-        ERROR_RAW("Invalid lap index.")
+        ERROR_RAW("Invalid lap index.", std::cerr)
     }
     return ((float) __lapSizes[index]) / 2;
 }
 
 void DrawingSummary::setLapSize(unsigned index, float size) {
     if (index < 0 || index > 3) {
-        ERROR_RAW("Invalid lap index.")
+        ERROR_RAW("Invalid lap index.", std::cerr)
     }
     __lapSizes[index] = (unsigned) (size * 2);
 }

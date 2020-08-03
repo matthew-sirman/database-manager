@@ -12,6 +12,7 @@
 
 #include "../../include/database/Drawing.h"
 #include "../../include/database/DrawingPDFWriter.h"
+#include "../../include/database/componentFilters.h"
 
 namespace Ui {
     class AddDrawingPageWidget;
@@ -43,14 +44,18 @@ private:
 
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;
-    ComboboxComponentDataSource<Material> materialSource;
-    ComboboxComponentDataSource<SideIron> sideIronSource;
+    ComboboxComponentDataSource<Material> topMaterialSource, bottomMaterialSource;
+    ComboboxComponentDataSource<SideIron> leftSideIronSource, rightSideIronSource;
     ComboboxComponentDataSource<Machine> machineSource;
     ComboboxComponentDataSource<MachineDeck> machineDeckSource;
+
+    SideIronFilter *leftSideIronFilter = nullptr, *rightSideIronFilter = nullptr;
 
     QGraphicsScene *visualsScene = nullptr;
 
     Drawing drawing;
+
+    DrawingPDFWriter pdfWriter;
 
     unsigned leftSICache = 0, rightSICache = 0;
     bool leftSIInverted = false, rightSIInverted = false;
@@ -68,6 +73,8 @@ private:
     void setupDrawingUpdateConnections();
 
     void loadDrawing();
+
+    bool checkDrawing(unsigned exclusions = 0);
 
 private slots:
     void capitaliseLineEdit(const QString &text);

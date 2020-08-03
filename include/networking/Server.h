@@ -77,6 +77,10 @@ public:
 
     void addMessageToSendQueue(const ClientHandle &clientHandle, const std::string &message);
 
+    void broadcastMessage(const void *message, unsigned messageLength);
+
+    void broadcastMessage(const std::string &message);
+
     void sendRepeatToken(const ClientHandle &clientHandle, unsigned responseCode = 0);
 
     void connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
@@ -84,7 +88,7 @@ public:
 
     void setRequestHandler(ServerRequestHandler &handler);
 
-    void setLoggingStream(const std::ostream &stream = std::cout, const std::ostream &errStream = std::cerr);
+    void setLoggingStream(std::ostream &stream = std::cout, std::ostream &errStream = std::cerr);
 
     void setHeartBeatCycles(int cycles);
 

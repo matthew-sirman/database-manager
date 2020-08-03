@@ -186,7 +186,13 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 		case RequestType::DRAWING_DETAILS: {
 			DrawingRequest request = DrawingRequest::deserialise(message);
 
-			request.drawingData = *caller.databaseManager().executeDrawingQuery(request);
+			Drawing *returnedDrawing = caller.databaseManager().executeDrawingQuery(request);
+			if (returnedDrawing != nullptr) {
+				request.drawingData = *returnedDrawing;
+			} else {
+				request.drawingData = Drawing();
+				request.drawingData->setLoadWarning(Drawing::LOAD_FAILED);
+			}
 
 			unsigned bufferSize = request.serialisedSize();
 
@@ -205,6 +211,86 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			response.responseCode = caller.databaseManager().insertComponent(insert) ? ComponentInsert::ComponentInsertResponse::SUCCESS
 				: ComponentInsert::ComponentInsertResponse::FAILED;
+
+			unsigned bufferSize = response.serialisedSize();
+			void *responseBuffer = alloca(bufferSize);
+			response.serialise(responseBuffer);
+
+			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+
+			void *sourceData;
+			unsigned sourceDataBufferSize;
+
+			switch (insert.getSourceTableCode()) {
+				case RequestType::SOURCE_APERTURE_TABLE: {
+					if (DrawingComponentManager<ApertureShape>::dirty()) {
+						createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
+					}
+					createSourceData<ApertureData>(caller.databaseManager().sourceTable("apertures"));
+
+					sourceData = DrawingComponentManager<Aperture>::rawSourceData();
+					sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
+					break;
+				}
+				case RequestType::SOURCE_MACHINE_TABLE: {
+					createSourceData<MachineData>(caller.databaseManager().sourceTable("machines",
+						"manufacturer<>'None', manufacturer, model"));
+
+					sourceData = DrawingComponentManager<Machine>::rawSourceData();
+					sourceDataBufferSize = DrawingComponentManager<Machine>::rawSourceDataSize();
+					break;
+				}
+				case RequestType::SOURCE_SIDE_IRON_TABLE: {
+					std::stringstream orderBy;
+					orderBy << "CASE " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
+					orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
+					orderBy << "ELSE 10 " << std::endl;
+					orderBy << "END, length, drawing_number DESC" << std::endl;
+
+					createSourceData<SideIronData>(caller.databaseManager().sourceTable("side_irons", orderBy.str()));
+
+					sourceData = DrawingComponentManager<SideIron>::rawSourceData();
+					sourceDataBufferSize = DrawingComponentManager<SideIron>::rawSourceDataSize();
+					break;
+				}
+				case RequestType::SOURCE_MATERIAL_TABLE: {
+					createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
+					sourceData = DrawingComponentManager<Material>::rawSourceData();
+					sourceDataBufferSize = DrawingComponentManager<Material>::rawSourceDataSize();
+					break;
+				}
+				default:
+					return;
+			}
+
+			caller.broadcastMessage(sourceData, sourceDataBufferSize);
+
+			break;
+		}
+		case RequestType::CREATE_DATABASE_BACKUP: {
+			DatabaseBackup backup = DatabaseBackup::deserialise(message);
+
+			std::filesystem::path backupPath = "D:/Users/Matthew/Work/Database Manager/backups";
+			backupPath /= backup.backupName;
+			backupPath.replace_extension("sql");
+
+			DatabaseBackup response;
+
+			if (caller.databaseManager().createBackup(backupPath)) {
+				response.responseCode = DatabaseBackup::BackupResponse::SUCCESS;
+			} else {
+				response.responseCode = DatabaseBackup::BackupResponse::FAILED;
+			}
+
+			response.backupName = std::string();
 
 			unsigned bufferSize = response.serialisedSize();
 			void *responseBuffer = alloca(bufferSize);

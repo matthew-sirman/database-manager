@@ -93,7 +93,7 @@ void Server::startServer() {
             ClientData &connectedClient = *connectedClients[ic];
 
             // First, check if the client socket connection is dead
-            if (connectedClient.clientSocket.dead()) {
+            /*if (connectedClient.clientSocket.dead()) {
                 *logStream << "Client " << connectedClient.clientEmail << " disconnected." << std::endl;
                 connectedClient.clientSocket.closeSocket();
                 connectedClients.erase(connectedClients.begin() + ic);
@@ -104,6 +104,34 @@ void Server::startServer() {
             // If we haven't received a message, continue
             if (connectedClient.clientSocket.receiveMessage(message, MessageProtocol::AES_MESSAGE) != SOCKET_SUCCESS) {
                 continue;
+            }*/
+
+            EncryptedNetworkMessage message;
+
+            switch (connectedClient.clientSocket.receiveMessage(message, MessageProtocol::AES_MESSAGE)) {
+                case SOCKET_SUCCESS:
+                    break;
+                case ERR_SOCKET_DEAD:
+                    *logStream << "Client " << connectedClient.clientEmail << " disconnected (timed out)." << std::endl;
+                    connectedClient.clientSocket.closeSocket();
+                    connectedClients.erase(connectedClients.begin() + ic);
+                    handleMap.erase(connectedClient.handle.clientID);
+                    continue;
+                case SOCKET_DISCONNECTED:
+                    switch (*((DisconnectCode *)message.getMessageData())) {
+                        case DisconnectCode::CLIENT_EXIT:
+                            *logStream << "Client " << connectedClient.clientEmail << " disconnected." << std::endl;
+                            break;
+                        default:
+                            *logStream << "Client " << connectedClient.clientEmail << " disconnected (with error code)." << std::endl;
+                            break;
+                    }
+                    connectedClient.clientSocket.closeSocket();
+                    connectedClients.erase(connectedClients.begin() + ic);
+                    handleMap.erase(connectedClient.handle.clientID);
+                    continue;
+                default:
+                    continue;
             }
 
             // If the message received successfully
@@ -196,6 +224,16 @@ void Server::addMessageToSendQueue(const ClientHandle &clientHandle, const std::
     addMessageToSendQueue(clientHandle, message.c_str(), message.size());
 }
 
+void Server::broadcastMessage(const void *message, unsigned messageLength) {
+    for (const ClientData *client : connectedClients) {
+        addMessageToSendQueue(client->handle, message, messageLength);
+    }
+}
+
+void Server::broadcastMessage(const std::string &message) {
+    broadcastMessage(message.c_str(), message.size());
+}
+
 void Server::sendRepeatToken(const ClientHandle &clientHandle, unsigned responseCode) {
     uint256 token;
     CryptoSafeRandom::random(&token, sizeof(uint256));
@@ -212,15 +250,19 @@ void Server::sendRepeatToken(const ClientHandle &clientHandle, unsigned response
 void Server::connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                      const std::string &host) {
     dbManager = new DatabaseManager(database, user, password, host);
+    dbManager->setErrorStream(*errorStream);
 }
 
 void Server::setRequestHandler(ServerRequestHandler &handler) {
     requestHandler = &handler;
 }
 
-void Server::setLoggingStream(const std::ostream &stream, const std::ostream &errStream) {
-    logStream = (std::ostream *) &stream;
-    errorStream = (std::ostream *) &errStream;
+void Server::setLoggingStream(std::ostream &stream, std::ostream &errStream) {
+    logStream = &stream;
+    errorStream = &errStream;
+    if (dbManager) {
+        dbManager->setErrorStream(errStream);
+    }
 }
 
 void Server::setHeartBeatCycles(int cycles) {

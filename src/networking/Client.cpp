@@ -258,6 +258,10 @@ Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, 
 }
 
 void Client::disconnect() {
+    if (clientSocket.connected()) {
+        DisconnectCode code = DisconnectCode::CLIENT_EXIT;
+        clientSocket.sendMessage(NetworkMessage(&code, sizeof(DisconnectCode), MessageProtocol::DISCONNECT_MESSAGE));
+    }
     clientSocket.closeSocket();
 }
 

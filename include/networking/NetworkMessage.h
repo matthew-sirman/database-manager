@@ -30,6 +30,7 @@ enum class MessageProtocol {
     AES_MESSAGE,
     RAW_MESSAGE,
     CONNECTION_RESPONSE_MESSAGE,
+    DISCONNECT_MESSAGE,
     HEARTBEAT
 };
 
@@ -46,6 +47,10 @@ enum class AuthMode {
 enum class ConnectionResponse {
     SUCCESS,
     FAILED
+};
+
+enum class DisconnectCode {
+    CLIENT_EXIT
 };
 
 enum class DecodeStatus {

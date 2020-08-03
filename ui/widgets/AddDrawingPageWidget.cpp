@@ -11,10 +11,14 @@ AddDrawingPageWidget::AddDrawingPageWidget(QWidget *parent)
         : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
 
+    drawing.setAsDefault();
+
+    drawing.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
+    drawing.setProduct(DrawingComponentManager<Product>::findComponentByID(1));
+    drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::findComponentByID(1));
+
     setupActivators();
     setupComboboxSources();
-
-    drawing.setAsDefault();
 
     visualsScene = new QGraphicsScene();
     ui->drawingSpecsVisual->setScene(visualsScene);
@@ -74,24 +78,28 @@ AddDrawingPageWidget::~AddDrawingPageWidget() {
 void AddDrawingPageWidget::setupComboboxSources() {
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
     DrawingComponentManager<Aperture>::addCallback([this]() { apertureSource.updateSource(); });
-    DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); });
-    DrawingComponentManager<SideIron>::addCallback([this]() { sideIronSource.updateSource(); });
+    DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); });
+    DrawingComponentManager<Material>::addCallback([this]() { bottomMaterialSource.updateSource(); });
+    DrawingComponentManager<SideIron>::addCallback([this]() { leftSideIronSource.updateSource(); });
+    DrawingComponentManager<SideIron>::addCallback([this]() { rightSideIronSource.updateSource(); });
     DrawingComponentManager<Machine>::addCallback([this]() { machineSource.updateSource(); });
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
 
     productSource.updateSource();
     apertureSource.updateSource();
-    materialSource.updateSource();
-    sideIronSource.updateSource();
+    topMaterialSource.updateSource();
+    bottomMaterialSource.updateSource();
+    leftSideIronSource.updateSource();
+    rightSideIronSource.updateSource();
     machineSource.updateSource();
     machineDeckSource.updateSource();
 
     ui->productInput->setDataSource(productSource);
     ui->apertureInput->setDataSource(apertureSource);
-    ui->topMaterialInput->setDataSource(materialSource);
-    ui->bottomMaterialInput->setDataSource(materialSource);
-    ui->leftSideIronDrawingInput->setDataSource(sideIronSource);
-    ui->rightSideIronDrawingInput->setDataSource(sideIronSource);
+    ui->topMaterialInput->setDataSource(topMaterialSource);
+    ui->bottomMaterialInput->setDataSource(bottomMaterialSource);
+    ui->leftSideIronDrawingInput->setDataSource(leftSideIronSource);
+    ui->rightSideIronDrawingInput->setDataSource(rightSideIronSource);
     ui->machineInput->setDataSource(machineSource);
     ui->machineDeckInput->setDataSource(machineDeckSource);
 }
@@ -191,8 +199,92 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         }
     });
     connect(ui->productInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setProduct(
-                DrawingComponentManager<Product>::getComponentByHandle(ui->productInput->itemData(index).toInt()));
+        Product &product = DrawingComponentManager<Product>::getComponentByHandle(ui->productInput->itemData(index).toInt());
+
+        if (product.productName == "Rubber Screen Cloth") {
+            topMaterialSource.setFilter<RubberScreenClothMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(false);
+            ui->bottomMaterialLabel->setEnabled(false);
+
+            ui->drawingSpecsVisual->enableLaps();
+
+            ui->tensionTypeInput->setEnabled(true);
+
+            ui->numberOfBarsInput->setEnabled(true);
+        } else if (product.productName == "Extraflex") {
+            topMaterialSource.setFilter<TackyBackMaterialFilter>();
+            bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(true);
+            ui->bottomMaterialLabel->setEnabled(true);
+
+            ui->drawingSpecsVisual->enableLaps();
+
+            ui->tensionTypeInput->setEnabled(true);
+
+            ui->numberOfBarsInput->setEnabled(true);
+        } else if (product.productName == "Polyflex") {
+            topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
+            bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(true);
+            ui->bottomMaterialLabel->setEnabled(true);
+
+            ui->drawingSpecsVisual->enableLaps();
+
+            ui->tensionTypeInput->setEnabled(true);
+
+            ui->numberOfBarsInput->setEnabled(true);
+        } else if (product.productName == "Bivitec") {
+            topMaterialSource.setFilter<BivitecMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(false);
+            ui->bottomMaterialLabel->setEnabled(false);
+
+            ui->drawingSpecsVisual->disableLaps();
+
+            ui->tensionTypeInput->setEnabled(false);
+            ui->tensionTypeInput->setCurrentIndex(0);
+            drawing.setTensionType(Drawing::SIDE);
+
+            ui->numberOfBarsInput->setEnabled(false);
+            ui->numberOfBarsInput->setValue(0);
+            ui->drawingSpecsVisual->setNumberOfBars(0);
+        } else if (product.productName == "Flip Flow") {
+            topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(false);
+            ui->bottomMaterialLabel->setEnabled(false);
+
+            ui->drawingSpecsVisual->disableLaps();
+
+            ui->tensionTypeInput->setEnabled(false);
+            ui->tensionTypeInput->setCurrentIndex(0);
+            drawing.setTensionType(Drawing::SIDE);
+
+            ui->numberOfBarsInput->setEnabled(false);
+            ui->numberOfBarsInput->setValue(0);
+            ui->drawingSpecsVisual->setNumberOfBars(0);
+        } else if (product.productName == "Rubber Modules and Panels") {
+            topMaterialSource.setFilter<RubberModuleMaterialFilter>();
+            ui->bottomMaterialLabel->setActive(false);
+            ui->bottomMaterialLabel->setEnabled(false);
+
+            ui->drawingSpecsVisual->enableLaps();
+
+            ui->tensionTypeInput->setEnabled(true);
+
+            ui->numberOfBarsInput->setEnabled(true);
+        } else {
+            topMaterialSource.removeFilter();
+            bottomMaterialSource.removeFilter();
+            ui->bottomMaterialLabel->setActive(false);
+            ui->bottomMaterialLabel->setEnabled(true);
+
+            ui->drawingSpecsVisual->enableLaps();
+
+            ui->tensionTypeInput->setEnabled(true);
+
+            ui->numberOfBarsInput->setEnabled(true);
+        }
+
+        drawing.setProduct(product);
     });
     connect(ui->dateInput, &QDateEdit::dateChanged, [this](const QDate &date) {
         drawing.setDate({ (unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day() });
@@ -232,6 +324,21 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setNotes(ui->notesInput->toPlainText().toStdString());
     });
 
+    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
+    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
+
+    connect(ui->leftSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
+        if (leftSideIronFilter) {
+            leftSideIronFilter->setSideIronType((SideIronType)(index + 1));
+        }
+    });
+
+    connect(ui->leftSideIronLengthInput, qOverload<int>(&QSpinBox::valueChanged), [this](int value) {
+        if (leftSideIronFilter) {
+            leftSideIronFilter->setSideIronFilterMinimumLength(value);
+        }
+    });
+
     connect(ui->leftSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setSideIron(Drawing::LEFT, DrawingComponentManager<SideIron>::getComponentByHandle(
                 ui->leftSideIronDrawingInput->itemData(index).toInt()));
@@ -242,6 +349,18 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     });
     connect(ui->leftSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
         drawing.setSideIronInverted(Drawing::LEFT, checked);
+    });
+
+    connect(ui->rightSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
+        if (rightSideIronFilter) {
+            rightSideIronFilter->setSideIronType((SideIronType)(index + 1));
+        }
+    });
+
+    connect(ui->rightSideIronLengthInput, qOverload<int>(&QSpinBox::valueChanged), [this](int value) {
+        if (rightSideIronFilter) {
+            rightSideIronFilter->setSideIronFilterMinimumLength(value);
+        }
     });
 
     connect(ui->rightSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
@@ -272,6 +391,36 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->hyperlinkDisplay->setToolTip(hyperlinkFile);
 
             drawing.setHyperlink(hyperlinkFile.toStdString());
+        }
+    });
+    connect(ui->generatePDFButton, &QPushButton::pressed, [this]() {
+        if (!checkDrawing(Drawing::INVALID_HYPERLINK)) {
+            return;
+        }
+
+        const QString pdfDirectory = QFileDialog::getExistingDirectory(this, "Open Folder to save PDF", QString());
+        if (!pdfDirectory.isEmpty()) {
+            std::filesystem::path pdfFile = pdfDirectory.toStdString();
+            pdfFile /= (drawing.drawingNumber() + ".pdf");
+
+            if (std::filesystem::exists(pdfFile)) {
+                if (QMessageBox::question(this, "Overwrite PDF",
+                    "A PDF for this drawing already exists. Would you like to overwrite it?") != QMessageBox::Yes) {
+                    return;
+                }
+            }
+
+            if (pdfWriter.createPDF(pdfFile.string().c_str(), drawing)) {
+                QMessageBox::about(this, "PDF Generator", "Automatic PDF generated.");
+            } else {
+                QMessageBox::about(this, "PDF Generator", "PDF Generation failed. Is the PDF file already open?");
+                return;
+            }
+
+            ui->hyperlinkDisplay->setText(pdfFile.string().c_str());
+            ui->hyperlinkDisplay->setToolTip(pdfFile.string().c_str());
+
+            drawing.setHyperlink(pdfFile.string());
         }
     });
     connect(ui->pressDrawingHyperlinksAddButton, &QPushButton::pressed, [this]() {
@@ -364,66 +513,74 @@ void AddDrawingPageWidget::loadDrawing() {
     }
 }
 
-void AddDrawingPageWidget::confirmDrawing() {
-    switch (drawing.checkDrawingValidity()) {
+bool AddDrawingPageWidget::checkDrawing(unsigned exclusions) {
+    switch (drawing.checkDrawingValidity(exclusions)) {
         case Drawing::SUCCESS:
-            switch (addMode) {
-                case ADD_NEW_DRAWING:
-                    confirmationCallback(drawing, false);
-                    break;
-                case EDIT_DRAWING:
-                    switch (QMessageBox::question(this, "Confirm Update", "Are you sure you wish to update this drawing?")) {
-                        case QMessageBox::Yes:
-                            confirmationCallback(drawing, true);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-            }
-            break;
+            return true;
         case Drawing::INVALID_DRAWING_NUMBER:
             QMessageBox::about(this, "Drawing Error", "Invalid Drawing Number");
-            break;
+            return false;
         case Drawing::INVALID_PRODUCT:
             QMessageBox::about(this, "Drawing Error", "Invalid Product selected");
-            break;
+            return false;
         case Drawing::INVALID_WIDTH:
             QMessageBox::about(this, "Drawing Error", "Invalid width. Make sure the width is positive");
-            break;
+            return false;
         case Drawing::INVALID_LENGTH:
             QMessageBox::about(this, "Drawing Error", "Invalid length. Make sure the length is positive");
-            break;
+            return false;
         case Drawing::INVALID_TOP_MATERIAL:
             QMessageBox::about(this, "Drawing Error", "Invalid Top Layer Material");
-            break;
+            return false;
         case Drawing::INVALID_BOTTOM_MATERIAL:
             QMessageBox::about(this, "Drawing Error", "Invalid Bottom Layer Material");
-            break;
+            return false;
         case Drawing::INVALID_APERTURE:
             QMessageBox::about(this, "Drawing Error", "Invalid Aperture");
-            break;
+            return false;
         case Drawing::INVALID_BAR_SPACINGS:
             QMessageBox::about(this, "Drawing Error", "Invalid Bar Spacings. Make sure they add to the width");
-            break;
+            return false;
         case Drawing::INVALID_BAR_WIDTHS:
             QMessageBox::about(this, "Drawing Error", "Invalid Bar Widths. Make sure they are all positive and non-zero");
-            break;
+            return false;
         case Drawing::INVALID_SIDE_IRONS:
             QMessageBox::about(this, "Drawing Error", "Invalid Side Irons");
-            break;
+            return false;
         case Drawing::INVALID_MACHINE:
             QMessageBox::about(this, "Drawing Error", "Invalid Machine");
-            break;
+            return false;
         case Drawing::INVALID_MACHINE_POSITION:
             QMessageBox::about(this, "Drawing Error", "Invalid Machine position");
-            break;
+            return false;
         case Drawing::INVALID_MACHINE_DECK:
             QMessageBox::about(this, "Drawing Error", "Invalid Machine Deck");
-            break;
+            return false;
         case Drawing::INVALID_HYPERLINK:
             QMessageBox::about(this, "Drawing Error", "Invalid Drawing PDF Hyperlink");
-            break;
+            return false;
+        default:
+            QMessageBox::about(this, "Drawing Error", "Unknown error");
+            return false;
+    }
+}
+
+void AddDrawingPageWidget::confirmDrawing() {
+    if (checkDrawing()) {
+        switch (addMode) {
+            case ADD_NEW_DRAWING:
+                confirmationCallback(drawing, false);
+                break;
+            case EDIT_DRAWING:
+                switch (QMessageBox::question(this, "Confirm Update", "Are you sure you wish to update this drawing?")) {
+                    case QMessageBox::Yes:
+                        confirmationCallback(drawing, true);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+        }
     }
 }
 

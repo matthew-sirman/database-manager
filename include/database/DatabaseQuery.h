@@ -557,6 +557,8 @@ public:
 
     std::string toSQLQueryString() const;
 
+    RequestType getSourceTableCode() const;
+
     ComponentInsertResponse responseCode = ComponentInsertResponse::NONE;
 
 private:
@@ -575,6 +577,44 @@ private:
     std::optional<SideIronData> sideIronData;
     std::optional<MaterialData> materialData;
 
+};
+
+class DatabaseBackup : DatabaseQuery {
+public:
+    enum class BackupResponse {
+        NONE,
+        SUCCESS,
+        FAILED
+    };
+
+    DatabaseBackup() = default;
+
+    /// <summary>
+    /// Serialise this object into the target buffer
+    /// </summary>
+    /// <param name="target">The buffer to write this serialises object into.</param>
+    void serialise(void *target) const override;
+
+    /// <summary>
+    /// Get the serialised size of this object.
+    /// This size will be how many bytes this object will occupy in the buffer.
+    /// </summary>
+    /// <returns>The size the object will occupy.</returns>
+    unsigned int serialisedSize() const override;
+
+    /// <summary>
+    /// Deserialise this object from the data buffer
+    /// </summary>
+    /// <param name="data">The buffer to read this object from</param>
+    /// <returns>A newly constructed query object equivalent to the one the buffer was
+    /// created with.</returns>
+    static DatabaseBackup &deserialise(void *data);
+
+    BackupResponse responseCode = BackupResponse::NONE;
+
+    std::string backupName;
+
+private:
 };
 
 #endif //DATABASE_MANAGER_DATABASEQUERY_H

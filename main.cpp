@@ -310,8 +310,21 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
         return;
     }
 
+    std::ostream *errStream = &std::cerr, *logStream = &std::cout;
+
+    if (meta.find("logFile") != meta.end()) {
+        logStream = new std::ofstream(meta["logFile"].get<std::string>());
+        std::cout << "Logging to: " << meta["logFile"] << std::endl;
+    }
+    if (meta.find("errorFile") != meta.end()) {
+        errStream = new std::ofstream(meta["errorFile"].get<std::string>());
+        std::cout << "Logging errors to: " << meta["errorFile"] << std::endl;
+    }
+
     // Initialise a server object with a refresh rate of 16Hz
     Server s(16, serverKeyPair, digitalSignatureKeyPair);
+
+    s.setLoggingStream(*logStream, *errStream);
 
     DatabaseRequestHandler handler;
 
