@@ -16,8 +16,14 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
     updateFields();
 
     connect(ui->editDrawingButton, &QPushButton::clicked, [this]() {
-        if (updateDrawingCallback) {
-            updateDrawingCallback();
+        if (changeDrawingCallback) {
+            changeDrawingCallback(AddDrawingPageWidget::EDIT_DRAWING);
+        }
+    });
+
+    connect(ui->cloneDrawingButton, &QPushButton::clicked, [this]() {
+        if (changeDrawingCallback) {
+            changeDrawingCallback(AddDrawingPageWidget::CLONE_DRAWING);
         }
     });
 }
@@ -114,14 +120,18 @@ void DrawingViewWidget::updateFields() {
         ui->drawingPDFSelectorInput->addItem(pdf.c_str(), pdf.c_str());
     }
 
+    std::filesystem::path pressDrawingLocation = punchProgramPathForDrawing(drawing->drawingNumber());
+
+    if (std::filesystem::exists(pressDrawingLocation)) {
+        ui->drawingPDFSelectorInput->addItem(pressDrawingLocation.string().c_str(), pressDrawingLocation.string().c_str());
+    }
+
     if (!drawing->loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
         SideIron leftSideIron = drawing->sideIron(Drawing::LEFT),
             rightSideIron = drawing->sideIron(Drawing::RIGHT);
         ui->drawingPDFSelectorInput->addItem(("Left Side Iron: " + leftSideIron.drawingNumber).c_str(), leftSideIron.hyperlink.c_str());
         ui->drawingPDFSelectorInput->addItem(("Right Side Iron: " + rightSideIron.drawingNumber).c_str(), rightSideIron.hyperlink.c_str());
     }
-
-    // TODO: Embed PDF viewer
 
     pdfViewer = new QPdfView(this);
     QPdfDocumentRenderOptions renderOptions;
@@ -139,6 +149,22 @@ void DrawingViewWidget::updateFields() {
     pdfViewer->setDocument(pdfDocument);
 }
 
-void DrawingViewWidget::setUpdateDrawingCallback(const std::function<void()> &callback) {
-    updateDrawingCallback = callback;
+void DrawingViewWidget::setChangeDrawingCallback(const std::function<void(AddDrawingPageWidget::AddDrawingMode)> &callback) {
+    changeDrawingCallback = callback;
+}
+
+std::filesystem::path DrawingViewWidget::punchProgramPathForDrawing(const std::string &drawingNumber) {
+    std::filesystem::path path = PUNCH_PDF_LOCATION;
+    std::string folder = "" + drawingNumber.at(0);
+
+    if (std::isdigit(drawingNumber.at(1))) {
+        folder = "1" + folder;
+    } else {
+        folder += drawingNumber.at(1);
+    }
+
+    path /= folder;
+    path /= drawingNumber + ".pdf";
+
+    return path;
 }

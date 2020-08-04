@@ -54,6 +54,8 @@ void Server::initialiseServer(unsigned short serverPort) {
             s.closeSocket();
         }
     });
+
+    *logStream << "Server initialised" << std::endl;
 }
 
 void Server::startServer() {
@@ -249,8 +251,14 @@ void Server::sendRepeatToken(const ClientHandle &clientHandle, unsigned response
 
 void Server::connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                      const std::string &host) {
-    dbManager = new DatabaseManager(database, user, password, host);
+    try {
+        dbManager = new DatabaseManager(database, user, password, host);
+    } catch (mysqlx::Error &e) {
+        SQL_ERROR(e, *errorStream)
+    }
     dbManager->setErrorStream(*errorStream);
+
+    *logStream << "Connected to database" << std::endl;
 }
 
 void Server::setRequestHandler(ServerRequestHandler &handler) {

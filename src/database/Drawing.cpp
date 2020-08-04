@@ -119,8 +119,8 @@ void Drawing::setAsDefault() {
     this->__pressDrawingHyperlinks = std::vector<std::string>();
     this->barSpacings = { 0 };
     this->barWidths = { 0, 0 };
-    this->sideIronHandles[0] = 1;
-    this->sideIronHandles[1] = 1;
+    this->sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
+    this->sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
     this->sideIronsInverted[0] = false;
     this->sideIronsInverted[1] = false;
     this->sidelaps[0] = std::nullopt;

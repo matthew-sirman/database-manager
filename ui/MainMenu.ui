@@ -1192,6 +1192,7 @@ color: rgb(70, 70, 70);
      <string>Drawing</string>
     </property>
     <addaction name="drawingMenu_addDrawingAction"/>
+    <addaction name="drawingMenu_addManualDrawingAction"/>
    </widget>
    <widget class="QMenu" name="componentsMenu">
     <property name="title">
@@ -1240,6 +1241,11 @@ color: rgb(70, 70, 70);
   <action name="fileMenu_createBackupAction">
    <property name="text">
     <string>Create Backup</string>
+   </property>
+  </action>
+  <action name="drawingMenu_addManualDrawingAction">
+   <property name="text">
+    <string>Add Manual Drawing</string>
    </property>
   </action>
  </widget>

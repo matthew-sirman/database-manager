@@ -90,6 +90,23 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 				response.serialise(responseBuffer);
 
 				caller.addMessageToSendQueue(clientHandle, responseBuffer, responseSize);
+
+				NextDrawing automatic, manual;
+				automatic.drawingType = NextDrawing::DrawingType::AUTOMATIC;
+				manual.drawingType = NextDrawing::DrawingType::MANUAL;
+
+				automatic.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
+				manual.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
+
+				unsigned autoBufferSize = automatic.serialisedSize();
+				void *autoBuffer = alloca(autoBufferSize);
+				automatic.serialise(autoBuffer);
+
+				unsigned manualBufferSize = manual.serialisedSize();
+				void *manualBuffer = alloca(manualBufferSize);
+				manual.serialise(manualBuffer);
+				caller.broadcastMessage(autoBuffer, autoBufferSize);
+				caller.broadcastMessage(manualBuffer, manualBufferSize);
 			}
 
 			break;
@@ -275,6 +292,26 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			break;
 		}
+		case RequestType::GET_NEXT_DRAWING_NUMBER: {
+			NextDrawing next = NextDrawing::deserialise(message);
+
+			switch (next.drawingType) {
+				case NextDrawing::DrawingType::AUTOMATIC:
+					next.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
+					break;
+				case NextDrawing::DrawingType::MANUAL:
+					next.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
+					break;
+			}
+
+			unsigned bufferSize = next.serialisedSize();
+			void *responseBuffer = alloca(bufferSize);
+			next.serialise(responseBuffer);
+
+			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+
+			break;
+		}
 		case RequestType::CREATE_DATABASE_BACKUP: {
 			DatabaseBackup backup = DatabaseBackup::deserialise(message);
 
@@ -380,6 +417,11 @@ void DatabaseRequestHandler::constructDataElement(
 	const mysqlx::Row &apertureRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::ApertureData> &elements, unsigned &sizeValue
 ) const {
+	if (apertureRow[6].isNull()) {
+		ERROR_RAW_SAFE("Aperture with missing shape ID detected.", std::cerr);
+		return;
+	}
+
 	if (apertureRow[6].get<unsigned>() == DrawingComponentManager<ApertureShape>::findComponentByID(5).handle()) {
 		ApertureData slData, stData;
 		slData.handle = handle++;

@@ -58,6 +58,11 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
             addComponentCallback(ComponentInsert::deserialise(message).responseCode);
         }
         break;
+    case RequestType::GET_NEXT_DRAWING_NUMBER:
+        if (nextDrawingResponseCallback) {
+            nextDrawingResponseCallback(NextDrawing::deserialise(message));
+        }
+        break;
     case RequestType::CREATE_DATABASE_BACKUP:
         if (backupResponseCallback) {
             backupResponseCallback(DatabaseBackup::deserialise(message).responseCode);
@@ -88,6 +93,10 @@ void DatabaseResponseHandler::setAddComponentResponseCallback(const std::functio
 
 void DatabaseResponseHandler::setBackupResponseCallback(const std::function<void(DatabaseBackup::BackupResponse)> &callback) {
     backupResponseCallback = callback;
+}
+
+void DatabaseResponseHandler::setNextDrawingNumberCallback(const std::function<void(const NextDrawing &)> &callback) {
+    nextDrawingResponseCallback = callback;
 }
 
 RequestType DatabaseResponseHandler::getDeserialiseType(void *data) {

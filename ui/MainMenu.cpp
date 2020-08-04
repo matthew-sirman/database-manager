@@ -174,7 +174,8 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->searchResultsTable, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(handleSearchElementContextMenu(const QPoint &)));
     ui->searchResultsTable->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->mainTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
-    connect(ui->drawingMenu_addDrawingAction, SIGNAL(triggered()), this, SLOT(openAddDrawingTab()));
+    connect(ui->drawingMenu_addDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::AUTOMATIC); });
+    connect(ui->drawingMenu_addManualDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::MANUAL); });
     connect(this, SIGNAL(itemAddedToDrawingQueue()), this, SLOT(processDrawings()));
 
     connect(ui->componentsMenu_addApertureAction, &QAction::triggered, [this]() {
@@ -241,6 +242,17 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
         emit insertDrawingResponseReceived(responseType, responseCode);
     });
 
+    handler->setNextDrawingNumberCallback([this](const NextDrawing &nextDrawing) {
+        switch (nextDrawing.drawingType) {
+            case NextDrawing::DrawingType::AUTOMATIC:
+                nextAutomaticDrawingNumber = nextDrawing.drawingNumber.value();
+                break;
+            case NextDrawing::DrawingType::MANUAL:
+                nextManualDrawingNumber = nextDrawing.drawingNumber.value();
+                break;
+        }
+    });
+
     connect(this, SIGNAL(insertDrawingResponseReceived(unsigned, unsigned)),
             this, SLOT(insertDrawingResponse(unsigned, unsigned)));
 
@@ -248,6 +260,7 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     setupValidators();
     setupActivators();
     setupSearchResultsTable();
+    requestNextDrawingNumbers();
 }
 
 MainMenu::~MainMenu() = default;
@@ -360,6 +373,23 @@ void MainMenu::setupSearchResultsTable() {
 
     ui->searchResultsTable->horizontalHeader()->setStretchLastSection(true);
     ui->searchResultsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeMode::ResizeToContents);
+}
+
+void MainMenu::requestNextDrawingNumbers() const {
+    NextDrawing automatic, manual;
+    automatic.drawingType = NextDrawing::DrawingType::AUTOMATIC;
+    manual.drawingType = NextDrawing::DrawingType::MANUAL;
+
+    unsigned autoBufferSize = automatic.serialisedSize();
+    void *autoBuffer = alloca(autoBufferSize);
+    automatic.serialise(autoBuffer);
+
+    unsigned manualBufferSize = manual.serialisedSize();
+    void *manualBuffer = alloca(manualBufferSize);
+    manual.serialise(manualBuffer);
+
+    client->addMessageToSendQueue(autoBuffer, autoBufferSize);
+    client->addMessageToSendQueue(manualBuffer, manualBufferSize);
 }
 
 void MainMenu::onReceiveDrawing(DrawingRequest &drawingRequest) {
@@ -565,8 +595,18 @@ void MainMenu::closeTab(int index) {
     ui->mainTabs->removeTab(index);
 }
 
-void MainMenu::openAddDrawingTab() {
-    AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(ui->mainTabs);
+void MainMenu::openAddDrawingTab(NextDrawing::DrawingType type) {
+    AddDrawingPageWidget *addDrawingPage = nullptr;
+    switch (type) {
+        case NextDrawing::DrawingType::AUTOMATIC:
+            addDrawingPage = new AddDrawingPageWidget(nextAutomaticDrawingNumber, ui->mainTabs);
+            break;
+        case NextDrawing::DrawingType::MANUAL:
+            addDrawingPage = new AddDrawingPageWidget(nextManualDrawingNumber, ui->mainTabs);
+            break;
+        default:
+            return;
+    }
     addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
         DrawingInsert insert;
         insert.drawingData = drawing;
@@ -601,8 +641,8 @@ void MainMenu::processDrawings() {
                     DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
                     Drawing &drawing = request->drawingData.value();
 
-                    drawingView->setUpdateDrawingCallback([this, drawing]() {
-                        AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, ui->mainTabs);
+                    drawingView->setChangeDrawingCallback([this, drawing](AddDrawingPageWidget::AddDrawingMode mode) {
+                        AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, mode, ui->mainTabs);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
                             DrawingInsert insert;
                             insert.drawingData = drawing;
@@ -618,7 +658,16 @@ void MainMenu::processDrawings() {
 
                             client->addMessageToSendQueue(buffer, bufferSize);
                         });
-                        ui->mainTabs->addTab(addDrawingPage, tr("Add Drawing"));
+                        switch (mode) {
+                            case AddDrawingPageWidget::CLONE_DRAWING:
+                                ui->mainTabs->addTab(addDrawingPage, tr("Clone Drawing"));
+                                break;
+                            case AddDrawingPageWidget::EDIT_DRAWING:
+                                ui->mainTabs->addTab(addDrawingPage, tr("Edit Drawing"));
+                                break;
+                            default:
+                                break;
+                        }
                         ui->mainTabs->setCurrentWidget(addDrawingPage);
                     });
 

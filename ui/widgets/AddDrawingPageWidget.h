@@ -24,12 +24,13 @@ class AddDrawingPageWidget : public QWidget {
 public:
     enum AddDrawingMode {
         ADD_NEW_DRAWING,
-        EDIT_DRAWING
+        EDIT_DRAWING,
+        CLONE_DRAWING
     };
 
-    explicit AddDrawingPageWidget(QWidget *parent = nullptr);
+    explicit AddDrawingPageWidget(const std::string &drawingNumber, QWidget *parent = nullptr);
 
-    AddDrawingPageWidget(const Drawing &drawing, QWidget *parent = nullptr);
+    AddDrawingPageWidget(const Drawing &drawing, AddDrawingMode mode, QWidget *parent = nullptr);
 
     ~AddDrawingPageWidget() override;
 
@@ -79,6 +80,5 @@ private:
 private slots:
     void capitaliseLineEdit(const QString &text);
 };
-
 
 #endif //DATABASE_MANAGER_ADDDRAWINGPAGEWIDGET_H

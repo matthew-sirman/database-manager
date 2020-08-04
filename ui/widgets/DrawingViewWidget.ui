@@ -316,6 +316,13 @@ color: rgb(70, 70, 70);
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="cloneDrawingButton">
+       <property name="text">
+        <string>Clone Drawing</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="editDrawingRightSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>

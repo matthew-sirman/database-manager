@@ -24,6 +24,8 @@ public:
     void setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback);
 
     void setBackupResponseCallback(const std::function<void(DatabaseBackup::BackupResponse)> &callback);
+
+    void setNextDrawingNumberCallback(const std::function<void(const NextDrawing &)> &callback);
 private:
     static RequestType getDeserialiseType(void *data);
 
@@ -38,6 +40,8 @@ private:
     std::function<void(ComponentInsert::ComponentInsertResponse)> addComponentCallback = nullptr;
 
     std::function<void(DatabaseBackup::BackupResponse)> backupResponseCallback = nullptr;
+
+    std::function<void(const NextDrawing &)> nextDrawingResponseCallback = nullptr;
 };
 
 

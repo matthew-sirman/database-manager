@@ -60,11 +60,15 @@ private:
 
     void setupSearchResultsTable();
 
+    void requestNextDrawingNumbers() const;
+
     void onReceiveDrawing(DrawingRequest &drawingRequest);
 
     unsigned getValidRequestCode() const;
 
     unsigned getValidInsertCode() const;
+
+    void openAddDrawingTab(NextDrawing::DrawingType type);
 
     void connectToServerWithJWT(const std::string &serverIP, unsigned serverPort);
 
@@ -84,6 +88,8 @@ private:
 
     std::unordered_map<unsigned, const Drawing *> drawingInserts;
 
+    std::string nextAutomaticDrawingNumber, nextManualDrawingNumber;
+
 private slots:
     void searchButtonPressed();
 
@@ -94,8 +100,6 @@ private slots:
     void openDrawingView(unsigned matID);
 
     void closeTab(int index);
-
-    void openAddDrawingTab();
 
     void processDrawings();
 

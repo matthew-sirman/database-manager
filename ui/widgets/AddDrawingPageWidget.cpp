@@ -7,12 +7,15 @@
 #include "AddDrawingPageWidget.h"
 #include "../build/ui_AddDrawingPageWidget.h"
 
-AddDrawingPageWidget::AddDrawingPageWidget(QWidget *parent)
+AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWidget *parent)
         : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
 
+    ui->drawingNumberInput->setText(drawingNumber.c_str());
+
     drawing.setAsDefault();
 
+    drawing.setDrawingNumber(drawingNumber);
     drawing.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
     drawing.setProduct(DrawingComponentManager<Product>::findComponentByID(1));
     drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::findComponentByID(1));
@@ -36,10 +39,12 @@ AddDrawingPageWidget::AddDrawingPageWidget(QWidget *parent)
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
             SLOT(capitaliseLineEdit(const QString &)));
 
+    setMode(ADD_NEW_DRAWING);
+
     setupDrawingUpdateConnections();
 }
 
-AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, QWidget *parent)
+AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode, QWidget *parent)
     : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
 
@@ -47,6 +52,9 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, QWidget *pare
     setupComboboxSources();
 
     this->drawing = drawing;
+    if (mode == CLONE_DRAWING) {
+        this->drawing.setDrawingNumber("");
+    }
 
     visualsScene = new QGraphicsScene();
     ui->drawingSpecsVisual->setScene(visualsScene);
@@ -66,7 +74,7 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, QWidget *pare
 
     setupDrawingUpdateConnections();
 
-    setMode(EDIT_DRAWING);
+    setMode(mode);
 
     loadDrawing();
 }
@@ -593,6 +601,7 @@ void AddDrawingPageWidget::setMode(AddDrawingPageWidget::AddDrawingMode mode) {
 
     switch (addMode) {
         case ADD_NEW_DRAWING:
+        case CLONE_DRAWING:
             ui->confirmDrawingButton->setText("Add Drawing to Database");
             break;
         case EDIT_DRAWING:

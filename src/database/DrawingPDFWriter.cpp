@@ -11,14 +11,8 @@ DrawingPDFWriter::DrawingPDFWriter() {
 bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing) const {
 	std::string productName = drawing.product().productName;
 
-	if (productName == "Bivitec") {
-		QMessageBox::about(nullptr, "Unsupported Type", "Bivitec PDF generation is not yet supported.");
-		return false;
-	} else if (productName == "Flip Flow") {
-		QMessageBox::about(nullptr, "Unsupported Type", "Flip Flow PDF generation is not yet supported.");
-		return false;
-	} else if (productName == "Rubber Modules and Panels") {
-		QMessageBox::about(nullptr, "Unsupported Type", "Rubber Modules and Panels PDF generation is not yet supported.");
+	if (productName == "Rubber Modules and Panels") {
+		QMessageBox::about(nullptr, "Unsupported Type", "Rubber Modules and Panels PDF generation is not supported.");
 		return false;
 	}
 
@@ -33,22 +27,14 @@ bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const
 	QPainter painter;
 
 	if (!painter.begin(&writer)) {
-		return false;
+		return false; 
 	}
 
 	drawStandardTemplate(painter, svgTemplateRenderer);
 
 	drawTextDetails(painter, svgTemplateRenderer, drawing);
 
-	if (productName == "Rubber Screen Cloth" || productName == "Extraflex" || productName == "Polyflex") {
-		drawRubberScreenCloth(painter, svgTemplateRenderer.boundsOnElement("drawing_target_region"), drawing);
-	} else if (productName == "Bivitec") {
-
-	} else if (productName == "Flip Flow") {
-
-	} else if (productName == "Rubber Modules and Panels") {
-
-	}
+	drawRubberScreenCloth(painter, svgTemplateRenderer.boundsOnElement("drawing_target_region"), drawing);
 
 	return true;
 }

@@ -12,6 +12,8 @@
 #include "DatabaseQuery.h"
 #include "Drawing.h"
 
+#include "../util/format.h"
+
 #include "../../guard.h"
 
 /// <summary>
@@ -113,6 +115,10 @@ public:
     /// <returns>A boolean indicating whether the backup creation was successful.</returns>
     bool createBackup(const std::filesystem::path &backupLocation);
 
+    std::string nextAutomaticDrawingNumber();
+
+    std::string nextManualDrawingNumber();
+
     /// <summary>
     /// Closes the connection to the database.
     /// </summary>
@@ -125,6 +131,7 @@ private:
     // This allows the manager to interact with the database.
     mysqlx::Session sess;
     std::string username, password;
+    std::string database;
 
     std::ostream *errStream = &std::cerr;
 };

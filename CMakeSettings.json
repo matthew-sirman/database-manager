@@ -13,42 +13,42 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/debug/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/debug/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "Qt5Pdf_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
           "type": "PATH"
         },
         {
           "name": "Qt5PdfWidgets_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
           "type": "PATH"
         }
       ]
@@ -66,47 +66,42 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
-          "type": "PATH"
-        },
-        {
-          "name": "BOOST_INCLUDE_DIRS",
-          "value": "D:/Libraries/boost",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "Qt5Pdf_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
           "type": "PATH"
         },
         {
           "name": "Qt5PdfWidgets_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
           "type": "PATH"
         }
       ]
@@ -124,42 +119,42 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/lib/vs14/debug/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib/vs14/debug/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "Qt5Pdf_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
           "type": "PATH"
         },
         {
           "name": "Qt5PdfWidgets_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
           "type": "PATH"
         }
       ]
@@ -177,42 +172,42 @@
       "variables": [
         {
           "name": "Qt5_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "D:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "D:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/${name}/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "D:/Libraries/mysql-connector-cpp/${name}/lib/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
           "name": "JSON_INCLUDE_DIRS",
-          "value": "D:/Libraries/json/include",
+          "value": "C:/Libraries/json/include",
           "type": "PATH"
         },
         {
           "name": "Qt5Pdf_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
           "type": "PATH"
         },
         {
           "name": "Qt5PdfWidgets_DIR",
-          "value": "D:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
           "type": "PATH"
         }
       ]

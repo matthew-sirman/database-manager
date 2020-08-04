@@ -24,7 +24,7 @@ enum RunMode {
 
 #ifdef _WIN32
 
-uint256 getPasswordHash(const std::string &prompt) {
+std::string getPassword(const std::string &prompt) {
     const char BACKSPACE = 8, RETURN = 13;
 
     std::string password;
@@ -46,8 +46,7 @@ uint256 getPasswordHash(const std::string &prompt) {
                 std::cout << "\b \b";
                 password.resize(password.length() - 1);
             }
-        }
-        else {
+        } else {
             password += ch;
             std::cout << "*";
         }
@@ -57,30 +56,28 @@ uint256 getPasswordHash(const std::string &prompt) {
 
     SetConsoleMode(hIn, consoleMode);
 
+    return password;
+}
+
+#else
+
+std::string getPassword(const std::string &prompt) {
+    // Get the password from the terminal. This will hide the input
+    char *pw = getpass(prompt.c_str());
+    size_t pwLen = strlen(pw);
+}
+
+#endif
+
+uint256 getPasswordHash(const std::string &prompt) {
+    std::string password = getPassword(prompt);
+
     uint256 pwHash = sha256((const uint8 *) password.c_str(), password.size());
 
     memset(password.data(), 0, password.size());
 
     return pwHash;
 }
-
-#else
-
-uint256 getPasswordHash(const std::string &prompt) {
-    // Get the password from the terminal. This will hide the input
-    char *pw = getpass(prompt.c_str());
-    size_t pwLen = strlen(pw);
-
-    // Hash the password to use as an AES key to secure the two keys
-    uint256 pwHash = sha256((const uint8 *) pw, pwLen);
-
-    // Overwrite the password buffer with all 0s
-    memset(pw, 0, pwLen);
-
-    return pwHash;
-}
-
-#endif
 
 void setupServerKeys(std::filesystem::path metaFilePath) {
     metaFilePath = metaFilePath / "serverMeta.json";
@@ -110,8 +107,15 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
         std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
         return;
     }
+    if (meta.find("databasePasswordPath") == meta.end()) {
+        std::cerr << "Could not find 'databasePasswordPath' in meta file." << std::endl;
+        return;
+    }
 
     std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
+    std::filesystem::path databasePasswordPath = meta["databasePasswordPath"].get<std::string>();
+
+    std::string databasePassword = getPassword("Enter database password: ");
 
     std::cout << "Generating RSA key pairs for the server and signatures (this may take up to a minute)..."
               << std::endl;
@@ -134,6 +138,8 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
     writePublicKey(serverKeyPair.publicKey, keyPath / "server/server_key.pub");
     lockPrivateKey(digitalSignatureKeyPair.privateKey, keyPath / "signature/signature_root.pri", pwHash);
     writePublicKey(digitalSignatureKeyPair.publicKey, keyPath / "signature/signature.pub");
+
+    lockData((uint8 *) databasePassword.c_str(), databasePassword.size(), databasePasswordPath / "encrypted_root.pass", pwHash);
 
     std::cout << "Keys saved successfully for user root." << std::endl;
 
@@ -163,6 +169,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
             lockPrivateKey(serverKeyPair.privateKey, keyPath / ("server/server_key_" + uname + ".pri"), pwHash);
             lockPrivateKey(digitalSignatureKeyPair.privateKey, keyPath / ("signature/signature_" + uname + ".pri"),
                            pwHash);
+            lockData((uint8 *) databasePassword.c_str(), databasePassword.size(), databasePasswordPath / ("encrypted_" + uname + ".pass"), pwHash);
 
             std::cout << "Keys saved successfully for user " << uname << "." << std::endl;
         } else {
@@ -199,8 +206,13 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath, con
         std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
         return;
     }
+    if (meta.find("databasePasswordPath") == meta.end()) {
+        std::cerr << "Could not find 'databasePasswordPath' in meta file." << std::endl;
+        return;
+    }
 
     std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
+    std::filesystem::path databasePasswordPath = meta["databasePasswordPath"].get<std::string>();
 
     if (!std::filesystem::exists(keyPath / ("server/server_key_" + authUser + ".pri")) ||
         !std::filesystem::exists(keyPath / ("server/server_key.pub")) ||
@@ -225,6 +237,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath, con
     digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(keyPath / ("signature/signature_" + authUser + ".pri"),
                                                           pwHash);
     digitalSignatureKeyPair.publicKey = readPublicKey<24>(keyPath / ("signature/signature.pub"));
+    std::string databasePassword = unlockStringData(databasePasswordPath / ("encrypted_" + authUser + ".pass"), pwHash);
 
     if (serverKeyPair.privateKey.n == serverKeyPair.publicKey.n &&
         digitalSignatureKeyPair.privateKey.n == digitalSignatureKeyPair.publicKey.n) {
@@ -237,6 +250,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath, con
         lockPrivateKey(serverKeyPair.privateKey, keyPath / ("server/server_key_" + newUser + ".pri"), pwHash);
         lockPrivateKey(digitalSignatureKeyPair.privateKey, keyPath / ("signature/signature_" + newUser + ".pri"),
                        pwHash);
+        lockData((uint8 *) databasePassword.c_str(), databasePassword.size(), databasePasswordPath / ("encrypted_" + newUser + ".pass"), pwHash);
 
         std::cout << "Keys saved successfully for user " << newUser << "." << std::endl;
     } else {
@@ -273,12 +287,17 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
         std::cerr << "Could not find 'keyPath' in meta file." << std::endl;
         return;
     }
+    if (meta.find("databasePasswordPath") == meta.end()) {
+        std::cerr << "Could not find 'databasePasswordPath' in meta file." << std::endl;
+        return;
+    }
     if (meta.find("serverPort") == meta.end()) {
         std::cerr << "Could not find 'serverPort' in meta file." << std::endl;
         return;
     }
 
     std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
+    std::filesystem::path databasePasswordPath = meta["databasePasswordPath"].get<std::string>();
     unsigned serverPort = meta["serverPort"];
 
     if (!std::filesystem::exists(keyPath / ("server/server_key_" + user + ".pri")) ||
@@ -303,6 +322,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
     serverKeyPair.publicKey = readPublicKey<32>(keyPath / ("server/server_key.pub"));
     digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(keyPath / ("signature/signature_" + user + ".pri"), pwHash);
     digitalSignatureKeyPair.publicKey = readPublicKey<24>(keyPath / ("signature/signature.pub"));
+    std::string databasePassword = unlockStringData(databasePasswordPath / ("encrypted_" + user + ".pass"), pwHash);
 
     if (serverKeyPair.privateKey.n != serverKeyPair.publicKey.n ||
         digitalSignatureKeyPair.privateKey.n != digitalSignatureKeyPair.publicKey.n) {
@@ -330,11 +350,11 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
 
     s.initialiseServer(serverPort);
 
-    std::ifstream dbPasswordFile(keyPath / "../db-pw.txt");
+    /*std::ifstream dbPasswordFile(keyPath / "../db-pw.txt");
     std::string dbPassword;
-    dbPasswordFile >> dbPassword;
+    dbPasswordFile >> dbPassword;*/
 
-    s.connectToDatabaseServer("scs_drawings", "db-server-user", dbPassword);
+    s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
 
     s.setRequestHandler(handler);
 

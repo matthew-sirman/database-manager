@@ -23,7 +23,7 @@ void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
             return;
         case ERR_CREATE_SOCKET: SOCK_ERROR_TO("Failed to create socket", errorStream)
         case ERR_SET_SOCKET_OPTIONS: SOCK_ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
-        case ERR_PARSE_IP: SOCK_ERROR_TO("Failed to parse IP address. Check that it is in the correct format", errorStream)
+        case ERR_PARSE_IP: SOCK_ERROR_TO("Failed to parse address. Check that it is in the correct format", errorStream)
         case ERR_BIND_SOCKET: SOCK_ERROR_TO("Failed to bind socket to provided address and port.", errorStream)
         case ERR_CONNECT: SOCK_ERROR_TO("Failed to connect to server", errorStream)
         case ERR_GET_FD_FLAGS: SOCK_ERROR_TO("Failed to get flags from TCP socket file descriptor", errorStream)
@@ -46,7 +46,7 @@ bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream) {
             return false;
         case ERR_SET_SOCKET_OPTIONS: SAFE_SOCK_ERROR_TO("Failed to set TCP socket to reuse address and port", errorStream)
             return false;
-        case ERR_PARSE_IP: SAFE_SOCK_ERROR_TO("Failed to parse IP address. Check that it is in the correct format",
+        case ERR_PARSE_IP: SAFE_SOCK_ERROR_TO("Failed to parse address. Check that it is in the correct format",
                                          errorStream)
             return false;
         case ERR_BIND_SOCKET: SAFE_SOCK_ERROR_TO("Failed to bind socket to provided address and port", errorStream)
@@ -154,8 +154,20 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
 
     serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
 
+
     if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
-        return ERR_CONNECT;
+        if (sock_errno == WSAEADDRNOTAVAIL) {
+            hostent *remoteHost = gethostbyname(ip.c_str());
+            if (remoteHost == NULL) {
+                return ERR_PARSE_IP;
+            }
+            serverAddress.sin_addr.s_addr = *(u_long *) remoteHost->h_addr_list[0];
+            if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
+                return ERR_CONNECT;
+            }
+        } else {
+            return ERR_CONNECT;
+        }
     }
 
 #else

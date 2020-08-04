@@ -543,17 +543,17 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     // and the laps, which are returned as JSON arrays. Otherwise, every selection is a standard SQL selection.
     sql << "SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, "
            "mal.aperture_id AS aperture_id, mal.direction AS direction, "
-           "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM scs_drawings.thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
+           "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM {0}.thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
            "d.tension_type AS tension_type, "
            "COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) "
-           "FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM scs_drawings.sidelaps UNION "
-           "SELECT mat_id, 'O' AS type, width, mat_side FROM scs_drawings.overlaps) AS l "
+           "FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM {0}.sidelaps UNION "
+           "SELECT mat_id, 'O' AS type, width, mat_side FROM {0}.overlaps) AS l "
            "WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps"
         << std::endl;
 
     // We then specify the primary table to select from, and begin joining other required tables.
-    sql << "FROM " << "scs_drawings.drawings" << " AS d" << std::endl;
-    sql << "INNER JOIN " << "scs_drawings.mat_aperture_link" << " AS mal ON d.mat_id=mal.mat_id" << std::endl;
+    sql << "FROM {0}.drawings" << " AS d" << std::endl;
+    sql << "INNER JOIN {0}.mat_aperture_link" << " AS mal ON d.mat_id=mal.mat_id" << std::endl;
 
     // Next we declare a vector of strings for the conditions. We do this because, for example,
     // we need to know if there are no conditions, because in this case we do not put the "WHERE"
@@ -618,7 +618,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         // If we just are searching for a top layer thickness, the search is the same as the above conditions:
         // a condition is simply added to match the thickness ID
         if (!bottomThickness.has_value()) {
-            sql << "INNER JOIN " << "scs_drawings.thickness" << " AS t ON d.mat_id=t.mat_id" << std::endl;
+            sql << "INNER JOIN {0}.thickness" << " AS t ON d.mat_id=t.mat_id" << std::endl;
             condition << "t.material_thickness_id=" << topThickness->componentID();
         } else {
             // If the search is for multiple layers, it is more complex. We have to join the table to itself on
@@ -627,8 +627,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
             // what was searched. Note: As this is a nested query, it is evaluated once and returns a set of mat_id's
             // which match the thickness restrictions. This could potentially be slow, however the subquery itself
             // is called a minimal amount of times.
-            condition << "d.mat_id IN (SELECT t1.mat_id AS mid FROM scs_drawings.thickness AS t1" << std::endl;
-            condition << "INNER JOIN scs_drawings.thickness AS t2 ON t1.mat_id=t2.mat_id" << std::endl;
+            condition << "d.mat_id IN (SELECT t1.mat_id AS mid FROM {0}.thickness AS t1" << std::endl;
+            condition << "INNER JOIN {0}.thickness AS t2 ON t1.mat_id=t2.mat_id" << std::endl;
             condition << "WHERE t1.thickness_id < t2.thickness_id AND" << std::endl;
             condition << "t1.material_thickness_id=" << topThickness->componentID() << " AND" << std::endl;
             condition << "t2.material_thickness_id=" << bottomThickness->componentID() << ")";
@@ -644,8 +644,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     if (sideIronType.has_value() || sideIronLength.has_value()) {
         // For the side irons, we link to the side iron table itself and check if the length and type align with what was
         // searched.
-        sql << "INNER JOIN " << "scs_drawings.mat_side_iron_link" << " AS msil ON d.mat_id=msil.mat_id" << std::endl;
-        sql << "INNER JOIN " << "scs_drawings.side_irons" << " AS si ON msil.side_iron_id=si.side_iron_id" << std::endl;
+        sql << "INNER JOIN {0}.mat_side_iron_link" << " AS msil ON d.mat_id=msil.mat_id" << std::endl;
+        sql << "INNER JOIN {0}.side_irons" << " AS si ON msil.side_iron_id=si.side_iron_id" << std::endl;
         if (sideIronType.has_value()) {
             condition.str(std::string());
             switch (sideIronType.value()) {
@@ -680,8 +680,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition.str(std::string());
         // The sidelaps work by nesting a subquery which returns a set of all mat_ids which match the
         // criteria imposed by the sidelap parameters.
-        condition << "d.mat_id IN (SELECT d_i.mat_id FROM scs_drawings.drawings AS d_i" << std::endl;
-        condition << "LEFT JOIN scs_drawings.sidelaps AS s ON d_i.mat_id=s.mat_id" << std::endl;
+        condition << "d.mat_id IN (SELECT d_i.mat_id FROM {0}.drawings AS d_i" << std::endl;
+        condition << "LEFT JOIN {0}.sidelaps AS s ON d_i.mat_id=s.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         // First we impose that the width is in the correct range
         if (sidelapWidth.has_value()) {
@@ -725,8 +725,8 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition.str(std::string());
         // The overlaps work by nesting a subquery which returns a set of all mat_ids which match the
         // criteria imposed by the overlap parameters.
-        condition << "d.mat_id IN (SELECT d_i.mat_id FROM scs_drawings.drawings AS d_i" << std::endl;
-        condition << "LEFT JOIN scs_drawings.overlaps AS o ON d_i.mat_id=o.mat_id" << std::endl;
+        condition << "d.mat_id IN (SELECT d_i.mat_id FROM {0}.drawings AS d_i" << std::endl;
+        condition << "LEFT JOIN {0}.overlaps AS o ON d_i.mat_id=o.mat_id" << std::endl;
         condition << "WHERE true" << std::endl;
         // First we impose that the width is in the correct range
         if (overlapWidth.has_value()) {
@@ -769,7 +769,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     if (machine.has_value() || quantityOnDeck.has_value() || position.has_value() || machineDeck.has_value()) {
         // If the query requests that any restrictions concerning the machine template should be imposed,
         // we join to the machine templates table.
-        sql << "INNER JOIN scs_drawings.machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
+        sql << "INNER JOIN {0}.machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
 
         // For each of the restrictions, we simply check if the parameter matches, if they are included in
         // the query parameters.
@@ -810,7 +810,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     // before double letter drawings (e.g. EA34) and then the drawings are order lexicographically in descending order
     // so more recent drawings appear higher up the search list.
     sql << "GROUP BY d.mat_id, mal.aperture_id" << std::endl;
-    sql << "ORDER BY IF(d.drawing_number REGEXP '^[A-Z][0-9]{2,}[A-Z]?$', "
+    sql << "ORDER BY IF(d.drawing_number REGEXP '^[A-Z][0-9]{{2,}}[A-Z]?$', "
            "CONCAT('0', d.drawing_number), d.drawing_number) DESC;";
 
     return sql.str();
@@ -1085,7 +1085,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     std::stringstream insert;
 
     // First we specify the columns we are inserting
-    insert << "INSERT INTO scs_drawings.drawings" << std::endl;
+    insert << "INSERT INTO {0}.drawings" << std::endl;
     insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
               "hyperlink, notes)" << std::endl;
     insert << "VALUES" << std::endl;
@@ -1124,7 +1124,7 @@ std::string DrawingInsert::barSpacingInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // Specify the columns to insert
-    insert << "INSERT INTO scs_drawings.bar_spacings" << std::endl;
+    insert << "INSERT INTO {0}.bar_spacings" << std::endl;
     insert << "(mat_id, bar_spacing, bar_width, bar_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1147,7 +1147,7 @@ std::string DrawingInsert::machineTemplateInsertQuery() const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.machine_templates" << std::endl;
+    insert << "INSERT INTO {0}.machine_templates" << std::endl;
     insert << "(machine_id, quantity_on_deck, position, deck_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1172,7 +1172,7 @@ std::string DrawingInsert::testMachineTemplateQuery() const {
     // Construct a simple search query in the machine templates table. This
     // query returns the template_id so if a match is found, we know which
     // ID to use from this point.
-    query << "SELECT template_id FROM scs_drawings.machine_templates" << std::endl;
+    query << "SELECT template_id FROM {0}.machine_templates" << std::endl;
     query << "WHERE machine_id=" << t.machine().componentID() << " AND " << std::endl;
     query << "quantity_on_deck=" << t.quantityOnDeck << " AND" << std::endl;
     query << "position='" << t.position << "' AND" << std::endl;
@@ -1187,7 +1187,7 @@ std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.mat_aperture_link" << std::endl;
+    insert << "INSERT INTO {0}.mat_aperture_link" << std::endl;
     insert << "(mat_id, aperture_id, direction)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1218,7 +1218,7 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.mat_side_iron_link" << std::endl;
+    insert << "INSERT INTO {0}.mat_side_iron_link" << std::endl;
     insert << "(mat_id, side_iron_id, bar_width, inverted, side_iron_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1237,7 +1237,7 @@ std::string DrawingInsert::thicknessInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.thickness" << std::endl;
+    insert << "INSERT INTO {0}.thickness" << std::endl;
     insert << "(mat_id, material_thickness_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1267,7 +1267,7 @@ std::string DrawingInsert::overlapsInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.overlaps" << std::endl;
+    insert << "INSERT INTO {0}.overlaps" << std::endl;
     insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1328,7 +1328,7 @@ std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.sidelaps" << std::endl;
+    insert << "INSERT INTO {0}.sidelaps" << std::endl;
     insert << "(mat_id, width, mat_side, attachment_type, material_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1391,7 +1391,7 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     // First specify the columns to insert
-    insert << "INSERT INTO scs_drawings.punch_program_pdfs" << std::endl;
+    insert << "INSERT INTO {0}.punch_program_pdfs" << std::endl;
     insert << "(mat_id, hyperlink)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1616,24 +1616,24 @@ std::string ComponentInsert::toSQLQueryString() const {
 
     switch (insertType) {
         case InsertType::APERTURE:
-            insert << "INSERT INTO scs_drawings.apertures (width, length, base_width, base_length, quantity, shape_id)" << std::endl;
+            insert << "INSERT INTO {0}.apertures (width, length, base_width, base_length, quantity, shape_id)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << apertureData->width << ", " << apertureData->length << ", " << apertureData->baseWidth << ", "
                 << apertureData->baseLength << ", " << apertureData->quantity << ", " << apertureData->shapeID << ")" << std::endl;
             break;
         case InsertType::MACHINE:
-            insert << "INSERT INTO scs_drawings.machines (manufacturer, model)" << std::endl;
+            insert << "INSERT INTO {0}.machines (manufacturer, model)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "('" << machineData->manufacturer << "', '" << machineData->model << "')" << std::endl;
             break;
         case InsertType::SIDE_IRON:
-            insert << "INSERT INTO scs_drawings.side_irons (type, length, drawing_number, hyperlink)" << std::endl;
+            insert << "INSERT INTO {0}.side_irons (type, length, drawing_number, hyperlink)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << (unsigned)sideIronData->type << ", " << sideIronData->length << ", '" << sideIronData->drawingNumber << "', '"
                 << sideIronData->hyperlink << "')" << std::endl;
             break;
         case InsertType::MATERIAL:
-            insert << "INSERT INTO scs_drawings.materials (material, hardness, thickness)" << std::endl;
+            insert << "INSERT INTO {0}.materials (material, hardness, thickness)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "('" << materialData->materialName << "', " << materialData->hardness << ", " << materialData->thickness << ")" << std::endl;
             break;
@@ -1695,7 +1695,46 @@ DatabaseBackup &DatabaseBackup::deserialise(void *data) {
     return *backup;
 }
 
+void NextDrawing::serialise(void *target) const {
+    unsigned char *buff = (unsigned char *) target;
 
+    *((RequestType *) buff) = RequestType::GET_NEXT_DRAWING_NUMBER;
+    buff += sizeof(RequestType);
+
+    *((DrawingType *) buff) = drawingType;
+    buff += sizeof(DrawingType);
+
+    *buff++ = drawingNumber.has_value();
+
+    if (drawingNumber.has_value()) {
+        unsigned char drawingNumberSize = MIN(255, drawingNumber->size());
+        *buff++ = drawingNumberSize;
+        memcpy(buff, drawingNumber->c_str(), drawingNumberSize);
+    }
+}
+
+unsigned int NextDrawing::serialisedSize() const {
+    return sizeof(RequestType) + sizeof(DrawingType) + sizeof(unsigned char) + (drawingNumber.has_value() ? sizeof(unsigned char) + drawingNumber->size() : 0);
+}
+
+NextDrawing &NextDrawing::deserialise(void *data) {
+    NextDrawing *next = new NextDrawing();
+
+    unsigned char *buff = (unsigned char *) data + sizeof(RequestType);
+
+    next->drawingType = *((DrawingType *) buff);
+    buff += sizeof(DrawingType);
+
+    bool hasDrawingNumber = *buff++;
+
+    if (hasDrawingNumber) {
+        unsigned char drawingNumberSize = *buff++;
+        next->drawingNumber = std::string((const char *) buff, drawingNumberSize);
+    } else {
+        next->drawingNumber = std::nullopt;
+    }
+
+    return *next;
+}
 
 #pragma clang diagnostic pop
-

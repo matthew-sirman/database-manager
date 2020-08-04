@@ -11,6 +11,7 @@ DatabaseManager::DatabaseManager(const std::string &database, const std::string 
 	const std::string &host) : sess(host, 33060, user, password) {
 	this->username = user;
 	this->password = password;
+	this->database = database;
 }
 
 // Method to generate details for the DrawingSummaryCompressionSchema used in compression with summaries for a search
@@ -18,20 +19,20 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
 		// Select the maximum mat_id from the drawings table
-		maxMatID = sess.sql("SELECT MAX(mat_id) FROM scs_drawings.drawings").execute().fetchOne()[0];
+		maxMatID = sess.sql("SELECT MAX(mat_id) FROM " + database + ".drawings").execute().fetchOne()[0];
 
 		// Select the maximum width from the drawings table
-		maxWidth = sess.sql("SELECT MAX(width) FROM scs_drawings.drawings").execute().fetchOne()[0];
+		maxWidth = sess.sql("SELECT MAX(width) FROM " + database + ".drawings").execute().fetchOne()[0];
 
 		// Select the maximum length from the drawings table
-		maxLength = sess.sql("SELECT MAX(length) FROM scs_drawings.drawings").execute().fetchOne()[0];
+		maxLength = sess.sql("SELECT MAX(length) FROM " + database + ".drawings").execute().fetchOne()[0];
 
 		// Select the maximum overlap/sidelap size from the union of the overlaps and sidelaps tables
-		maxLapSize = sess.sql("SELECT MAX(width) FROM (SELECT width FROM scs_drawings.sidelaps "
-			"UNION SELECT width FROM scs_drawings.overlaps) AS laps").execute().fetchOne()[0];
+		maxLapSize = sess.sql("SELECT MAX(width) FROM (SELECT width FROM " + database + ".sidelaps "
+			"UNION SELECT width FROM " + database + ".overlaps) AS laps").execute().fetchOne()[0];
 
 		// Select the length of the longest drawing number from the drawings table
-		maxDrawingLength = sess.sql("SELECT MAX(LENGTH(drawing_number)) FROM scs_drawings.drawings").execute().fetchOne()[0].get<unsigned>();
+		maxDrawingLength = sess.sql("SELECT MAX(LENGTH(drawing_number)) FROM " + database + ".drawings").execute().fetchOne()[0].get<unsigned>();
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console and exit the program.
 		// This error is fatal - if we are unable to create a compression schema, the database cannot
@@ -48,7 +49,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
-		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(query.toSQLQueryString()).execute());
+		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(format(query.toSQLQueryString(), database)).execute());
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
@@ -63,6 +64,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 	try {
 		// Construct an empty drawing object on the heap, as we will be returing this
 		Drawing *drawing = new Drawing();
+		drawing->setAsDefault();
 
 		// Declare a string stream for queries to the database.
 		std::stringstream queryString;
@@ -78,9 +80,9 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			<< std::endl;
 		queryString << "mt.deck_id AS deck_id, " << std::endl;
 		queryString << "mal.aperture_id AS aperture_id, mal.direction AS aperture_direction" << std::endl;
-		queryString << "FROM scs_drawings.drawings AS d " << std::endl;
-		queryString << "INNER JOIN scs_drawings.machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
-		queryString << "INNER JOIN scs_drawings.mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
+		queryString << "FROM " << database << ".drawings AS d " << std::endl;
+		queryString << "INNER JOIN " << database << ".machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
+		queryString << "INNER JOIN " << database << ".mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
 		queryString << "WHERE d.mat_id=" << query.matID << std::endl;
 
 		// Execute this query string and read the first row. This should never return more than one row as the mat_id is a
@@ -158,7 +160,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		}
 
 		// Get all the matching materials for this drawing. There may be more than one material, so this is done in a separate query.
-		mysqlx::RowResult materials = sess.getSchema("scs_drawings").getTable("thickness").select("material_thickness_id").where("mat_id=:matID").bind("matID", query.matID).execute();
+		mysqlx::RowResult materials = sess.getSchema(database).getTable("thickness").select("material_thickness_id").where("mat_id=:matID").bind("matID", query.matID).execute();
 
 		// Get the first material
 		mysqlx::Row topMaterial = materials.fetchOne();
@@ -182,7 +184,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		}
 
 		// Read each bar and its corresponding spacing from the database for this drawing
-		mysqlx::RowResult bars = sess.getSchema("scs_drawings").getTable("bar_spacings").select("bar_spacing", "bar_width")
+		mysqlx::RowResult bars = sess.getSchema(database).getTable("bar_spacings").select("bar_spacing", "bar_width")
 			.where("mat_id=:matID").orderBy("bar_index ASC").bind("matID", query.matID).execute();
 
 		std::vector<float> barSpacings, barWidths;
@@ -194,7 +196,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		}
 
 		// Get the side irons associated with this drawing
-		mysqlx::RowResult sideIrons = sess.getSchema("scs_drawings").getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted")
+		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted")
 			.where("mat_id=:matID").orderBy("side_iron_index ASC").bind("matID", query.matID).execute();
 
 		// Get the left (first) side iron
@@ -249,9 +251,9 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 
 		// SQL query for selecting each sidelap and overlap from the database
 		queryString << "SELECT 'S' AS type, mat_side, width, attachment_type, material_id " << std::endl;
-		queryString << "FROM scs_drawings.sidelaps WHERE mat_id=" << query.matID << std::endl;
+		queryString << "FROM " << database << ".sidelaps WHERE mat_id=" << query.matID << std::endl;
 		queryString << "UNION SELECT 'O' AS type, mat_side, width, attachment_type, material_id " << std::endl;
-		queryString << "FROM scs_drawings.overlaps WHERE mat_id=" << query.matID << std::endl;
+		queryString << "FROM " << database << ".overlaps WHERE mat_id=" << query.matID << std::endl;
 
 		// Execute this query
 		mysqlx::RowResult laps = sess.sql(queryString.str()).execute();
@@ -327,7 +329,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		}
 
 		// Get all of the press drawing links from the database (if any)
-		std::vector<mysqlx::Row> pressHyperlinkRows = sess.getSchema("scs_drawings").getTable("punch_program_pdfs").select("hyperlink")
+		std::vector<mysqlx::Row> pressHyperlinkRows = sess.getSchema(database).getTable("punch_program_pdfs").select("hyperlink")
 			.where("mat_id=:matID").bind("matID", query.matID).execute().fetchAll();
 
 		// Declare a vector for the press hyperlinks and reserve the space for it
@@ -353,7 +355,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, const std::string &orderBy) {
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
-		return sess.sql("SELECT * FROM scs_drawings." + tableName + (orderBy.empty() ? "" : " ORDER BY " + orderBy)).execute();
+		return sess.sql("SELECT * FROM " + database + "." + tableName + (orderBy.empty() ? "" : " ORDER BY " + orderBy)).execute();
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return an empty row set
@@ -382,7 +384,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// Before adding the drawing, we must check if it exists in the database, so we select any records with
 		// the same drawing number.
-		mysqlx::Row existingDrawing = sess.getSchema("scs_drawings").getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
+		mysqlx::Row existingDrawing = sess.getSchema(database).getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
 			.bind("drawingNumber", insert.drawingData->drawingNumber()).execute().fetchOne();
 
 		// If the resulting row is not null, i.e. ther drawing exist,
@@ -394,13 +396,13 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 				return false;
 			}
 			// Otherwise, delete the old drawing from the database.
-			sess.getSchema("scs_drawings").getTable("drawings").remove().where("mat_id=:matID").bind("matID", existingDrawing[0]).execute();
+			sess.getSchema(database).getTable("drawings").remove().where("mat_id=:matID").bind("matID", existingDrawing[0]).execute();
 		}
 
 		// Each insertion query is constructed as an SQL query by the insert object.
 
 		// Next, we check if the machine template is in the database already
-		mysqlx::Row existingTemplate = sess.sql(insert.testMachineTemplateQuery()).execute().fetchOne();
+		mysqlx::Row existingTemplate = sess.sql(format(insert.testMachineTemplateQuery(), database)).execute().fetchOne();
 
 		unsigned templateID;
 
@@ -410,7 +412,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			templateID = existingTemplate[0];
 		} else {
 			// Otherwise, we add the template
-			sess.sql(insert.machineTemplateInsertQuery()).execute();
+			sess.sql(format(insert.machineTemplateInsertQuery(), database)).execute();
 			// "SELECT @@identity" returns the most recently added ID from this session, and so
 			// there should be no race condition issue here.
 			templateID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
@@ -418,7 +420,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// Next, we insert the drawing itself into the database and retrieve its ID. The rest of the
 		// inserts all depend on the matID, in order to link to this specific drawing.
-		sess.sql(insert.drawingInsertQuery(templateID)).execute();
+		sess.sql(format(insert.drawingInsertQuery(templateID), database)).execute();
 		unsigned matID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
 
 		// Get the query string for the bars. If this is empty, this indicates that there are none
@@ -426,15 +428,15 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		std::string barInsertQuery = insert.barSpacingInsertQuery(matID);
 
 		if (!barInsertQuery.empty()) {
-			sess.sql(barInsertQuery).execute();
+			sess.sql(format(barInsertQuery, database)).execute();
 		}
 
 		// Insert the aperture
-		sess.sql(insert.apertureInsertQuery(matID)).execute();
+		sess.sql(format(insert.apertureInsertQuery(matID), database)).execute();
 		// Insert the side irons
-		sess.sql(insert.sideIronInsertQuery(matID)).execute();
+		sess.sql(format(insert.sideIronInsertQuery(matID), database)).execute();
 		// Insert the materials
-		sess.sql(insert.thicknessInsertQuery(matID)).execute();
+		sess.sql(format(insert.thicknessInsertQuery(matID), database)).execute();
 
 		// Get the query strings for the overlaps and sidelaps. If they are empty, this indicates that there are none
 		// to insert, so we just ignore them.
@@ -442,11 +444,11 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have overlaps to insert, execute the overlap insert query
 		if (!overlapInsert.empty()) {
-			sess.sql(overlapInsert).execute();
+			sess.sql(format(overlapInsert, database)).execute();
 		}
 		// If we have sidelaps to insert, execute the sidelap insert query
 		if (!sidelapInsert.empty()) {
-			sess.sql(sidelapInsert).execute();
+			sess.sql(format(sidelapInsert, database)).execute();
 		}
 
 		// Get the punch program insert query. Most of the time, there are none to insert, 
@@ -455,7 +457,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have punch program PDFs to insert, execute the insert query
 		if (!punchProgramInsert.empty()) {
-			sess.sql(punchProgramInsert).execute();
+			sess.sql(format(punchProgramInsert, database)).execute();
 		}
 
 		// Finally, if all insertions were successful, we commit and return that the drawing insert was successful.
@@ -475,7 +477,7 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
 	try {
 		// Search the database for a drawing with the drawingNumber passed in. If the result is not null,
 		// return that the drawing exists. Otherwise, return that the drawing does not exist.
-		if (!sess.getSchema("scs_drawings").getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
+		if (!sess.getSchema(database).getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
 			.bind("drawingNumber", drawingNumber).execute().fetchOne().isNull()) {
 			return DrawingExistsResponse::EXISTS;
 		} else {
@@ -498,7 +500,7 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 
 		// If there is a query string to execute, execute it
 		if (!insertString.empty()) {
-			sess.sql(insertString).execute();
+			sess.sql(format(insertString, database)).execute();
 		} else {
 			// Return that the insertion failed - there was nothing to insert for some reason
 			return false;
@@ -522,7 +524,7 @@ bool DatabaseManager::createBackup(const std::filesystem::path &backupLocation) 
 	command << " -p\"" << password << "\"";
 	command << " --result-file " << backupLocation;
 	command << " --no-tablespaces ";
-	command << " scs_drawings";
+	command << " " << database;
 
 #ifdef _WIN32
 	FILE *pipe = _popen(command.str().c_str(), "r");
@@ -541,6 +543,104 @@ bool DatabaseManager::createBackup(const std::filesystem::path &backupLocation) 
 #endif
 
 	return true;
+}
+
+std::string DatabaseManager::nextAutomaticDrawingNumber() {
+	// Wrapped in a try statement to catch any MySQL errors.
+	try {
+		std::string sqlQuery = "SELECT drawing_number FROM " + database + ".drawings "
+			"ORDER BY IF(drawing_number REGEXP '^[A-Z][0-9]{2,}[A-Z]?$', "
+			"CONCAT('0', drawing_number), drawing_number) DESC LIMIT 1;";
+
+		mysqlx::Row row = sess.sql(sqlQuery).execute().fetchOne();
+
+		if (!row.isNull()) {
+			std::string latest = row[0].get<std::string>();
+
+			std::string charSection, numberSection;
+
+			unsigned index = 0;
+
+			while (std::isalpha(latest.at(index)) && index < latest.size()) {
+				charSection += latest.at(index++);
+			}
+			while (std::isdigit(latest.at(index)) && index < latest.size()) {
+				numberSection += latest.at(index++);
+			}
+
+			unsigned char number = std::stoi(numberSection);
+
+			std::stringstream next;
+
+			if (number == 99) {
+				index = charSection.size() - 1;
+				while (index >= 0) {
+					char c = charSection[index];
+					if (c == 'Z') {
+						charSection[index--] = 'A';
+					} else {
+						charSection[index]++;
+						break;
+					}
+				}
+			}
+
+			next << charSection << (number + 1) % 100;
+
+			return next.str();
+		}
+
+		SAFE_ERROR_TO("Failed to find next automatic drawing number.", *errStream);
+
+		return std::string();
+
+	} catch (mysqlx::Error &e) {
+		// If there was an error, print it to the console.
+		// This is not considered a fatal error
+		SQL_ERROR_SAFE(e, *errStream)
+	}
+}
+
+std::string DatabaseManager::nextManualDrawingNumber() {
+	// Wrapped in a try statement to catch any MySQL errors.
+	try {
+		std::string sqlQuery = "SELECT drawing_number FROM " + database + ".drawings "
+			"WHERE drawing_number LIKE 'M%' "
+			"ORDER BY drawing_number DESC LIMIT 1;";
+
+		mysqlx::Row row = sess.sql(sqlQuery).execute().fetchOne();
+
+		if (!row.isNull()) {
+			std::string latest = row[0].get<std::string>();
+
+			std::string charSection, numberSection;
+
+			unsigned index = 0;
+
+			while (std::isalpha(latest.at(index)) && index < latest.size()) {
+				charSection += latest.at(index++);
+			}
+			while (std::isdigit(latest.at(index)) && index < latest.size()) {
+				numberSection += latest.at(index++);
+			}
+
+			unsigned char number = std::stoi(numberSection);
+
+			std::stringstream next;
+
+			next << charSection << (number + 1) % 100;
+
+			return next.str();
+		}
+
+		SAFE_ERROR_TO("Failed to find next manual drawing number.", *errStream);
+
+		return std::string();
+	} catch (mysqlx::Error &e) {
+		// If there was an error, print it to the console.
+		// This is not considered a fatal error
+		SQL_ERROR_SAFE(e, *errStream)
+	}
 }
 
 void DatabaseManager::closeConnection() {
