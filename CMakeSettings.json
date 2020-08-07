@@ -12,28 +12,91 @@
       "ctestCommandArgs": "",
       "variables": [
         {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "WIN32",
+          "type": "STRING"
+        },
+        {
           "name": "Qt5_DIR",
           "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/x64-Debug/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "C:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/x64-Debug/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Debug/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/debug/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Debug/lib64/vs14/debug/mysqlcppconn8.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "C:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Pdf_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5PdfWidgets_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug-Server",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "",
+          "type": "STRING"
+        },
+        {
+          "name": "Qt5_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "C:/Libraries/curl/x64-Debug/lib/libcurl_a_debug.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "C:/Libraries/curl/x64-Debug/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Debug/include/",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Debug/lib64/vs14/debug/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
@@ -65,28 +128,91 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "variables": [
         {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "WIN32",
+          "type": "STRING"
+        },
+        {
           "name": "Qt5_DIR",
           "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/x64-Release/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "C:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/x64-Release/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Release/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib64/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Release/lib64/vs14/mysqlcppconn8.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "JSON_INCLUDE_DIRS",
+          "value": "C:/Libraries/json/include",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5Pdf_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5Pdf",
+          "type": "PATH"
+        },
+        {
+          "name": "Qt5PdfWidgets_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/modules/qtpdf/lib/cmake/Qt5PdfWidgets",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release-Server",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "",
+          "type": "STRING"
+        },
+        {
+          "name": "Qt5_DIR",
+          "value": "C:/Libraries/Qt/5.15.0/msvc2019_64/lib/cmake/Qt5",
+          "type": "PATH"
+        },
+        {
+          "name": "CURL_LIBRARY",
+          "value": "C:/Libraries/curl/x64-Release/lib/libcurl_a.lib",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CURL_INCLUDE_DIRS",
+          "value": "C:/Libraries/curl/x64-Release/include",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_INCLUDE_DIRS",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Release/include/",
+          "type": "PATH"
+        },
+        {
+          "name": "MYSQL_LIBRARY",
+          "value": "C:/Libraries/mysql-connector-cpp/x64-Release/lib64/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
@@ -118,28 +244,33 @@
       "inheritEnvironments": [ "msvc_x86" ],
       "variables": [
         {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "WIN32",
+          "type": "STRING"
+        },
+        {
           "name": "Qt5_DIR",
           "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "C:/Libraries/curl/${name}/lib/libcurl_a_debug.lib",
+          "value": "C:/Libraries/curl/x86-Debug/lib/libcurl_a_debug.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "C:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/x86-Debug/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x86-Debug/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib/vs14/debug/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x86-Debug/lib/vs14/debug/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {
@@ -171,28 +302,33 @@
       "inheritEnvironments": [ "msvc_x86" ],
       "variables": [
         {
+          "name": "EXTRA_ADD_EXECUTABLE_ARGS",
+          "value": "WIN32",
+          "type": "STRING"
+        },
+        {
           "name": "Qt5_DIR",
           "value": "C:/Libraries/Qt/5.15.0/msvc2019/lib/cmake/Qt5",
           "type": "PATH"
         },
         {
           "name": "CURL_LIBRARY",
-          "value": "C:/Libraries/curl/${name}/lib/libcurl_a.lib",
+          "value": "C:/Libraries/curl/x86-Release/lib/libcurl_a.lib",
           "type": "FILEPATH"
         },
         {
           "name": "CURL_INCLUDE_DIRS",
-          "value": "C:/Libraries/curl/${name}/include",
+          "value": "C:/Libraries/curl/x86-Release/include",
           "type": "PATH"
         },
         {
           "name": "MYSQL_INCLUDE_DIRS",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/include/",
+          "value": "C:/Libraries/mysql-connector-cpp/x86-Release/include/",
           "type": "PATH"
         },
         {
           "name": "MYSQL_LIBRARY",
-          "value": "C:/Libraries/mysql-connector-cpp/${name}/lib/vs14/mysqlcppconn8.lib",
+          "value": "C:/Libraries/mysql-connector-cpp/x86-Release/lib/vs14/mysqlcppconn8.lib",
           "type": "PATH"
         },
         {

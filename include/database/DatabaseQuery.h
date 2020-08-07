@@ -187,6 +187,7 @@ public:
     std::optional<ValueRange<unsigned>> sidelapWidth, overlapWidth;
     std::optional<LapAttachment> sidelapAttachment, overlapAttachment;
     std::optional<Machine> machine;
+    std::optional<std::string> manufacturer;
     std::optional<unsigned char> quantityOnDeck;
     std::optional<std::string> position;
     std::optional<MachineDeck> machineDeck;
@@ -218,9 +219,10 @@ private:
         SIDELAP_ATTACHMENT = 0x00008000,
         OVERLAP_ATTACHMENT = 0x00010000,
         MACHINE = 0x00020000,
-        QUANTITY_ON_DECK = 0x00040000,
-        POSITION = 0x00080000,
-        MACHINE_DECK = 0x00100000
+        MACHINE_MANUFACTURER = 0x00040000,
+        QUANTITY_ON_DECK = 0x00080000,
+        POSITION = 0x00100000,
+        MACHINE_DECK = 0x00200000
     };
 
     /// <summary>
@@ -445,6 +447,14 @@ public:
     /// from the database manager.</param>
     /// <returns>An SQL query string or an empty string if there are no punch programs to insert.</returns>
     std::string punchProgramsInsertQuery(unsigned matID) const;
+
+    std::string impactPadsInsertQuery(unsigned matID) const;
+
+    std::string centreHolesInsertQuery(unsigned matID) const;
+
+    std::string deflectorsInsertQuery(unsigned matID) const;
+
+    std::string divertorsInsertQuery(unsigned matID) const;
 
     // The optional drawingData object. If this object is set, this is a
     // request query, and the drawingData represents the drawing we wish to insert.

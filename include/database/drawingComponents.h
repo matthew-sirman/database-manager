@@ -24,7 +24,7 @@ struct DrawingComponent {
 
     constexpr size_t serialisedSize() const { return sizeof(unsigned); };
 
-    virtual ComboboxDataElement toDataElement() const = 0;
+    virtual ComboboxDataElement toDataElement(unsigned mode = 0) const = 0;
 
     unsigned componentID() const;
 
@@ -45,7 +45,7 @@ struct Product : public DrawingComponent {
 public:
     std::string productName;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     Product(unsigned id);
@@ -64,7 +64,7 @@ public:
 
     std::string apertureName() const;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     Aperture(unsigned id);
@@ -78,7 +78,7 @@ struct ApertureShape : public DrawingComponent {
 public:
     std::string shape;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     ApertureShape(unsigned id);
@@ -95,7 +95,7 @@ public:
 
     std::string material() const;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     Material(unsigned id);
@@ -123,7 +123,7 @@ public:
 
     std::string sideIronStr() const;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     SideIron(unsigned id);
@@ -150,7 +150,7 @@ public:
 
     std::string machineName() const;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     Machine(unsigned id);
@@ -164,7 +164,7 @@ struct MachineDeck : public DrawingComponent {
 public:
     std::string deck;
 
-    ComboboxDataElement toDataElement() const override;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
     MachineDeck(unsigned id);
@@ -179,10 +179,18 @@ public:
 
     void updateSource() override;
 
+    void sort(const std::function<bool(const T &, const T &)> &comparator);
+
+    void makeDistinct();
+
+    void setMode(unsigned mode);
+
 private:
     void setAdapter(const std::function<ComboboxDataElement(std::vector<unsigned>::const_iterator)> &adapter) override {}
 
     std::vector<unsigned> handleSet;
+
+    unsigned elementMode = 0;
 };
 
 template<typename T>
@@ -199,6 +207,32 @@ void ComboboxComponentDataSource<T>::updateSource() {
     this->__end = handleSet.end();
 
     DataSource::updateSource();
+}
+
+template<typename T>
+void ComboboxComponentDataSource<T>::sort(const std::function<bool(const T &, const T &)> &comparator) {
+    std::sort(handleSet.begin(), handleSet.end(), [comparator](unsigned a, unsigned b) {
+        return comparator(DrawingComponentManager<T>::getComponentByHandle(a),
+                          DrawingComponentManager<T>::getComponentByHandle(b));
+    });
+}
+
+template<typename T>
+void ComboboxComponentDataSource<T>::makeDistinct() {
+    std::vector<unsigned>::const_iterator end = std::unique(handleSet.begin(), handleSet.end(), [this](unsigned a, unsigned b) {
+        return DrawingComponentManager<T>::getComponentByHandle(a).toDataElement(elementMode).text ==
+            DrawingComponentManager<T>::getComponentByHandle(b).toDataElement(elementMode).text;
+    });
+    handleSet.erase(end, handleSet.end());
+    this->__end = handleSet.end();
+}
+
+template<typename T>
+void ComboboxComponentDataSource<T>::setMode(unsigned mode) {
+    ComboboxDataSource::setAdapter([mode](std::vector<unsigned>::const_iterator iter) {
+        return DrawingComponentManager<T>::getComponentByHandle(*iter).toDataElement(mode);
+    });
+    elementMode = mode;
 }
 
 template<typename T>

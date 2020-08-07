@@ -8,9 +8,11 @@
 #include <QGraphicsView>
 #include <QGraphicsProxyWidget>
 #include <QSpinBox>
+#include <QApplication>
 
 #include "DimensionLine.h"
 #include "AddLapWidget.h"
+#include "ImpactPadGraphicsItem.h"
 #include "../../include/database/Drawing.h"
 
 class DrawingView : public QGraphicsView {
@@ -29,8 +31,20 @@ public:
 
     void disableLaps();
 
+    void setRedrawRequired();
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+
+    void resizeEvent(QResizeEvent *event) override;
+
+    void contextMenuEvent(QContextMenuEvent *event) override;
+
+    void mousePressEvent(QMouseEvent *event) override;
+
+    void mouseMoveEvent(QMouseEvent *event) override;
+
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
     Drawing *drawing = nullptr;
@@ -39,15 +53,15 @@ private:
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
 
-    const double sceneSize = 2000;
-    const double maxMatDimensionPercentage = 0.9;
+    // const double sceneSize = 2000;
+    const double maxMatDimensionPercentage = 0.8;
     const double matSectionInset = 0.03;
-    const double dimensionLineOffset = 0.05;
+    const double dimensionLineOffset = 0.03;
     const double barSpacingDimensionHeight = 0.7;
     const double barWidthDimensionHeight = 0.8;
     const double barDimensionHeight = 0.1;
-    const double lapHintWidth = 0.02;
-    const double defaultLapSize = 0.01;
+    const double lapHintWidth = 0.012;
+    const double defaultLapSize = 40;
     const double defaultBarSize = 50;
 
     std::optional<Drawing::Lap> lapCache[4];
@@ -60,14 +74,28 @@ private:
 
     void lapChangedCallback(const Drawing::Lap &lap, unsigned lapIndex);
 
+    void updateSnapLines();
+
+    QPoint snapPoint(const QPoint &point) const;
+
+    QPointF snapPointF(const QPointF &point) const;
+
     QGraphicsRectItem *drawingBorderRect = nullptr;
     AddLapWidget *leftLapHint = nullptr, *rightLapHint = nullptr, *topLapHint = nullptr, *bottomLapHint = nullptr;
     DimensionLine *widthDimension = nullptr, *lengthDimension = nullptr;
+    QGraphicsTextItem *widthSumTextItem = nullptr;
     std::vector<QGraphicsProxyWidget *> spacingProxies, barProxies;
     std::vector<WidgetDimensionLine *> spacingDimensions, barDimensions;
     std::vector<QGraphicsRectItem *> matSectionRects;
+    std::vector<ImpactPadGraphicsItem *> impactPadRegions;
+
+    std::vector<double> hSnapLines, vSnapLines;
+
+    QRubberBand *impactPadRegionSelector = nullptr;
 
     bool lapsDisabled = false;
+
+    bool refreshRequired = true;
 };
 
 

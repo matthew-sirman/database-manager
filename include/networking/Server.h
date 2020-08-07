@@ -88,7 +88,11 @@ public:
 
     void setRequestHandler(ServerRequestHandler &handler);
 
-    void setLoggingStream(std::ostream &stream = std::cout, std::ostream &errStream = std::cerr);
+    void setLoggingStream(std::ostream *log = &std::cout, std::ostream *changelog = nullptr, std::ostream *errStream = &std::cerr);
+
+    void changelogMessage(const ClientHandle &clientHandle, const std::string &message);
+
+    std::string timestamp() const;
 
     void setHeartBeatCycles(int cycles);
 
@@ -123,6 +127,7 @@ private:
     ServerRequestHandler *requestHandler = nullptr;
 
     std::ostream *logStream = &std::cout;
+    std::ostream *changelogStream = nullptr;
     std::ostream *errorStream = &std::cerr;
 
     DatabaseManager *dbManager = nullptr;

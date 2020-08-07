@@ -72,3 +72,25 @@ bool SideIronFilter::__filter(std::vector<unsigned>::const_iterator element) con
 	}
 	return match;
 }
+
+void MachineModelFilter::setManufacturer(const std::string &manufacturerName) {
+	manufacturer = manufacturerName;
+	if (filterUpdateCallback) {
+		filterUpdateCallback();
+	}
+}
+
+void MachineModelFilter::removeManufacturerFilter() {
+	manufacturer = std::nullopt;
+	if (filterUpdateCallback) {
+		filterUpdateCallback();
+	}
+}
+
+bool MachineModelFilter::__filter(std::vector<unsigned>::const_iterator element) const {
+	if (!manufacturer.has_value()) {
+		return false;
+	}
+	Machine &machine = DrawingComponentManager<Machine>::getComponentByHandle(*element);
+	return machine.model != std::string() && machine.manufacturer == manufacturer.value();
+}

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Database Manager</string>
+   <string>SCS Screen Mat Database</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -151,7 +151,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="1" column="7">
-                  <widget class="DynamicComboBox" name="thickness1SearchInput">
+                  <widget class="DynamicComboBox" name="thicknessSearchInput">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
@@ -278,7 +278,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="2" column="7">
-                  <widget class="DynamicComboBox" name="thickness2SearchInput">
+                  <widget class="DynamicComboBox" name="backingThicknessSearchInput">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
@@ -313,7 +313,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="2" column="6">
-                  <widget class="ActivatorLabel" name="thickness2SearchLabel">
+                  <widget class="ActivatorLabel" name="backingThicknessSearchLabel">
                    <property name="styleSheet">
                     <string notr="true">QLabel {
 	padding: 3px;
@@ -326,7 +326,7 @@ QLabel[hovering=true] {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Bottom Thickness</string>
+                    <string>Backing Thickness</string>
                    </property>
                   </widget>
                  </item>
@@ -347,7 +347,7 @@ QLabel[hovering=true] {
                   </widget>
                  </item>
                  <item row="1" column="6">
-                  <widget class="ActivatorLabel" name="thickness1SearchLabel">
+                  <widget class="ActivatorLabel" name="thicknessSearchLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -366,7 +366,7 @@ QLabel[hovering=true] {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Top Thickness</string>
+                    <string>Thickness</string>
                    </property>
                   </widget>
                  </item>
@@ -959,7 +959,7 @@ QLabel[hovering=true] {
                <item>
                 <layout class="QGridLayout" name="gridLayout">
                  <item row="0" column="0">
-                  <widget class="ActivatorLabel" name="machineLabel">
+                  <widget class="ActivatorLabel" name="manufacturerLabel">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                      <horstretch>0</horstretch>
@@ -978,7 +978,7 @@ QLabel[hovering=true] {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Machine</string>
+                    <string>Manufacturer</string>
                    </property>
                   </widget>
                  </item>
@@ -1104,7 +1104,41 @@ QLabel[hovering=true] {
                   </spacer>
                  </item>
                  <item row="0" column="1">
-                  <widget class="DynamicComboBox" name="machineSearchInput">
+                  <widget class="DynamicComboBox" name="manufacturerSearchInput">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                   <property name="insertPolicy">
+                    <enum>QComboBox::NoInsert</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="ActivatorLabel" name="modelLabel">
+                   <property name="styleSheet">
+                    <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+                   </property>
+                   <property name="text">
+                    <string>Model</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3">
+                  <widget class="DynamicComboBox" name="modelSearchInput">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -1269,8 +1303,8 @@ color: rgb(70, 70, 70);
   <tabstop>productTypeSearchInput</tabstop>
   <tabstop>numberOfBarsSearchInput</tabstop>
   <tabstop>apertureSearchInput</tabstop>
-  <tabstop>thickness1SearchInput</tabstop>
-  <tabstop>thickness2SearchInput</tabstop>
+  <tabstop>thicknessSearchInput</tabstop>
+  <tabstop>backingThicknessSearchInput</tabstop>
   <tabstop>startDateSearchInput</tabstop>
   <tabstop>endDateSearchInput</tabstop>
   <tabstop>sideIronTypeSearchInput</tabstop>
@@ -1281,7 +1315,7 @@ color: rgb(70, 70, 70);
   <tabstop>overlapWidthSearchInput</tabstop>
   <tabstop>sidelapAttachmentSearchInput</tabstop>
   <tabstop>overlapAttachmentSearchInput</tabstop>
-  <tabstop>machineSearchInput</tabstop>
+  <tabstop>manufacturerSearchInput</tabstop>
   <tabstop>quantityOnDeckSearchInput</tabstop>
   <tabstop>positionSearchInput</tabstop>
   <tabstop>deckSearchInput</tabstop>

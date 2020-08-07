@@ -9,6 +9,7 @@
 #include <QMessageBox>
 #include <QPdfDocument>
 #include <QPdfView>
+#include <QDesktopServices>
 
 #include <filesystem>
 

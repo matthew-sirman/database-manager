@@ -20,8 +20,14 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     drawing.setProduct(DrawingComponentManager<Product>::findComponentByID(1));
     drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::findComponentByID(1));
 
+    Date today = Date::today();
+    drawing.setDate(today);
+
+    ui->dateInput->setDate(QDate(today.year, today.month, today.day));
+
     setupActivators();
     setupComboboxSources();
+    setupDrawingUpdateConnections();
 
     visualsScene = new QGraphicsScene();
     ui->drawingSpecsVisual->setScene(visualsScene);
@@ -40,21 +46,20 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
             SLOT(capitaliseLineEdit(const QString &)));
 
     setMode(ADD_NEW_DRAWING);
-
-    setupDrawingUpdateConnections();
 }
 
 AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode, QWidget *parent)
     : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
 
-    setupActivators();
-    setupComboboxSources();
-
     this->drawing = drawing;
     if (mode == CLONE_DRAWING) {
         this->drawing.setDrawingNumber("");
     }
+
+    setupActivators();
+    setupComboboxSources();
+    setupDrawingUpdateConnections();
 
     visualsScene = new QGraphicsScene();
     ui->drawingSpecsVisual->setScene(visualsScene);
@@ -72,11 +77,23 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
         SLOT(capitaliseLineEdit(const QString &)));
 
-    setupDrawingUpdateConnections();
-
     setMode(mode);
 
     loadDrawing();
+
+    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
+    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
+
+    if (drawing.sideIron(Drawing::Side::LEFT).type != SideIronType::None) {
+        leftSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::LEFT).type);
+    } else {
+        leftSideIronFilter->setSideIronType(SideIronType::A);
+    }
+    if (drawing.sideIron(Drawing::Side::RIGHT).type != SideIronType::None) {
+        rightSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::RIGHT).type);
+    } else {
+        leftSideIronFilter->setSideIronType(SideIronType::A);
+    }
 }
 
 AddDrawingPageWidget::~AddDrawingPageWidget() {
@@ -84,14 +101,39 @@ AddDrawingPageWidget::~AddDrawingPageWidget() {
 }
 
 void AddDrawingPageWidget::setupComboboxSources() {
+    static std::unordered_map<unsigned char, unsigned char> shapeOrder = {
+        {1, 1},
+        {2, 4},
+        {3, 2},
+        {4, 3},
+        {5, 5},
+        {6, 0}
+    };
+    std::function<bool(const Aperture &, const Aperture &)> apertureComparator = [](const Aperture &a, const Aperture &b) {
+        if (a.apertureShapeID != b.apertureShapeID) {
+            return shapeOrder[a.apertureShapeID] < shapeOrder[b.apertureShapeID];
+        }
+        return a.width < b.width;
+    };
+
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
-    DrawingComponentManager<Aperture>::addCallback([this]() { apertureSource.updateSource(); });
+    DrawingComponentManager<Aperture>::addCallback([this, apertureComparator]() { 
+        apertureSource.updateSource();
+        apertureSource.sort(apertureComparator);
+    });
     DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); });
     DrawingComponentManager<Material>::addCallback([this]() { bottomMaterialSource.updateSource(); });
     DrawingComponentManager<SideIron>::addCallback([this]() { leftSideIronSource.updateSource(); });
     DrawingComponentManager<SideIron>::addCallback([this]() { rightSideIronSource.updateSource(); });
-    DrawingComponentManager<Machine>::addCallback([this]() { machineSource.updateSource(); });
+    DrawingComponentManager<Machine>::addCallback([this]() {
+        machineManufacturerSource.updateSource();
+        machineManufacturerSource.makeDistinct();
+        machineModelSource.updateSource();
+    });
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
+
+    machineManufacturerSource.setMode(1);
+    machineModelSource.setMode(2);
 
     productSource.updateSource();
     apertureSource.updateSource();
@@ -99,8 +141,18 @@ void AddDrawingPageWidget::setupComboboxSources() {
     bottomMaterialSource.updateSource();
     leftSideIronSource.updateSource();
     rightSideIronSource.updateSource();
-    machineSource.updateSource();
+    machineManufacturerSource.updateSource();
+    machineManufacturerSource.makeDistinct();
+    machineModelSource.updateSource();
     machineDeckSource.updateSource();
+
+    machineModelFilter = machineModelSource.setFilter<MachineModelFilter>();
+
+    connect(ui->manufacturerInput, &DynamicComboBox::currentTextChanged, [this](const QString &text) {
+        machineModelFilter->setManufacturer(text.toStdString());
+    });
+
+    apertureSource.sort(apertureComparator);
 
     ui->productInput->setDataSource(productSource);
     ui->apertureInput->setDataSource(apertureSource);
@@ -108,7 +160,8 @@ void AddDrawingPageWidget::setupComboboxSources() {
     ui->bottomMaterialInput->setDataSource(bottomMaterialSource);
     ui->leftSideIronDrawingInput->setDataSource(leftSideIronSource);
     ui->rightSideIronDrawingInput->setDataSource(rightSideIronSource);
-    ui->machineInput->setDataSource(machineSource);
+    ui->manufacturerInput->setDataSource(machineManufacturerSource);
+    ui->modelInput->setDataSource(machineModelSource);
     ui->machineDeckInput->setDataSource(machineDeckSource);
 }
 
@@ -320,20 +373,47 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         switch (index) {
             case 0:
                 drawing.setTensionType(Drawing::SIDE);
+                if (leftSICache == 0) {
+                    ui->leftSideIronTypeInput->setCurrentIndex(0);
+                }
+                if (rightSICache == 0) {
+                    ui->rightSideIronTypeInput->setCurrentIndex(0);
+                }
                 break;
             case 1:
                 drawing.setTensionType(Drawing::END);
+                if (leftSICache == 0) {
+                    ui->leftSideIronTypeInput->setCurrentIndex(2);
+                }
+                if (rightSICache == 0) {
+                    ui->rightSideIronTypeInput->setCurrentIndex(2);
+                }
                 break;
             default:
                 break;
         }
     });
+    connect(ui->rebatedInput, &QCheckBox::clicked, [this](bool checked) {
+        drawing.setRebated(checked);
+        if (checked && addedNotes.find(REBATED) == addedNotes.end()) {
+            std::stringstream updatedNotes;
+            updatedNotes << drawing.notes() << REBATED_NOTE << std::endl;
+            ui->notesInput->setText(updatedNotes.str().c_str());
+            addedNotes.insert(REBATED);
+        }
+    });
+    connect(ui->backingStripsInput, &QCheckBox::clicked, [this](bool checked) {
+        drawing.setHasBackingStrips(checked);
+        if (checked && addedNotes.find(HAS_BACKING_STRIPS) == addedNotes.end()) {
+            std::stringstream updatedNotes;
+            updatedNotes << drawing.notes() << BACKING_STRIPS_NOTE << std::endl;
+            ui->notesInput->setText(updatedNotes.str().c_str());
+            addedNotes.insert(HAS_BACKING_STRIPS);
+        }
+    });
     connect(ui->notesInput, &QTextEdit::textChanged, [this]() {
         drawing.setNotes(ui->notesInput->toPlainText().toStdString());
     });
-
-    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
-    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
 
     connect(ui->leftSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         if (leftSideIronFilter) {
@@ -350,9 +430,11 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->leftSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setSideIron(Drawing::LEFT, DrawingComponentManager<SideIron>::getComponentByHandle(
                 ui->leftSideIronDrawingInput->itemData(index).toInt()));
+        leftSICache = ui->leftSideIronDrawingInput->itemData(index).toInt();
         if (!ui->rightSideIronLabel->active()) {
             drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByHandle(
                     ui->leftSideIronDrawingInput->itemData(index).toInt()));
+            rightSICache = leftSICache;
         }
     });
     connect(ui->leftSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
@@ -374,13 +456,14 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->rightSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByHandle(
                 ui->leftSideIronDrawingInput->itemData(index).toInt()));
+        rightSICache = ui->rightSideIronDrawingInput->itemData(index).toInt();
     });
     connect(ui->rightSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
         drawing.setSideIronInverted(Drawing::RIGHT, checked);
     });
 
-    connect(ui->machineInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMachine(DrawingComponentManager<Machine>::getComponentByHandle(ui->machineInput->itemData(index).toInt()));
+    connect(ui->modelInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
+        drawing.setMachine(DrawingComponentManager<Machine>::getComponentByHandle(ui->modelInput->itemData(index).toInt()));
     });
     connect(ui->quantityOnDeckInput, qOverload<int>(&QSpinBox::valueChanged), [this](int newValue) {
         drawing.setQuantityOnDeck(newValue);
@@ -393,12 +476,12 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     });
 
     connect(ui->openDrawingPDFButton, &QPushButton::pressed, [this]() {
-        const QString hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Drawing PDF File", QString(), "PDF (*.pdf)");
-        if (!hyperlinkFile.isEmpty()) {
-            ui->hyperlinkDisplay->setText(hyperlinkFile);
-            ui->hyperlinkDisplay->setToolTip(hyperlinkFile);
+        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Drawing PDF File", QString(), "PDF (*.pdf)").toStdString();
+        if (!hyperlinkFile.empty()) {
+            ui->hyperlinkDisplay->setText(hyperlinkFile.generic_string().c_str());
+            ui->hyperlinkDisplay->setToolTip(hyperlinkFile.generic_string().c_str());
 
-            drawing.setHyperlink(hyperlinkFile.toStdString());
+            drawing.setHyperlink(hyperlinkFile.generic_string());
         }
     });
     connect(ui->generatePDFButton, &QPushButton::pressed, [this]() {
@@ -418,30 +501,31 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
                 }
             }
 
-            if (pdfWriter.createPDF(pdfFile.string().c_str(), drawing)) {
+            if (pdfWriter.createPDF(pdfFile.generic_string().c_str(), drawing)) {
                 QMessageBox::about(this, "PDF Generator", "Automatic PDF generated.");
             } else {
                 QMessageBox::about(this, "PDF Generator", "PDF Generation failed. Is the PDF file already open?");
                 return;
             }
 
-            ui->hyperlinkDisplay->setText(pdfFile.string().c_str());
-            ui->hyperlinkDisplay->setToolTip(pdfFile.string().c_str());
+            ui->hyperlinkDisplay->setText(pdfFile.generic_string().c_str());
+            ui->hyperlinkDisplay->setToolTip(pdfFile.generic_string().c_str());
 
-            drawing.setHyperlink(pdfFile.string());
+            drawing.setHyperlink(pdfFile.generic_string());
         }
     });
     connect(ui->pressDrawingHyperlinksAddButton, &QPushButton::pressed, [this]() {
-        const QString hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Press Program PDF File",
-                                                                   QString(), "PDF (*.pdf)");
-        if (!hyperlinkFile.isEmpty()) {
-            ui->pressDrawingHyperlinkList->addItem(hyperlinkFile);
+        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Press Program PDF File",
+                                                                   QString(), "PDF (*.pdf)").toStdString();
+        if (!hyperlinkFile.empty()) {
+            ui->pressDrawingHyperlinkList->addItem(hyperlinkFile.generic_string().c_str());
 
             std::vector<std::string> links;
             links.reserve(ui->pressDrawingHyperlinkList->count());
 
             for (int i = 0; i < ui->pressDrawingHyperlinkList->count(); i++) {
-                links.push_back(ui->pressDrawingHyperlinkList->item(i)->text().toStdString());
+                std::filesystem::path p = ui->pressDrawingHyperlinkList->item(i)->text().toStdString();
+                links.push_back(p.generic_string());
             }
 
             drawing.setPressDrawingHyperlinks(links);
@@ -488,6 +572,16 @@ void AddDrawingPageWidget::loadDrawing() {
         ui->tensionTypeInput->setCurrentText("End");
         break;
     }
+    ui->rebatedInput->setChecked(drawing.rebated());
+    ui->backingStripsInput->setChecked(drawing.hasBackingStrips());
+
+    if (drawing.rebated()) {
+        addedNotes.insert(REBATED);
+    }
+    if (drawing.hasBackingStrips()) {
+        addedNotes.insert(HAS_BACKING_STRIPS);
+    }
+
     ui->notesInput->setPlainText(drawing.notes().c_str());
 
     if (!drawing.loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
@@ -510,7 +604,8 @@ void AddDrawingPageWidget::loadDrawing() {
     }
 
     Drawing::MachineTemplate machineTemplate = drawing.machineTemplate();
-    ui->machineInput->setCurrentIndex(ui->machineInput->findData(machineTemplate.machine().handle()));
+    ui->manufacturerInput->setCurrentText(machineTemplate.machine().manufacturer.c_str());
+    ui->modelInput->setCurrentText(machineTemplate.machine().model.c_str());
     ui->quantityOnDeckInput->setValue(machineTemplate.quantityOnDeck);
     ui->machinePositionInput->setText(machineTemplate.position.c_str());
     ui->machineDeckInput->setCurrentIndex(ui->machineDeckInput->findData(machineTemplate.deck().handle()));

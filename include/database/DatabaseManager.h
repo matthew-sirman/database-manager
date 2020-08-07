@@ -57,7 +57,8 @@ public:
     /// <param name="maxLapSize">A reference to a variable to store the maxmimum lap size</param>
     /// <param name="maxDrawingLength">A refernce to a variable to store the maximum drawing number length.
     /// Note: drawing numbers longer than 255 are disallowed by the database, so this value is used as a single byte.</param>
-    void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, unsigned char &maxDrawingLength);
+    void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, 
+                                     unsigned char &maxBarSpacingCount, float &maxBarSpacing, unsigned char &maxDrawingLength);
 
     /// <summary>
     /// Executes a search query based on a DatabaseSearchQuery object parameterisation.

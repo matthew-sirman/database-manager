@@ -8,7 +8,7 @@
 
 #include <utility>
 
-DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0) {
+DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0, 0) {
 
 }
 
@@ -83,6 +83,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 				if (response.insertResponseCode == DrawingInsert::SUCCESS) {
 					setCompressionSchemaDirty();
+					caller.changelogMessage(clientHandle, "Added drawing " + drawingInsert.drawingData->drawingNumber());
 				}
 
 				unsigned responseSize = response.serialisedSize();
@@ -235,6 +236,10 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
+			if (response.responseCode != ComponentInsert::ComponentInsertResponse::SUCCESS) {
+				break;
+			}
+
 			void *sourceData;
 			unsigned sourceDataBufferSize;
 
@@ -247,6 +252,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 					sourceData = DrawingComponentManager<Aperture>::rawSourceData();
 					sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
+
+					caller.changelogMessage(clientHandle, "Added a new aperture");
 					break;
 				}
 				case RequestType::SOURCE_MACHINE_TABLE: {
@@ -255,6 +262,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 					sourceData = DrawingComponentManager<Machine>::rawSourceData();
 					sourceDataBufferSize = DrawingComponentManager<Machine>::rawSourceDataSize();
+
+					caller.changelogMessage(clientHandle, "Added a new machine");
 					break;
 				}
 				case RequestType::SOURCE_SIDE_IRON_TABLE: {
@@ -276,12 +285,16 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 					sourceData = DrawingComponentManager<SideIron>::rawSourceData();
 					sourceDataBufferSize = DrawingComponentManager<SideIron>::rawSourceDataSize();
+
+					caller.changelogMessage(clientHandle, "Added a new side iron");
 					break;
 				}
 				case RequestType::SOURCE_MATERIAL_TABLE: {
 					createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
 					sourceData = DrawingComponentManager<Material>::rawSourceData();
 					sourceDataBufferSize = DrawingComponentManager<Material>::rawSourceDataSize();
+
+					caller.changelogMessage(clientHandle, "Added a new material");
 					break;
 				}
 				default:
@@ -315,13 +328,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 		case RequestType::CREATE_DATABASE_BACKUP: {
 			DatabaseBackup backup = DatabaseBackup::deserialise(message);
 
-			std::filesystem::path backupPath = "D:/Users/Matthew/Work/Database Manager/backups";
-			backupPath /= backup.backupName;
-			backupPath.replace_extension("sql");
+			std::filesystem::path backupFile = backupPath / backup.backupName;
+			backupFile.replace_extension("sql");
 
 			DatabaseBackup response;
 
-			if (caller.databaseManager().createBackup(backupPath)) {
+			if (caller.databaseManager().createBackup(backupFile)) {
 				response.responseCode = DatabaseBackup::BackupResponse::SUCCESS;
 			} else {
 				response.responseCode = DatabaseBackup::BackupResponse::FAILED;
@@ -365,12 +377,17 @@ DrawingSummaryCompressionSchema DatabaseRequestHandler::compressionSchema(Databa
 		unsigned maxMatID, maxThicknessHandle, maxApertureHandle;
 		float maxWidth, maxLength, maxLapSize;
 		unsigned char maxDrawingLength;
+		unsigned char maxBarSpacingCount;
+		float maxBarSpacing;
 
-		dbManager->getCompressionSchemaDetails(maxMatID, maxWidth, maxLength, maxLapSize, maxDrawingLength);
+
+		dbManager->getCompressionSchemaDetails(maxMatID, maxWidth, maxLength, maxLapSize, maxBarSpacingCount, maxBarSpacing, maxDrawingLength);
 		maxThicknessHandle = DrawingComponentManager<Material>::maximumHandle();
 		maxApertureHandle = DrawingComponentManager<Aperture>::maximumHandle();
 		
-		schema = DrawingSummaryCompressionSchema(maxMatID, maxWidth, maxLength, maxThicknessHandle, maxLapSize, maxApertureHandle, maxDrawingLength);
+		schema = DrawingSummaryCompressionSchema(maxMatID, maxWidth, maxLength, maxThicknessHandle, 
+												 maxLapSize, maxApertureHandle, maxBarSpacingCount, 
+												 maxBarSpacing, maxDrawingLength);
 
 		schemaDirty = false;
 	}

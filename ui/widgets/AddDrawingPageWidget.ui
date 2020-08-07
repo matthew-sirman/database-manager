@@ -272,7 +272,7 @@ QLabel[hovering=true] {
 }</string>
              </property>
              <property name="text">
-              <string>Top Material</string>
+              <string>Thickness</string>
              </property>
             </widget>
            </item>
@@ -306,7 +306,7 @@ QLabel[hovering=true] {
 }</string>
              </property>
              <property name="text">
-              <string>Bottom Material</string>
+              <string>Backing Thickness</string>
              </property>
             </widget>
            </item>
@@ -436,6 +436,31 @@ QLabel[hovering=true] {
             </widget>
            </item>
            <item row="7" column="0">
+            <widget class="QLabel" name="rebatedLabel">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Rebated</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QCheckBox" name="rebatedInput">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
             <widget class="QLabel" name="notesLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
@@ -453,8 +478,33 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
+           <item row="9" column="1">
             <widget class="QTextEdit" name="notesInput"/>
+           </item>
+           <item row="8" column="1">
+            <widget class="QCheckBox" name="backingStripsInput">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QLabel" name="backingStripsLabel">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Backing Strips</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -853,7 +903,7 @@ QLabel[hovering=true] {
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
            </property>
            <item row="0" column="0">
-            <widget class="QLabel" name="machineLabel">
+            <widget class="QLabel" name="manufacturerLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
 	padding: 3px;
@@ -866,12 +916,12 @@ QLabel[hovering=true] {
 }</string>
              </property>
              <property name="text">
-              <string>Machine</string>
+              <string>Manufacturer</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="DynamicComboBox" name="machineInput">
+            <widget class="DynamicComboBox" name="manufacturerInput">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -886,7 +936,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="2" column="0">
             <widget class="QLabel" name="quantityOnDeckLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
@@ -904,7 +954,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="2" column="1">
             <widget class="QSpinBox" name="quantityOnDeckInput">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -914,7 +964,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="machinePositionLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
@@ -932,7 +982,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <widget class="QLineEdit" name="machinePositionInput">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -942,7 +992,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
+           <item row="4" column="0">
             <widget class="QLabel" name="machineDeckLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
@@ -960,13 +1010,41 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="1">
             <widget class="DynamicComboBox" name="machineDeckInput">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="ActivatorLabel" name="modelLabel">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Model</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="DynamicComboBox" name="modelInput">
+             <property name="editable">
+              <bool>true</bool>
              </property>
              <property name="insertPolicy">
               <enum>QComboBox::NoInsert</enum>
@@ -1168,7 +1246,7 @@ QLabel[hovering=true] {
   <tabstop>rightSideIronLengthInput</tabstop>
   <tabstop>rightSideIronDrawingInput</tabstop>
   <tabstop>rightSideIronInvertedInput</tabstop>
-  <tabstop>machineInput</tabstop>
+  <tabstop>manufacturerInput</tabstop>
   <tabstop>quantityOnDeckInput</tabstop>
   <tabstop>machinePositionInput</tabstop>
   <tabstop>machineDeckInput</tabstop>

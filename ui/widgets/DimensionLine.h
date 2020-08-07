@@ -17,7 +17,7 @@ public:
         HORIZONTAL
     };
 
-    DimensionLine(QRectF dimensionBounds, Orientation orientation, const QString &label = QString(), int labelFontSize=35);
+    DimensionLine(QRectF dimensionBounds, Orientation orientation, const QString &label = QString(), int labelFontSize=10);
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 

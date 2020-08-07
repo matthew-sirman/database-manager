@@ -76,6 +76,12 @@ Date Date::parse(std::time_t rawDate) {
     return { (unsigned)(timePoint->tm_year + 1900), (unsigned)(timePoint->tm_mon + 1), (unsigned)timePoint->tm_mday };
 }
 
+Date Date::today() {
+    time_t now = time(0);
+    std::tm *timePoint = std::localtime(&now);
+    return { (unsigned) (timePoint->tm_year + 1900), (unsigned) (timePoint->tm_mon + 1), (unsigned) timePoint->tm_mday };
+}
+
 Drawing::Drawing() = default;
 
 Drawing::Drawing(const Drawing &drawing) {
@@ -89,6 +95,8 @@ Drawing::Drawing(const Drawing &drawing) {
     this->productHandle = drawing.productHandle;
     this->apertureHandle = drawing.apertureHandle;
     this->__tensionType = drawing.__tensionType;
+    this->__rebated = drawing.__rebated;
+    this->__hasBackingStrips = drawing.__hasBackingStrips;
     this->__pressDrawingHyperlinks = drawing.__pressDrawingHyperlinks;
     this->barSpacings = drawing.barSpacings;
     this->barWidths = drawing.barWidths;
@@ -102,6 +110,10 @@ Drawing::Drawing(const Drawing &drawing) {
     this->overlaps[1] = drawing.overlaps[1];
     this->topLayerThicknessHandle = drawing.topLayerThicknessHandle;
     this->bottomLayerThicknessHandle = drawing.bottomLayerThicknessHandle;
+    this->__impactPads = drawing.__impactPads;
+    this->__centreHoles = drawing.__centreHoles;
+    this->__deflectors = drawing.__deflectors;
+    this->__divertors = drawing.__divertors;
     this->loadWarnings = drawing.loadWarnings;
 }
 
@@ -116,6 +128,8 @@ void Drawing::setAsDefault() {
     this->productHandle = 0;
     this->apertureHandle = 0;
     this->__tensionType = TensionType::SIDE;
+    this->__rebated = false;
+    this->__hasBackingStrips = false;
     this->__pressDrawingHyperlinks = std::vector<std::string>();
     this->barSpacings = { 0 };
     this->barWidths = { 0, 0 };
@@ -129,6 +143,10 @@ void Drawing::setAsDefault() {
     this->overlaps[1] = std::nullopt;
     this->topLayerThicknessHandle = 0;
     this->bottomLayerThicknessHandle = std::nullopt;
+    this->__impactPads = {};
+    this->__centreHoles = {};
+    this->__deflectors = {};
+    this->__divertors = {};
     this->loadWarnings = 0;
 }
 
@@ -244,6 +262,22 @@ Drawing::TensionType Drawing::tensionType() const {
 void Drawing::setTensionType(Drawing::TensionType newTensionType) {
     __tensionType = newTensionType;
     invokeUpdateCallbacks();
+}
+
+bool Drawing::rebated() const {
+    return __rebated;
+}
+
+void Drawing::setRebated(bool isRebated) {
+    __rebated = isRebated;
+}
+
+bool Drawing::hasBackingStrips() const {
+    return __hasBackingStrips;
+}
+
+void Drawing::setHasBackingStrips(bool backingStrips) {
+    __hasBackingStrips = backingStrips;
 }
 
 std::optional<Material> Drawing::material(Drawing::MaterialLayer layer) const {
@@ -454,6 +488,42 @@ bool Drawing::hasOverlaps() const {
     return overlaps[0].has_value() || overlaps[1].has_value();
 }
 
+void Drawing::addImpactPad(const ImpactPad &impactPad) {
+    __impactPads.push_back(impactPad);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::ImpactPad> Drawing::impactPads() const {
+    return __impactPads;
+}
+
+void Drawing::addCentreHole(const CentreHole &centreHole) {
+    __centreHoles.push_back(centreHole);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::CentreHole> Drawing::centreHoles() const {
+    return __centreHoles;
+}
+
+void Drawing::addDeflector(const Deflector &deflector) {
+    __deflectors.push_back(deflector);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::Deflector> Drawing::deflectors() const {
+    return __deflectors;
+}
+
+void Drawing::addDivertor(const Divertor &divertor) {
+    __divertors.push_back(divertor);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::Divertor> Drawing::divertors() const {
+    return __divertors;
+}
+
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCSimplifyInspection"
 
@@ -588,6 +658,12 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     // Tension Type
     *buffer++ = (unsigned char) drawing.__tensionType;
 
+    // Rebated
+    *buffer++ = drawing.__rebated;
+
+    // Backing Strips
+    *buffer++ = drawing.__hasBackingStrips;
+
     // Press Drawing Links
     *buffer++ = drawing.__pressDrawingHyperlinks.size();
     for (const std::string &pdl : drawing.__pressDrawingHyperlinks) {
@@ -692,6 +768,34 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         buffer += sizeof(unsigned);
     }
 
+    // Impact Pads
+    *buffer++ = drawing.__impactPads.size();
+    for (const Drawing::ImpactPad &pad : drawing.__impactPads) {
+        pad.serialise(buffer);
+        buffer += pad.serialisedSize();
+    }
+
+    // Centre Holes
+    *buffer++ = drawing.__centreHoles.size();
+    for (const Drawing::CentreHole &hole : drawing.__centreHoles) {
+        hole.serialise(buffer);
+        buffer += hole.serialisedSize();
+    }
+
+    // Deflectors
+    *buffer++ = drawing.__deflectors.size();
+    for (const Drawing::Deflector &deflector : drawing.__deflectors) {
+        deflector.serialise(buffer);
+        buffer += deflector.serialisedSize();
+    }
+
+    // Divertors
+    *buffer++ = drawing.__divertors.size();
+    for (const Drawing::Divertor &divertor : drawing.__divertors) {
+        divertor.serialise(buffer);
+        buffer += divertor.serialisedSize();
+    }
+
     // Load warnings
     *((unsigned *) buffer) = drawing.loadWarnings;
     buffer += sizeof(unsigned);
@@ -720,6 +824,10 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned);
     // Tension Type
     size += sizeof(unsigned char);
+    // Rebated
+    size += sizeof(bool);
+    // Backing Strips
+    size += sizeof(bool);
     // Press Drawing Links
     size += sizeof(unsigned char) +
             std::accumulate(drawing.__pressDrawingHyperlinks.begin(), drawing.__pressDrawingHyperlinks.end(),
@@ -755,6 +863,14 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     if (drawing.bottomLayerThicknessHandle.has_value()) {
         size += sizeof(unsigned);
     }
+    // Impact Pads
+    size += sizeof(unsigned char) + drawing.__impactPads.size();
+    // Centre Holes
+    size += sizeof(unsigned char) + drawing.__centreHoles.size();
+    // Deflectors
+    size += sizeof(unsigned char) + drawing.__deflectors.size();
+    // Divertors
+    size += sizeof(unsigned char) + drawing.__divertors.size();
     // Load Warnings
     size += sizeof(unsigned);
 
@@ -817,6 +933,12 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
 
     // Tension Type
     drawing->__tensionType = (Drawing::TensionType) *buffer++;
+
+    // Rebated
+    drawing->__rebated = *buffer++;
+
+    // Backing Strips
+    drawing->__hasBackingStrips = *buffer++;
 
     // Press Drawing Links
     unsigned char noPressDrawings = *buffer++;
@@ -926,6 +1048,38 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         drawing->bottomLayerThicknessHandle = std::nullopt;
     }
 
+    // Impact Pads
+    unsigned char impactPadCount = *buffer++;
+    for (unsigned i = 0; i < impactPadCount; i++) {
+        Drawing::ImpactPad &pad = Drawing::ImpactPad::deserialise(buffer);
+        buffer += pad.serialisedSize();
+        drawing->__impactPads.push_back(pad);
+    }
+
+    // Centre Holes
+    unsigned char centreHoleCount = *buffer++;
+    for (unsigned i = 0; i < centreHoleCount; i++) {
+        Drawing::CentreHole &hole= Drawing::CentreHole::deserialise(buffer);
+        buffer += hole.serialisedSize();
+        drawing->__centreHoles.push_back(hole);
+    }
+
+    // Deflectors
+    unsigned char deflectorCount = *buffer++;
+    for (unsigned i = 0; i < deflectorCount; i++) {
+        Drawing::Deflector &deflector = Drawing::Deflector::deserialise(buffer);
+        buffer += deflector.serialisedSize();
+        drawing->__deflectors.push_back(deflector);
+    }
+
+    // Divertors
+    unsigned char divertorCount = *buffer++;
+    for (unsigned i = 0; i < divertorCount; i++) {
+        Drawing::Divertor &divertor = Drawing::Divertor::deserialise(buffer);
+        buffer += divertor.serialisedSize();
+        drawing->__divertors.push_back(divertor);
+    }
+
     // Load Warnings
     drawing->loadWarnings = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
@@ -1007,9 +1161,34 @@ void DrawingSummary::setLapSize(unsigned index, float size) {
     __lapSizes[index] = (unsigned) (size * 2);
 }
 
+std::vector<float> DrawingSummary::barSpacings() const {
+    std::vector<float> spacings;
+
+    for (unsigned spacing : __barSpacings) {
+        spacings.push_back((float) spacing / 2.0f);
+    }
+
+    spacings.push_back(width() - std::accumulate(spacings.begin(), spacings.end(), 0.0f));
+
+    return spacings;
+}
+
+void DrawingSummary::addSpacing(float spacing) {
+    __barSpacings.push_back((unsigned) (spacing * 2));
+}
+
+void DrawingSummary::clearSpacings() {
+    __barSpacings.clear();
+}
+
+unsigned DrawingSummary::barSpacingCount() const {
+    return __barSpacings.size() + 1;
+}
+
 DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int maxMatID, float maxWidth, float maxLength,
                                                                  unsigned int maxThicknessHandle, float maxLapSize,
-                                                                 unsigned int maxApertureHandle,
+                                                                 unsigned int maxApertureHandle, 
+                                                                 unsigned char maxBarSpacingCount, float maxBarSpacing,
                                                                  unsigned char maxDrawingLength) {
     this->matIDSize = MIN_COVERING_BITS(maxMatID);
     this->widthSize = MIN_COVERING_BITS((unsigned) (maxWidth * 2));
@@ -1017,8 +1196,11 @@ DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int ma
     this->thicknessHandleSize = MIN_COVERING_BITS(maxThicknessHandle);
     this->lapSize = MIN_COVERING_BITS((unsigned) (maxLapSize * 2));
     this->apertureHandleSize = MIN_COVERING_BITS(maxApertureHandle);
+    this->barSpacingCountSize = MIN_COVERING_BITS(maxBarSpacingCount);
+    this->barSpacingSize = MIN_COVERING_BITS((unsigned) (maxBarSpacing * 2));
 
     this->maxDrawingLength = maxDrawingLength;
+    this->maxBarSpacingCount = maxBarSpacingCount;
 
     matIDBytes = MIN_COVERING_BYTES(matIDSize);
     widthBytes = MIN_COVERING_BYTES(widthSize);
@@ -1026,12 +1208,15 @@ DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int ma
     thicknessHandleBytes = MIN_COVERING_BYTES(thicknessHandleSize);
     lapBytes = MIN_COVERING_BYTES(lapSize);
     apertureHandleBytes = MIN_COVERING_BYTES(apertureHandleSize);
+    barSpacingCountBytes = MIN_COVERING_BYTES(barSpacingCountSize);
+    barSpacingBytes = MIN_COVERING_BYTES(barSpacingSize);
 }
 
 unsigned DrawingSummaryCompressionSchema::compressedSize(const DrawingSummary &summary) const {
     return sizeof(unsigned char) + summary.drawingNumber.size() + MIN_COVERING_BYTES(
-            matIDSize + widthSize + lengthSize + apertureHandleSize + thicknessHandleSize + 1 +
-            (summary.hasTwoLayers() ? thicknessHandleSize : 0) + 3 + summary.numberOfLaps() * lapSize);
+        matIDSize + widthSize + lengthSize + apertureHandleSize + thicknessHandleSize + 1 +
+        (summary.hasTwoLayers() ? thicknessHandleSize : 0) + 3 + summary.numberOfLaps() * lapSize +
+        barSpacingCountSize + (summary.barSpacingCount() - 1) * barSpacingSize);
 }
 
 void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summary, void *target) const {
@@ -1064,6 +1249,13 @@ void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summ
     for (unsigned i = 0; i < noOfLaps; i++) {
         writeAtBitOffset((void *) &summary.__lapSizes[i], lapBytes, buff, offset);
         offset += lapSize;
+    }
+    unsigned noOfBarSpacings = summary.barSpacingCount() - 1;
+    writeAtBitOffset(&noOfBarSpacings, barSpacingCountBytes, buff, offset);
+    offset += barSpacingCountSize;
+    for (unsigned spacing : summary.__barSpacings) {
+        writeAtBitOffset((void *) &spacing, barSpacingBytes, buff, offset);
+        offset += barSpacingSize;
     }
 }
 
@@ -1101,6 +1293,14 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
         readFromBitOffset(buff, offset, &summary.__lapSizes[i], lapSize);
         offset += lapSize;
     }
+    unsigned noOfBarSpacings = 0;
+    readFromBitOffset(buff, offset, &noOfBarSpacings, barSpacingCountSize);
+    offset += barSpacingCountSize;
+    summary.__barSpacings.resize(noOfBarSpacings);
+    for (unsigned i = 0; i < noOfBarSpacings; i++) {
+        readFromBitOffset(buff, offset, &summary.__barSpacings[i], barSpacingSize);
+        offset += barSpacingSize;
+    }
 
     size = MIN_COVERING_BYTES(offset) + sizeof(unsigned char) + summary.drawingNumber.size();
 
@@ -1109,7 +1309,8 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
 
 unsigned DrawingSummaryCompressionSchema::maxCompressedSize() const {
     return sizeof(unsigned char) + maxDrawingLength + MIN_COVERING_BYTES(
-            matIDSize + widthSize + lengthSize + thicknessHandleSize * 2 + 4 + lapSize * 4 + apertureHandleSize);
+        matIDSize + widthSize + lengthSize + thicknessHandleSize * 2 + 4 + lapSize * 4 + apertureHandleSize +
+        barSpacingCountSize + maxBarSpacingCount * barSpacingSize);
 }
 
 #pragma clang diagnostic pop

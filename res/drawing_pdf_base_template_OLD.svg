@@ -3,17 +3,68 @@
 
  <g>
   <title>background</title>
-  <rect fill="none" id="canvas_background" height="94163.247" width="130323.72588" y="-1" x="-1"/>
+  <rect fill="none" id="canvas_background" height="188329.730117" width="260652.698692" y="-1" x="-1"/>
  </g>
  <g>
   <title>Layer 1</title>
   <g id="general_details">
    <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="null" x="380" y="1130" id="label_general_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">General Details</text>
-   <rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="1230" width="3800" height="1960" id="general_details_target_region"/>
+   <g id="general_details_fields">
+    <rect id="field_template_number" height="280" width="2300" y="1230.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_manufacturer" height="280" width="2300" y="1509.99966" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_model" height="280" width="2300" y="1790.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_deck" height="280" width="2300" y="2070.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_quantity_on_deck" height="280" width="2300" y="2350.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_position" height="280" width="2300" y="2630.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_date" height="280" width="2300" y="2910.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+   </g>
+   <g id="general_details_labels">
+    <rect stroke="#000000" id="label_template_number" height="279.99993" width="1500" y="1230.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_manufacturer" height="279.99993" width="1500" y="1510.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_model" height="279.99993" width="1500" y="1790.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_deck" height="279.99993" width="1500" y="2070.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_quantity_on_deck" height="279.99993" width="1500" y="2350.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_position" height="279.99993" width="1500" y="2630.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_date" height="279.99993" width="1500" y="2910.00101" x="330" fill-opacity="0" stroke-width="10" fill="none"/>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_template_number_text" y="1410.00102" x="380" stroke-width="0" stroke="#000000" fill="#000000">Template No.</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_manufacturer_text" y="1690.00101" x="380" stroke-width="0" stroke="#000000" fill="#000000">Manufacturer</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_model_text" y="1970.00101" x="380" stroke-width="0" stroke="#000000" fill="#000000">Model</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_deck_text" y="2250.00101" x="380.16677" stroke-width="0" stroke="#000000" fill="#000000">Deck</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_quantity_on_deck_text" y="2530.00101" x="380" stroke-width="0" stroke="#000000" fill="#000000">Quantity on Deck</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_position_text" y="2810.00101" x="380" stroke-width="0" stroke="#000000" fill="#000000">Position(s)</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_date_text" y="3090.00101" x="380" stroke-width="0" stroke="#000000" fill="#000000">Date</text>
+   </g>
   </g>
   <g id="manufacturing_details">
    <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="null" x="380" y="3700" id="label_manufacturing_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">Manufacturing Details</text>
-   <rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="3800" width="3800" height="4000" id="manufacturing_details_target_region"/>
+   <g id="manufacturing_details_fields">
+    <rect id="field_width" height="280" width="2300" y="3800" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_length" height="280" width="2300" y="4080" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_thickness" height="280" width="2300" y="4360" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_aperture" height="280" width="2300" y="4640" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_side_irons" height="280" width="2300" y="4920" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_backing_strips" height="280" width="2300" y="5200" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_side_overlaps" height="280" width="2300" y="5480" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+    <rect id="field_notes" height="2000" width="2300" y="5760" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
+   </g>
+   <g id="manufacturing_details_labels">
+    <rect stroke="#000000" id="label_width" height="279.99993" width="1500" y="3799.98074" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_length" height="279.99993" width="1500" y="4079.98074" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_thickness" height="279.99993" width="1500" y="4359.98074" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_aperture" height="279.99993" width="1500" y="4639.98074" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_side_irons" height="279.99993" width="1500" y="4920" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_backing_strips" height="279.99993" width="1500" y="5200" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_side_overlaps" height="279.99993" width="1500" y="5480" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <rect stroke="#000000" id="label_notes" height="2000" width="1500" y="5760" x="329.90446" fill-opacity="0" stroke-width="10" fill="none"/>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_width_text" y="3980" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Width</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_length_text" y="4260" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Length</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_thickness_text" y="4540" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Thickness</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_aperture_text" y="4820" x="380.07123" stroke-width="0" stroke="#000000" fill="#000000">Aperture</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_side_irons_text" y="5100" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Side Irons</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_backing_strips_text" y="5380" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Backing Strips</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_side_overlaps_text" y="5660" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Side Overlaps</text>
+    <text xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="150" id="label_notes_text" y="5940" x="379.90446" stroke-width="0" stroke="#000000" fill="#000000">Notes</text>
+   </g>
   </g>
   <rect opacity="0" id="drawing_target_region" height="7060.0281" width="8432" y="977.04765" x="4600" fill-opacity="0" stroke-opacity="null" stroke-width="10" stroke="#000000" fill="#000000"/>
   <g id="title_section">

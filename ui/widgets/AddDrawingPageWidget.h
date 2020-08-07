@@ -10,9 +10,14 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include <unordered_set>
+
 #include "../../include/database/Drawing.h"
 #include "../../include/database/DrawingPDFWriter.h"
 #include "../../include/database/componentFilters.h"
+
+#define REBATED_NOTE "Rebate 50mm in down to 15mm"
+#define BACKING_STRIPS_NOTE "Backing Strips 6mm Tackyback"
 
 namespace Ui {
     class AddDrawingPageWidget;
@@ -47,10 +52,11 @@ private:
     ComboboxComponentDataSource<Aperture> apertureSource;
     ComboboxComponentDataSource<Material> topMaterialSource, bottomMaterialSource;
     ComboboxComponentDataSource<SideIron> leftSideIronSource, rightSideIronSource;
-    ComboboxComponentDataSource<Machine> machineSource;
+    ComboboxComponentDataSource<Machine> machineManufacturerSource, machineModelSource;
     ComboboxComponentDataSource<MachineDeck> machineDeckSource;
 
     SideIronFilter *leftSideIronFilter = nullptr, *rightSideIronFilter = nullptr;
+    MachineModelFilter *machineModelFilter = nullptr;
 
     QGraphicsScene *visualsScene = nullptr;
 
@@ -65,7 +71,7 @@ private:
 
     std::function<void(const Drawing &, bool)> confirmationCallback;
 
-    AddDrawingMode addMode = ADD_NEW_DRAWING; 
+    AddDrawingMode addMode = ADD_NEW_DRAWING;
     
     void setupComboboxSources();
 
@@ -76,6 +82,13 @@ private:
     void loadDrawing();
 
     bool checkDrawing(unsigned exclusions = 0);
+
+    enum DrawingNoteType {
+        REBATED,
+        HAS_BACKING_STRIPS
+    };
+
+    std::unordered_set<DrawingNoteType> addedNotes;
 
 private slots:
     void capitaliseLineEdit(const QString &text);

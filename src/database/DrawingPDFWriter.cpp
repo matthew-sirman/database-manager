@@ -49,15 +49,277 @@ void DrawingPDFWriter::drawStandardTemplate(QPainter &painter, QSvgRenderer &svg
 	svgTemplateRenderer.render(&painter);
 }
 
+void DrawingPDFWriter::drawLabelAndField(QPainter &painter, double left, double &top, const QString &label, double labelWidth, const QString &field,
+										 double fieldWidth, double hOffset, double vOffset) const {
+	QTextOption topLeftTextOption;
+	topLeftTextOption.setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	topLeftTextOption.setWrapMode(QTextOption::WordWrap);
+
+	QRectF labelBounds = QFontMetrics(painter.font()).boundingRect(
+		QRect(left, top, labelWidth, 0)
+		.adjusted(hOffset, vOffset, -hOffset, -vOffset),
+		Qt::TextWordWrap, label
+	);
+	QRectF fieldBounds = QFontMetrics(painter.font()).boundingRect(
+		QRect(left + labelWidth, top, fieldWidth, 0)
+		.adjusted(hOffset, vOffset, -hOffset, -vOffset),
+		Qt::TextWordWrap, field
+	);
+
+	double height = MAX(labelBounds.height(), fieldBounds.height()) + 2 * vOffset;
+
+	painter.drawRect(QRectF(left, top, labelWidth, height));
+	painter.drawRect(QRectF(left + labelWidth, top, fieldWidth, height));
+	painter.drawText(labelBounds, label, topLeftTextOption);
+	painter.drawText(fieldBounds, field, topLeftTextOption);
+
+	top += height;
+}
+
 void DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing) const {
 	painter.save();
 
-	const float horizontalOffset = 20.0f, verticalOffset = 10.0f;
+	const double horizontalOffset = 50.0, verticalOffset = 40.0;
 
 	QTextOption leftAlignedText;
 	leftAlignedText.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
 	QRectF
+		generalDetailsBox = svgTemplateRenderer.boundsOnElement("general_details_target_region"),
+		manufacturingDetailsBox = svgTemplateRenderer.boundsOnElement("manufacturing_details_target_region");
+
+	const double labelWidth = 1500, fieldWidth = 2300;
+	double currentVPos = generalDetailsBox.top();
+
+	QString labelText, fieldText;
+
+	Drawing::MachineTemplate &machineTemplate = drawing.machineTemplate();
+
+	labelText = "Manufacturer";
+	fieldText = machineTemplate.machine().manufacturer.c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Model";
+	fieldText = machineTemplate.machine().model.c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Deck";
+	fieldText = machineTemplate.deck().deck.c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Quantity On Deck";
+	fieldText = to_str(machineTemplate.quantityOnDeck).c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Position";
+	fieldText = machineTemplate.position.c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Date";
+
+	std::tm date;
+	date.tm_year = drawing.date().year - 1900;
+	date.tm_mon = drawing.date().month - 1;
+	date.tm_mday = drawing.date().day;
+
+	std::stringstream dateText;
+	dateText << std::put_time(&date, "%d/%m/%Y");
+
+	fieldText = dateText.str().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	currentVPos = manufacturingDetailsBox.top();
+
+	labelText = "Width";
+	fieldText = (to_str(drawing.width()) + "mm").c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Length";
+	fieldText = (to_str(drawing.length()) + "mm").c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Thickness";
+	std::stringstream thicknessText;
+	thicknessText << drawing.material(Drawing::TOP)->thickness;
+
+	std::optional<Material> bottomLayer = drawing.material(Drawing::BOTTOM);
+	if (bottomLayer.has_value()) {
+		thicknessText << "+" << bottomLayer->thickness;
+	}
+	fieldText = thicknessText.str().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Aperture";
+	fieldText = drawing.aperture().apertureName().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Side Irons";
+
+	std::stringstream sideIronText;
+	SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+
+	switch (leftSideIron.type) {
+		case SideIronType::A:
+			sideIronText << "Type A ";
+			break;
+		case SideIronType::B:
+			sideIronText << "Type B ";
+			break;
+		case SideIronType::C:
+			sideIronText << "Type C ";
+			break;
+		case SideIronType::D:
+			sideIronText << "Type D ";
+			break;
+		case SideIronType::E:
+			sideIronText << "Type E ";
+			break;
+		case SideIronType::None:
+			sideIronText << "None";
+			break;
+	}
+	if (leftSideIron.type != SideIronType::None) {
+		sideIronText << "(" << leftSideIron.drawingNumber << ")";
+	}
+
+	if (leftSideIron.handle() != rightSideIron.handle()) {
+		sideIronText << ", ";
+		switch (rightSideIron.type) {
+			case SideIronType::A:
+				sideIronText << "Type A ";
+				break;
+			case SideIronType::B:
+				sideIronText << "Type B ";
+				break;
+			case SideIronType::C:
+				sideIronText << "Type C ";
+				break;
+			case SideIronType::D:
+				sideIronText << "Type D ";
+				break;
+			case SideIronType::E:
+				sideIronText << "Type E ";
+				break;
+			case SideIronType::None:
+				sideIronText << "None";
+				break;
+		}
+		if (rightSideIron.type != SideIronType::None) {
+			sideIronText << "(" << rightSideIron.drawingNumber << ")";
+		}
+	}
+
+	fieldText = sideIronText.str().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	labelText = "Side Overlaps";
+
+	std::stringstream sideOverlapsText;
+
+	if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
+		std::optional<Drawing::Lap>
+			leftOverlap = drawing.overlap(Drawing::LEFT),
+			rightOverlap = drawing.overlap(Drawing::RIGHT),
+			leftSidelap = drawing.sidelap(Drawing::LEFT),
+			rightSidelap = drawing.sidelap(Drawing::RIGHT);
+
+		std::vector<std::string> lapStrings;
+		std::stringstream lapString;
+
+		if (leftOverlap.has_value()) {
+			lapString.str(std::string());
+			lapString << leftOverlap->width << "mm";
+			if (leftOverlap->attachmentType == LapAttachment::BONDED) {
+				lapString << " (bonded)";
+			}
+			lapStrings.push_back(lapString.str());
+		}
+		if (rightOverlap.has_value()) {
+			lapString.str(std::string());
+			lapString << rightOverlap->width << "mm";
+			if (rightOverlap->attachmentType == LapAttachment::BONDED) {
+				lapString << " (bonded)";
+			}
+			lapStrings.push_back(lapString.str());
+		}
+		if (leftSidelap.has_value()) {
+			lapString.str(std::string());
+			lapString << leftSidelap->width << "mm";
+			if (leftSidelap->attachmentType == LapAttachment::BONDED) {
+				lapString << " (bonded)";
+			}
+			lapStrings.push_back(lapString.str());
+		}
+		if (rightSidelap.has_value()) {
+			lapString.str(std::string());
+			lapString << rightSidelap->width << "mm";
+			if (rightSidelap->attachmentType == LapAttachment::BONDED) {
+				lapString << " (bonded)";
+			}
+			lapStrings.push_back(lapString.str());
+		}
+
+		for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
+			sideOverlapsText << *it;
+			if (it != lapStrings.end() - 1) {
+				sideOverlapsText << ", ";
+			}
+		}
+	} else {
+		sideOverlapsText << "No";
+	}
+
+	fieldText = sideOverlapsText.str().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	std::string productName = drawing.product().productName;
+
+	if (productName == "Rubber Screen Cloth") {
+		if (drawing.material(Drawing::TOP)->thickness >= 15) {
+			labelText = "Rebated";
+			fieldText = drawing.rebated() ? "Yes" : "No";
+			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+			if (drawing.hasBackingStrips()) {
+				labelText = "Backing Strips";
+				fieldText = "Yes";
+				drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+								  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+			}
+		} else {
+			labelText = "Backing Strips";
+			fieldText = drawing.hasBackingStrips() ? "Yes" : "No";
+			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+		}
+	} else if (productName == "Extraflex" || productName == "Polyflex") {
+		if (drawing.hasBackingStrips()) {
+			labelText = "Backing Strips";
+			fieldText = "Yes";
+			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+		}
+	}
+
+	labelText = "Notes";
+	fieldText = drawing.notes().c_str();
+	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+	/*QRectF
 		fieldManufacturerBox = svgTemplateRenderer.boundsOnElement("field_manufacturer").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
 		fieldModelBox = svgTemplateRenderer.boundsOnElement("field_model").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
 		fieldDeckBox = svgTemplateRenderer.boundsOnElement("field_deck").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
@@ -81,9 +343,9 @@ void DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTempl
 	std::stringstream dateText;
 	dateText << std::put_time(&date, "%d/%m/%Y");
 
-	painter.drawText(fieldDateBox, dateText.str().c_str(), leftAlignedText);
+	painter.drawText(fieldDateBox, dateText.str().c_str(), leftAlignedText);*/
 
-	QRectF
+	/*QRectF
 		fieldWidthBox = svgTemplateRenderer.boundsOnElement("field_width").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
 		fieldLengthBox = svgTemplateRenderer.boundsOnElement("field_length").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
 		fieldThicknessBox = svgTemplateRenderer.boundsOnElement("field_thickness").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
@@ -221,7 +483,7 @@ void DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTempl
 	QTextOption topLeftAlignedText;
 	topLeftAlignedText.setWrapMode(QTextOption::WordWrap);
 	topLeftAlignedText.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-	painter.drawText(fieldNotesBox, drawing.notes().c_str(), topLeftAlignedText);
+	painter.drawText(fieldNotesBox, drawing.notes().c_str(), topLeftAlignedText);*/
 
 	QRectF
 		fieldDrawingNumberBox = svgTemplateRenderer.boundsOnElement("field_drawing_number"),

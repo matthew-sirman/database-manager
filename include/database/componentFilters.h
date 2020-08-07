@@ -8,37 +8,39 @@
 #include "DataSource.h"
 #include "drawingComponents.h"
 
-class RubberScreenClothMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+typedef SourceFilter<std::vector<unsigned>::const_iterator> ComboboxSourceFilter;
+
+class RubberScreenClothMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class TackyBackMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class TackyBackMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class PolyurethaneMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class PolyurethaneMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class FlexBottomMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class FlexBottomMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class BivitecMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class BivitecMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class RubberModuleMaterialFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class RubberModuleMaterialFilter : public ComboboxSourceFilter {
 private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-class SideIronFilter : public SourceFilter<std::vector<unsigned>::const_iterator> {
+class SideIronFilter : public ComboboxSourceFilter {
 public:
 	void setSideIronType(SideIronType type);
 
@@ -55,6 +57,15 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
+class MachineModelFilter : public ComboboxSourceFilter {
+public:
+	void setManufacturer(const std::string &manufacturerName);
 
+	void removeManufacturerFilter();
+private:
+	std::optional<std::string> manufacturer = std::nullopt;
+
+	bool __filter(std::vector<unsigned>::const_iterator element) const override;
+};
 
 #endif //DATABASE_MANAGER_COMPONENTFILTERS_H

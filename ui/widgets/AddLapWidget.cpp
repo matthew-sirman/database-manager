@@ -41,7 +41,6 @@ AddLapWidget::AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionL
     });
 
     widthProxy = scene->addWidget(widthInput);
-    widthProxy->setScale(2);
     widthProxy->setZValue(1);
 
     QRectF dimensionPosition;

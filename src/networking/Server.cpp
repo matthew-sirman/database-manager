@@ -55,11 +55,11 @@ void Server::initialiseServer(unsigned short serverPort) {
         }
     });
 
-    *logStream << "Server initialised" << std::endl;
+    *logStream << timestamp() << "Server initialised" << std::endl;
 }
 
 void Server::startServer() {
-    *logStream << "Server started successfully" << std::endl;
+    *logStream << timestamp() << "Server started successfully" << std::endl;
 
     // Asynchronous call to console read to make console inputs non-blocking
     std::future<std::string> nonBlockingInput = std::async(std::launch::async, getNonBlockingInput);
@@ -77,7 +77,7 @@ void Server::startServer() {
         switch (serverSocket.tryAccept(true)) {
             case ERR_ACCEPT: ERROR_TO("Failed to accept client", *errorStream)
             case SOCKET_SUCCESS:
-                *logStream << "Accepted a new client" << std::endl;
+                // *logStream << timestamp << ": Accepted a new client" << std::endl;
             case S_NO_DATA:
             default:
                 break;
@@ -114,7 +114,7 @@ void Server::startServer() {
                 case SOCKET_SUCCESS:
                     break;
                 case ERR_SOCKET_DEAD:
-                    *logStream << "Client " << connectedClient.clientEmail << " disconnected (timed out)." << std::endl;
+                    *logStream << timestamp() << "Client " << connectedClient.clientEmail << " disconnected (timed out)." << std::endl;
                     connectedClient.clientSocket.closeSocket();
                     connectedClients.erase(connectedClients.begin() + ic);
                     handleMap.erase(connectedClient.handle.clientID);
@@ -122,10 +122,10 @@ void Server::startServer() {
                 case SOCKET_DISCONNECTED:
                     switch (*((DisconnectCode *)message.getMessageData())) {
                         case DisconnectCode::CLIENT_EXIT:
-                            *logStream << "Client " << connectedClient.clientEmail << " disconnected." << std::endl;
+                            *logStream << timestamp() << "Client " << connectedClient.clientEmail << " disconnected." << std::endl;
                             break;
                         default:
-                            *logStream << "Client " << connectedClient.clientEmail << " disconnected (with error code)." << std::endl;
+                            *logStream << timestamp() << "Client " << connectedClient.clientEmail << " disconnected (with error code)." << std::endl;
                             break;
                     }
                     connectedClient.clientSocket.closeSocket();
@@ -175,7 +175,13 @@ void Server::startServer() {
             std::string input = nonBlockingInput.get();
 
             if (input == "quit" || input == "exit") {
+                *logStream << timestamp() << "Server closed" << std::endl << std::endl;
                 break;
+            }
+            if (input == "list users") {
+                for (ClientData *connectedClient : connectedClients) {
+                    std::cout << "Client: " << connectedClient->clientEmail << std::endl;
+                }
             }
 
             nonBlockingInput = std::async(std::launch::async, getNonBlockingInput);
@@ -212,6 +218,7 @@ void Server::closeServer() {
     serverSocket.closeSocket();
     dbManager->closeConnection();
     delete dbManager;
+    *logStream << timestamp() << "Server closed" << std::endl << std::endl;
 }
 
 void
@@ -258,19 +265,41 @@ void Server::connectToDatabaseServer(const std::string &database, const std::str
     }
     dbManager->setErrorStream(*errorStream);
 
-    *logStream << "Connected to database" << std::endl;
+    *logStream << timestamp() << "Connected to database" << std::endl;
 }
 
 void Server::setRequestHandler(ServerRequestHandler &handler) {
     requestHandler = &handler;
 }
 
-void Server::setLoggingStream(std::ostream &stream, std::ostream &errStream) {
-    logStream = &stream;
-    errorStream = &errStream;
-    if (dbManager) {
-        dbManager->setErrorStream(errStream);
+void Server::setLoggingStream(std::ostream *log, std::ostream *changelog, std::ostream *errStream) {
+    if (log) {
+        logStream = log;
     }
+    if (changelog) {
+        changelogStream = changelog;
+    }
+    if (errorStream) {
+        errorStream = errStream;
+    }
+    if (dbManager) {
+        dbManager->setErrorStream(*errStream);
+    }
+}
+
+void Server::changelogMessage(const ClientHandle &clientHandle, const std::string &message) {
+    if (!changelogStream) {
+        return;
+    }
+    *changelogStream << timestamp() << handleMap[clientHandle.clientID]->clientEmail << " " << message << std::endl;
+}
+
+std::string Server::timestamp() const {
+    std::stringstream ss;
+    std::time_t now = time(nullptr);
+    std::tm *timePoint = std::localtime(&now);
+    ss << "[" << std::put_time(timePoint, "%d/%m/%Y %H:%M:%S") << "] ";
+    return ss.str();
 }
 
 void Server::setHeartBeatCycles(int cycles) {
@@ -499,7 +528,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
             // They may now access server resources
             clientData.clientEmail = claims["email"];
             connectedClients.push_back(&clientData);
-            *logStream << "Client " << clientData.clientEmail << " successfully authenticated themselves."
+            *logStream << timestamp() << "Client " << clientData.clientEmail << " successfully authenticated themselves."
                 << std::endl;
             ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
             NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
@@ -513,7 +542,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
         case INVALID_SIGNATURE:
             // If the authentication failed for any reason, the client did not authenticate themselves, so terminate
             // their connection. If they wish to retry, they must reconnect to the server.
-            *logStream << "Client failed to authenticate themselves: Bad JWT. Terminating connection." << std::endl;
+            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT. Terminating connection." << std::endl;
             ConnectionResponse failResponse = ConnectionResponse::FAILED;
             NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
             clientData.clientSocket.sendMessage(failedMessage);
@@ -532,7 +561,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
             if (it->first == repeatToken) {
                 clientData.clientEmail = repeatTokenMap[repeatToken];
                 connectedClients.push_back(&clientData);
-                *logStream << "Client " << clientData.clientEmail << " successfully authenticated themselves."
+                *logStream << timestamp() << "Client " << clientData.clientEmail << " successfully authenticated themselves."
                     << std::endl;
                 ConnectionResponse successResponse = ConnectionResponse::SUCCESS;
                 NetworkMessage succeededMessage(&successResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
@@ -543,7 +572,7 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
         }
 
         // There is no client with this repeat token
-        *logStream << "Client failed to authenticate themselves: Invalid Repeat Token. Terminating connection." << std::endl;
+        *logStream << timestamp() << "Client failed to authenticate themselves: Invalid Repeat Token. Terminating connection." << std::endl;
         ConnectionResponse failResponse = ConnectionResponse::FAILED;
         NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
         clientData.clientSocket.sendMessage(failedMessage);

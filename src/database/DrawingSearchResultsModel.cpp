@@ -18,8 +18,8 @@ int DrawingSearchResultsModel::rowCount(const QModelIndex &parent) const {
 }
 
 int DrawingSearchResultsModel::columnCount(const QModelIndex &parent) const {
-    // Drawing Number | Drawing Dimensions
-    return 2;
+    // Drawing Number | Drawing Dimensions | Bar Spacings
+    return 3;
 }
 
 QVariant DrawingSearchResultsModel::data(const QModelIndex &index, int role) const {
@@ -31,6 +31,20 @@ QVariant DrawingSearchResultsModel::data(const QModelIndex &index, int role) con
                 return QString(summary.drawingNumber.c_str());
             case 1:
                 return QString(summary.summaryString().c_str());
+            case 2: {
+                if (summary.barSpacingCount() == 1) {
+                    return QString("No bars");
+                }
+                std::stringstream spacingsString;
+                std::vector<float> spacings = summary.barSpacings();
+                for (std::vector<float>::const_iterator it = spacings.begin(); it != spacings.end(); it++) {
+                    spacingsString << *it;
+                    if (it != spacings.end() - 1) {
+                        spacingsString << "+";
+                    }
+                }
+                return QString(spacingsString.str().c_str());
+            }
             default:
                 break;
         }
@@ -47,6 +61,8 @@ QVariant DrawingSearchResultsModel::headerData(int section, Qt::Orientation orie
                     return "Drawing Number";
                 case 1:
                     return "Drawing Specifications";
+                case 2:
+                    return "Bar Spacings";
                 default:
                     break;
             }

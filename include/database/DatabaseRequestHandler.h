@@ -36,6 +36,8 @@ public:
 	/// <param name="messageSize">The length (in bytes) of the message data received.</param>
 	void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message, unsigned int messageSize) override;
 
+	std::filesystem::path backupPath;
+
 private:
 	/// <summary>
 	/// Creates a compression schema from the database based upon the largest values in certain 

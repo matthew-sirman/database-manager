@@ -41,6 +41,8 @@ struct Date {
     std::string toMySQLDateString() const;
 
     static Date parse(std::time_t rawDate);
+
+    static Date today();
 }
 PACK_END
 
@@ -55,7 +57,8 @@ public:
         INVALID_LAPS_DETECTED = 0x02,
         MISSING_SIDE_IRONS_DETECTED = 0x04,
         MISSING_MATERIAL_DETECTED = 0x08,
-        INVALID_APERTURE_DETECTED = 0x10
+        INVALID_APERTURE_DETECTED = 0x10,
+        INVALID_IMPACT_PAD_DETECTED = 0x20
     };
 
     enum BuildWarning {
@@ -74,6 +77,21 @@ public:
         INVALID_MACHINE_POSITION = 0x0800,
         INVALID_MACHINE_DECK = 0x1000,
         INVALID_HYPERLINK = 0x2000
+    };
+
+    enum Side {
+        LEFT,
+        RIGHT
+    };
+
+    enum MaterialLayer {
+        TOP,
+        BOTTOM
+    };
+
+    enum TensionType {
+        SIDE,
+        END
     };
 
     struct MachineTemplate {
@@ -160,19 +178,231 @@ public:
         unsigned materialHandle;
     };
 
-    enum Side {
-        LEFT,
-        RIGHT
+    struct Coordinate {
+        float x, y;
     };
 
-    enum MaterialLayer {
-        TOP,
-        BOTTOM
+    struct ImpactPad {
+        friend struct Drawing;
+
+        Coordinate pos;
+        float width, length;
+
+        inline Material &material() const {
+            return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
+        }
+
+        inline void setMaterial(const Material &material) {
+            materialHandle = material.handle();
+        }
+
+        inline Aperture &aperture() const {
+            return DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle);
+        }
+
+        inline void setAperture(const Aperture &aperture) {
+            apertureHandle = aperture.handle();
+        }
+
+        inline unsigned serialisedSize() const {
+            return sizeof(float) * 4 + sizeof(unsigned) * 2;
+        }
+
+        inline void serialise(void *target) const {
+            unsigned char *buff = (unsigned char *) target;
+
+            *((float *) buff) = pos.x;
+            buff += sizeof(float);
+            *((float *) buff) = pos.y;
+            buff += sizeof(float);
+            *((float *) buff) = width;
+            buff += sizeof(float);
+            *((float *) buff) = length;
+            buff += sizeof(float);
+            *((unsigned *) buff) = materialHandle;
+            buff += sizeof(unsigned);
+            *((unsigned *) buff) = apertureHandle;
+            buff += sizeof(unsigned);
+        }
+
+        inline static ImpactPad &deserialise(void *buffer) {
+            unsigned char *buff = (unsigned char *) buffer;
+
+            ImpactPad *pad = new ImpactPad();
+
+            pad->pos.x = *((float *) buff);
+            buff += sizeof(float);
+            pad->pos.y = *((float *) buff);
+            buff += sizeof(float);
+            pad->width = *((float *) buff);
+            buff += sizeof(float);
+            pad->length = *((float *) buff);
+            buff += sizeof(float);
+            pad->materialHandle = *((unsigned *) buff);
+            buff += sizeof(unsigned);
+            pad->apertureHandle = *((unsigned *) buff);
+            buff += sizeof(unsigned);
+
+            return *pad;
+        }
+
+    private:
+        unsigned materialHandle;
+        unsigned apertureHandle;
     };
 
-    enum TensionType {
-        SIDE,
-        END
+    struct CentreHole {
+        friend struct Drawing;
+
+        struct {
+            float width, length;
+            bool rounded;
+        } centreHoleShape;
+
+        Coordinate pos;
+
+        inline unsigned serialisedSize() const {
+            return sizeof(float) * 4 + sizeof(bool);
+        }
+
+        inline void serialise(void *target) const {
+            unsigned char *buff = (unsigned char *) target;
+
+            *((float *) buff) = pos.x;
+            buff += sizeof(float);
+            *((float *) buff) = pos.y;
+            buff += sizeof(float);
+            *((float *) buff) = centreHoleShape.width;
+            buff += sizeof(float);
+            *((float *) buff) = centreHoleShape.length;
+            buff += sizeof(float);
+            *buff++ = centreHoleShape.rounded;
+        }
+
+        inline static CentreHole &deserialise(void *buffer) {
+            unsigned char *buff = (unsigned char *) buffer;
+
+            CentreHole *hole = new CentreHole();
+
+            hole->pos.x = *((float *) buff);
+            buff += sizeof(float);
+            hole->pos.y = *((float *) buff);
+            buff += sizeof(float);
+            hole->centreHoleShape.width = *((float *) buff);
+            buff += sizeof(float);
+            hole->centreHoleShape.length = *((float *) buff);
+            buff += sizeof(float);
+            hole->centreHoleShape.rounded = *buff++;
+
+            return *hole;
+        }
+    };
+
+    struct Deflector {
+        friend struct Drawing;
+
+        Coordinate pos;
+        float size;
+
+        inline Material &material() const {
+            return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
+        }
+
+        void setMaterial(const Material &material) {
+            materialHandle = material.handle();
+        }
+
+        inline unsigned serialisedSize() const {
+            return sizeof(float) * 4 + sizeof(unsigned);
+        }
+
+        inline void serialise(void *target) const {
+            unsigned char *buff = (unsigned char *) target;
+
+            *((float *) buff) = pos.x;
+            buff += sizeof(float);
+            *((float *) buff) = pos.y;
+            buff += sizeof(float);
+            *((float *) buff) = size;
+            buff += sizeof(float);
+            *((unsigned *) buff) = materialHandle;
+            buff += sizeof(unsigned);
+        }
+
+        inline static Deflector &deserialise(void *buffer) {
+            unsigned char *buff = (unsigned char *) buffer;
+
+            Deflector *deflector = new Deflector();
+
+            deflector->pos.x = *((float *) buff);
+            buff += sizeof(float);
+            deflector->pos.y = *((float *) buff);
+            buff += sizeof(float);
+            deflector->size = *((float *) buff);
+            buff += sizeof(float);
+            deflector->materialHandle = *((unsigned *) buff);
+            buff += sizeof(unsigned);
+
+            return *deflector;
+        }
+
+    private:
+        unsigned materialHandle;
+    };
+
+    struct Divertor {
+        friend struct Drawing;
+
+        Side side;
+        float verticalPosition;
+        float width, length;
+
+        inline Material &material() const {
+            return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
+        }
+
+        void setMaterial(const Material &material) {
+            materialHandle = material.handle();
+        }
+
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned char) + sizeof(float) * 3 + sizeof(unsigned);
+        }
+
+        inline void serialise(void *target) const {
+            unsigned char *buff = (unsigned char *) target;
+
+            *buff++ = (unsigned char) side;
+            *((float *) buff) = verticalPosition;
+            buff += sizeof(float);
+            *((float *) buff) = width;
+            buff += sizeof(float);
+            *((float *) buff) = length;
+            buff += sizeof(float);
+            *((unsigned *) buff) = materialHandle;
+            buff += sizeof(unsigned);
+        }
+
+        inline static Divertor &deserialise(void *buffer) {
+            unsigned char *buff = (unsigned char *) buffer;
+
+            Divertor *divertor = new Divertor();
+
+            divertor->side = (Side) (*buff++);
+            divertor->verticalPosition = *((float *) buff);
+            buff += sizeof(float);
+            divertor->width = *((float *) buff);
+            buff += sizeof(float);
+            divertor->length = *((float *) buff);
+            buff += sizeof(float);
+            divertor->materialHandle = *((unsigned *) buff);
+            buff += sizeof(unsigned);
+
+            return *divertor;
+        }
+
+    private:
+        unsigned materialHandle;
     };
 
     Drawing();
@@ -229,6 +459,14 @@ public:
 
     void setTensionType(TensionType newTensionType);
 
+    bool rebated() const;
+
+    void setRebated(bool isRebated);
+
+    bool hasBackingStrips() const;
+
+    void setHasBackingStrips(bool backingStrips);
+
     std::optional<Material> material(MaterialLayer layer) const;
 
     void setMaterial(MaterialLayer layer, const Material &mat);
@@ -281,6 +519,22 @@ public:
 
     bool hasOverlaps() const;
 
+    void addImpactPad(const ImpactPad &impactPad);
+
+    std::vector<ImpactPad> impactPads() const;
+
+    void addCentreHole(const CentreHole &centreHole);
+
+    std::vector<CentreHole> centreHoles() const;
+
+    void addDeflector(const Deflector &deflector);
+
+    std::vector<Deflector> deflectors() const;
+
+    void addDivertor(const Divertor &divertor);
+
+    std::vector<Divertor> divertors() const;
+
     BuildWarning checkDrawingValidity(unsigned exclusions = 0) const;
 
     bool loadWarning(LoadWarning warning) const;
@@ -292,7 +546,7 @@ public:
 private:
     void invokeUpdateCallbacks() const;
 
-    static constexpr char drawingNumberRegexPattern[] = "^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3}[a-zA-Z]?)$";
+    static constexpr char drawingNumberRegexPattern[] = "^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3,}[a-zA-Z]?)$";
     static constexpr char positionRegexPattern[] = "(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)";
 
     std::string __drawingNumber;
@@ -307,6 +561,9 @@ private:
 
     TensionType __tensionType;
 
+    bool __rebated;
+    bool __hasBackingStrips;
+
     std::vector<std::string> __pressDrawingHyperlinks;
 
     std::vector<float> barSpacings;
@@ -319,6 +576,11 @@ private:
 
     unsigned topLayerThicknessHandle;
     std::optional<unsigned> bottomLayerThicknessHandle;
+
+    std::vector<ImpactPad> __impactPads;
+    std::vector<CentreHole> __centreHoles;
+    std::vector<Deflector> __deflectors;
+    std::vector<Divertor> __divertors;
 
     unsigned loadWarnings = 0;
 
@@ -361,16 +623,24 @@ struct DrawingSummary {
 
     void setLapSize(unsigned index, float size);
 
+    std::vector<float> barSpacings() const;
+
+    void addSpacing(float spacing);
+
+    void clearSpacings();
+
+    unsigned barSpacingCount() const;
+
 private:
     unsigned __width, __length;
-
     unsigned __lapSizes[4];
+    std::vector<unsigned> __barSpacings;
 };
 
 PACK_START
 struct DrawingSummaryCompressionSchema {
     DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessHandle,
-        float maxLapSize, unsigned maxApertureHandle, unsigned char maxDrawingLength);
+        float maxLapSize, unsigned maxApertureHandle, unsigned char maxBarSpacingCount, float maxBarSpacing, unsigned char maxDrawingLength);
 
     unsigned compressedSize(const DrawingSummary &summary) const;
 
@@ -388,6 +658,10 @@ private:
     unsigned char lapSize;
     unsigned char apertureHandleSize;
     unsigned char maxDrawingLength;
+    unsigned char barSpacingCountSize;
+    unsigned char barSpacingSize;
+
+    unsigned char maxBarSpacingCount;
 
     unsigned char matIDBytes;
     unsigned char widthBytes;
@@ -395,6 +669,8 @@ private:
     unsigned char thicknessHandleBytes;
     unsigned char lapBytes;
     unsigned char apertureHandleBytes;
+    unsigned char barSpacingCountBytes;
+    unsigned char barSpacingBytes;
 }
 PACK_END
 

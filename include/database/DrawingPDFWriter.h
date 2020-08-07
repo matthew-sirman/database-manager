@@ -26,6 +26,9 @@ public:
 private:
 	void drawStandardTemplate(QPainter &painter, QSvgRenderer &svgTemplateRenderer) const;
 
+	void drawLabelAndField(QPainter &painter, double left, double &top, const QString &label, double labelWidth, const QString &field, 
+						   double fieldWidth, double hOffset = 0, double vOffset = 0) const;
+
 	void drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing) const;
 
 	void drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const;

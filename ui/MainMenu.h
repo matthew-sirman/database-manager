@@ -11,6 +11,7 @@
 #include <QUrl>
 #include <QTableWidgetItem>
 #include <QInputDialog>
+#include <QKeyEvent>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
@@ -48,6 +49,8 @@ private:
 
     void closeEvent(QCloseEvent *event) override;
 
+    void keyPressEvent(QKeyEvent *event) override;
+
     void sendSourceTableRequests() const;
 
     void sourceTable(RequestType requestType) const;
@@ -75,10 +78,12 @@ private:
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;
     ComboboxComponentDataSource<ApertureShape> apertureShapeSource;
-    ComboboxComponentDataSource<Material> materialSource;
+    ComboboxComponentDataSource<Material> topMaterialSource, bottomMaterialSource;
     ComboboxComponentDataSource<SideIron> sideIronSource;
-    ComboboxComponentDataSource<Machine> machineSource;
+    ComboboxComponentDataSource<Machine> machineManufacturerSource, machineModelSource;
     ComboboxComponentDataSource<MachineDeck> machineDeckSource;
+
+    MachineModelFilter *machineModelFilter = nullptr;
 
     DrawingSearchResultsModel *searchResultsModel = nullptr;
 

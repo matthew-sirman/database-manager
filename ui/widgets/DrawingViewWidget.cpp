@@ -9,6 +9,11 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
         : QWidget(parent), ui(new Ui::DrawingViewWidget()) {
     ui->setupUi(this);
 
+    ui->rebatedCheckbox->setAttribute(Qt::WA_TransparentForMouseEvents);
+    ui->rebatedCheckbox->setFocusPolicy(Qt::NoFocus);
+    ui->backingStripsCheckbox->setAttribute(Qt::WA_TransparentForMouseEvents);
+    ui->backingStripsCheckbox->setFocusPolicy(Qt::NoFocus);
+
     this->drawing = &drawing;
 
     this->pdfDocument = new QPdfDocument();
@@ -24,6 +29,13 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
     connect(ui->cloneDrawingButton, &QPushButton::clicked, [this]() {
         if (changeDrawingCallback) {
             changeDrawingCallback(AddDrawingPageWidget::CLONE_DRAWING);
+        }
+    });
+
+    connect(ui->openPDFButton, &QPushButton::clicked, [this]() {
+        std::filesystem::path pdfPath = ui->drawingPDFSelectorInput->currentData().toString().toStdString();
+        if (!QDesktopServices::openUrl(QUrl::fromLocalFile(pdfPath.generic_string().c_str()))) {
+            QMessageBox::about(this, "Open PDF", ("The PDF could not be found. (" + pdfPath.generic_string() + ")").c_str());
         }
     });
 }
@@ -104,6 +116,8 @@ void DrawingViewWidget::updateFields() {
             ui->bottomMaterialTextbox->setText("None");
         }
     }
+    ui->rebatedCheckbox->setChecked(drawing->rebated());
+    ui->backingStripsCheckbox->setChecked(drawing->hasBackingStrips());
     ui->notesTextbox->setText(drawing->notes().c_str());
 
     // Machine Template Page
@@ -123,7 +137,7 @@ void DrawingViewWidget::updateFields() {
     std::filesystem::path pressDrawingLocation = punchProgramPathForDrawing(drawing->drawingNumber());
 
     if (std::filesystem::exists(pressDrawingLocation)) {
-        ui->drawingPDFSelectorInput->addItem(pressDrawingLocation.string().c_str(), pressDrawingLocation.string().c_str());
+        ui->drawingPDFSelectorInput->addItem("Punch Program (auto search)", pressDrawingLocation.generic_string().c_str());
     }
 
     if (!drawing->loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
@@ -155,12 +169,19 @@ void DrawingViewWidget::setChangeDrawingCallback(const std::function<void(AddDra
 
 std::filesystem::path DrawingViewWidget::punchProgramPathForDrawing(const std::string &drawingNumber) {
     std::filesystem::path path = PUNCH_PDF_LOCATION;
-    std::string folder = "" + drawingNumber.at(0);
+    std::string folder;
 
-    if (std::isdigit(drawingNumber.at(1))) {
+    size_t index = 0;
+    while (index < drawingNumber.size()) {
+        if (std::isalpha(drawingNumber.at(index))) {
+            folder += drawingNumber.at(index++);
+        } else {
+            break;
+        }
+    }
+
+    if (folder.size() == 1) {
         folder = "1" + folder;
-    } else {
-        folder += drawingNumber.at(1);
     }
 
     path /= folder;

@@ -295,10 +295,15 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
         std::cerr << "Could not find 'serverPort' in meta file." << std::endl;
         return;
     }
+    if (meta.find("backupPath") == meta.end()) {
+        std::cerr << "Could not file 'backupPath' in meta file." << std::endl;
+        return;
+    }
 
     std::filesystem::path keyPath = meta["keyPath"].get<std::string>();
     std::filesystem::path databasePasswordPath = meta["databasePasswordPath"].get<std::string>();
     unsigned serverPort = meta["serverPort"];
+    std::filesystem::path backupPath = meta["backupPath"].get<std::string>();
 
     if (!std::filesystem::exists(keyPath / ("server/server_key_" + user + ".pri")) ||
         !std::filesystem::exists(keyPath / ("server/server_key.pub")) ||
@@ -330,23 +335,28 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
         return;
     }
 
-    std::ostream *errStream = &std::cerr, *logStream = &std::cout;
+    std::ostream *errStream = &std::cerr, *changelogStream = nullptr, *logStream = &std::cout;
 
     if (meta.find("logFile") != meta.end()) {
-        logStream = new std::ofstream(meta["logFile"].get<std::string>());
+        logStream = new std::ofstream(meta["logFile"].get<std::string>(), std::ios::app);
         std::cout << "Logging to: " << meta["logFile"] << std::endl;
     }
+    if (meta.find("changelogFile") != meta.end()) {
+        changelogStream = new std::ofstream(meta["changelogFile"].get<std::string>(), std::ios::app);
+        std::cout << "Logging changes to: " << meta["changelogFile"] << std::endl;
+    }
     if (meta.find("errorFile") != meta.end()) {
-        errStream = new std::ofstream(meta["errorFile"].get<std::string>());
+        errStream = new std::ofstream(meta["errorFile"].get<std::string>(), std::ios::app);
         std::cout << "Logging errors to: " << meta["errorFile"] << std::endl;
     }
 
     // Initialise a server object with a refresh rate of 16Hz
     Server s(16, serverKeyPair, digitalSignatureKeyPair);
 
-    s.setLoggingStream(*logStream, *errStream);
+    s.setLoggingStream(logStream, changelogStream, errStream);
 
     DatabaseRequestHandler handler;
+    handler.backupPath = backupPath;
 
     s.initialiseServer(serverPort);
 
@@ -363,6 +373,10 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
 
     // Start running the server - this will enter a loop and return when the server is closed
     s.startServer();
+
+    delete logStream;
+    delete changelogStream;
+    delete errStream;
 }
 
 int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
@@ -370,12 +384,7 @@ int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[
     app.setWindowIcon(QIcon(":/scs_logo.png"));
 
     MainMenu mainMenu(clientMetaFile);
-    mainMenu.show();
-
-    /*QSystemTrayIcon *trayIcon = new QSystemTrayIcon(&mainMenu);
-    QIcon trayImage("D:/Users/Matthew/Work/Database Manager/database-manager/res/scs_logo.ico");
-    trayIcon->setIcon(trayImage);
-    trayIcon->show();*/
+    mainMenu.showMaximized();
 
     return QApplication::exec();
 }

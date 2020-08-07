@@ -15,7 +15,8 @@ DatabaseManager::DatabaseManager(const std::string &database, const std::string 
 }
 
 // Method to generate details for the DrawingSummaryCompressionSchema used in compression with summaries for a search
-void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, unsigned char &maxDrawingLength) {
+void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize,
+												  unsigned char &maxBarSpacingCount, float &maxBarSpacing, unsigned char &maxDrawingLength) {
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
 		// Select the maximum mat_id from the drawings table
@@ -30,6 +31,11 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 		// Select the maximum overlap/sidelap size from the union of the overlaps and sidelaps tables
 		maxLapSize = sess.sql("SELECT MAX(width) FROM (SELECT width FROM " + database + ".sidelaps "
 			"UNION SELECT width FROM " + database + ".overlaps) AS laps").execute().fetchOne()[0];
+
+		maxBarSpacingCount = sess.sql("SELECT MAX(spacing_count) FROM (SELECT COUNT(MAT_ID) AS spacing_count FROM "
+									  + database + ".bar_spacings GROUP BY mat_id) AS mat_spacings").execute().fetchOne()[0].get<unsigned>();
+
+		maxBarSpacing = sess.sql("SELECT MAX(bar_spacing) FROM " + database + ".bar_spacings").execute().fetchOne()[0];
 
 		// Select the length of the longest drawing number from the drawings table
 		maxDrawingLength = sess.sql("SELECT MAX(LENGTH(drawing_number)) FROM " + database + ".drawings").execute().fetchOne()[0].get<unsigned>();
@@ -49,6 +55,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
+
 		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(format(query.toSQLQueryString(), database)).execute());
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
@@ -75,7 +82,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			<< std::endl;
 		queryString << "d.length AS length, d.tension_type AS tension_type, UNIX_TIMESTAMP(d.drawing_date) AS drawing_date, "
 			<< std::endl;
-		queryString << "d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
+		queryString << "d.rebated, d.backing_strips, d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
 		queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, "
 			<< std::endl;
 		queryString << "mt.deck_id AS deck_id, " << std::endl;
@@ -98,17 +105,19 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setLength(drawingResults[3]);
 			drawing->setTensionType((drawingResults[4].get<std::string>() == "Side") ? Drawing::SIDE : Drawing::END);
 			drawing->setDate(Date::parse(drawingResults[5].get<int>()));
-			drawing->setHyperlink(drawingResults[6].get<std::string>());
-			drawing->setNotes(drawingResults[7].get<std::string>());
-			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[8]));
-			drawing->setQuantityOnDeck(drawingResults[9].get<int>());
-			drawing->setMachinePosition(drawingResults[10].get<std::string>());
-			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[11]));
+			drawing->setRebated(drawingResults[6].get<bool>());
+			drawing->setHasBackingStrips(drawingResults[7].get<bool>());
+			drawing->setHyperlink(drawingResults[8].get<std::string>());
+			drawing->setNotes(drawingResults[9].get<std::string>());
+			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[10]));
+			drawing->setQuantityOnDeck(drawingResults[11].get<int>());
+			drawing->setMachinePosition(drawingResults[12].get<std::string>());
+			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[13]));
 
 			// It may be the case that the physical aperture is able to be rotated. This is internally represented in the manager
 			// as two separate Aperture objects, both with the same componentID. For this reason, we must search for all apertures
 			// with the matching component ID to select the correct one.
-			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(drawingResults[12]);
+			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(drawingResults[14]);
 
 			if (matchingApertures.size() == 1) {
 				// If there was just a single aperture which matched, this must be the correct aperture, so
@@ -116,7 +125,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				drawing->setAperture(*matchingApertures.front());
 			} else {
 				// If there were multiple matches, we must get the direction this aperture was stored to be facing.
-				std::string apertureDirectionString = drawingResults[13].get<std::string>();
+				std::string apertureDirectionString = drawingResults[15].get<std::string>();
 
 				// Boolean value to determine if we found an aperture. If we didn't there is an error with this
 				// drawing.
@@ -342,6 +351,117 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		// Set the press drawing hyperlinks in the drawing object (this may well be empty)
 		drawing->setPressDrawingHyperlinks(pressHyperlinks);
 
+		// Impact Pads
+		mysqlx::RowResult impactPadResults = sess.getSchema(database).getTable("impact_pads")
+			.select("material_id", "aperture_id", "aperture_direction", "width", "length", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row &row : impactPadResults) {
+			Drawing::ImpactPad pad;
+			pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[0]));
+
+			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(row[1]);
+
+			if (matchingApertures.size() == 1) {
+				// If there was just a single aperture which matched, this must be the correct aperture, so
+				// just set the drawing's aperture to be this.
+				pad.setAperture(*matchingApertures.front());
+			} else {
+				// If there were multiple matches, we must get the direction this aperture was stored to be facing.
+				std::string apertureDirectionString = row[2].get<std::string>();
+
+				// Boolean value to determine if we found an aperture. If we didn't there is an error with this
+				// drawing.
+				bool found = false;
+
+				if (apertureDirectionString == "Longitudinal") {
+					// If it was a longitudinal aperture, we look through the set of possibilities and find the one
+					// which is set to be longitudinal.
+					for (const Aperture *ap : matchingApertures) {
+						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
+							pad.setAperture(*ap);
+							found = true;
+							break;
+						}
+					}
+				} else if (apertureDirectionString == "Transverse") {
+					// Otherwise look for which one was transvers.
+					for (const Aperture *ap : matchingApertures) {
+						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
+							pad.setAperture(*ap);
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
+					// If apertures are broken for this drawing, print a safe error to the console and set a load warning on
+					// the drawing
+					ERROR_RAW_SAFE("Invalid impact pad detected for: " + drawing->drawingNumber(), *errStream);
+					drawing->setLoadWarning(Drawing::LoadWarning::INVALID_IMPACT_PAD_DETECTED);
+				}
+			}
+
+			pad.width = row[3].get<float>();
+			pad.length = row[4].get<float>();
+			pad.pos.x = row[5].get<float>();
+			pad.pos.y = row[6].get<float>();
+
+			drawing->addImpactPad(pad);
+		}
+
+		// Center Holes
+		mysqlx::RowResult centreHoleResults = sess.getSchema(database).getTable("centre_holes")
+			.select("x_coord", "y_coord", "shape_width", "shape_length", "rounded")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row &row : centreHoleResults) {
+			Drawing::CentreHole hole;
+			hole.pos.x = row[0].get<float>();
+			hole.pos.y = row[1].get<float>();
+			hole.centreHoleShape.width = row[2].get<float>();
+			hole.centreHoleShape.length = row[3].get<float>();
+			hole.centreHoleShape.rounded = row[4].get<bool>();
+
+			drawing->addCentreHole(hole);
+		}
+
+		// Deflectors
+		mysqlx::RowResult deflectorResults = sess.getSchema(database).getTable("deflectors")
+			.select("material_id", "size", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row &row : deflectorResults) {
+			Drawing::Deflector deflector;
+			deflector.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[0]));
+			deflector.size = row[1].get<float>();
+			deflector.pos.x = row[2].get<float>();
+			deflector.pos.y = row[3].get<float>();
+
+			drawing->addDeflector(deflector);
+		}
+
+		// Divertors
+		mysqlx::RowResult divertorResults = sess.getSchema(database).getTable("divertors")
+			.select("material_id", "width", "length", "mat_side", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row &row : divertorResults) {
+			Drawing::Divertor divertor;
+			divertor.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[0]));
+			divertor.width = row[1].get<float>();
+			divertor.length = row[2].get<float>();
+			if (row[3].get<std::string>() == "Left") {
+				divertor.side = Drawing::LEFT;
+			} else {
+				divertor.side = Drawing::RIGHT;
+			}
+			divertor.verticalPosition = row[4].get<float>();
+
+			drawing->addDivertor(divertor);
+		}
+
 		// Return the constructed drawing
 		return drawing;
 	} catch (mysqlx::Error &e) {
@@ -460,6 +580,22 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			sess.sql(format(punchProgramInsert, database)).execute();
 		}
 
+		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
+			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID);
+
+		if (!impactPadsInsert.empty()) {
+			sess.sql(format(impactPadsInsert, database)).execute();
+		}
+		if (!centreHolesInsert.empty()) {
+			sess.sql(format(centreHolesInsert, database)).execute();
+		}
+		if (!deflectorsInsert.empty()) {
+			sess.sql(format(deflectorsInsert, database)).execute();
+		}
+		if (!divertorsInsert.empty()) {
+			sess.sql(format(divertorsInsert, database)).execute();
+		}
+
 		// Finally, if all insertions were successful, we commit and return that the drawing insert was successful.
 		sess.commit();
 		return true;
@@ -561,11 +697,19 @@ std::string DatabaseManager::nextAutomaticDrawingNumber() {
 
 			unsigned index = 0;
 
-			while (std::isalpha(latest.at(index)) && index < latest.size()) {
-				charSection += latest.at(index++);
+			while (index < latest.size()) {
+				if (std::isalpha(latest.at(index))) {
+					charSection += latest.at(index++);
+				} else {
+					break;
+				}
 			}
-			while (std::isdigit(latest.at(index)) && index < latest.size()) {
-				numberSection += latest.at(index++);
+			while (index < latest.size()) {
+				if (std::isdigit(latest.at(index))) {
+					numberSection += latest.at(index++);
+				} else {
+					break;
+				}
 			}
 
 			unsigned char number = std::stoi(numberSection);
@@ -597,7 +741,8 @@ std::string DatabaseManager::nextAutomaticDrawingNumber() {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
-		SQL_ERROR_SAFE(e, *errStream)
+		SQL_ERROR_SAFE(e, *errStream);
+		return std::string();
 	}
 }
 
@@ -606,7 +751,7 @@ std::string DatabaseManager::nextManualDrawingNumber() {
 	try {
 		std::string sqlQuery = "SELECT drawing_number FROM " + database + ".drawings "
 			"WHERE drawing_number LIKE 'M%' "
-			"ORDER BY drawing_number DESC LIMIT 1;";
+			"ORDER BY CAST(SUBSTRING(drawing_number, 2) AS UNSIGNED) DESC LIMIT 1;";
 
 		mysqlx::Row row = sess.sql(sqlQuery).execute().fetchOne();
 
@@ -617,18 +762,26 @@ std::string DatabaseManager::nextManualDrawingNumber() {
 
 			unsigned index = 0;
 
-			while (std::isalpha(latest.at(index)) && index < latest.size()) {
-				charSection += latest.at(index++);
+			while (index < latest.size()) {
+				if (std::isalpha(latest.at(index))) {
+					charSection += latest.at(index++);
+				} else {
+					break;
+				}
 			}
-			while (std::isdigit(latest.at(index)) && index < latest.size()) {
-				numberSection += latest.at(index++);
+			while (index < latest.size()) {
+				if (std::isdigit(latest.at(index))) {
+					numberSection += latest.at(index++);
+				} else {
+					break;
+				}
 			}
 
-			unsigned char number = std::stoi(numberSection);
+			unsigned number = std::stoi(numberSection);
 
 			std::stringstream next;
 
-			next << charSection << (number + 1) % 100;
+			next << charSection << number + 1;
 
 			return next.str();
 		}
@@ -639,7 +792,8 @@ std::string DatabaseManager::nextManualDrawingNumber() {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
-		SQL_ERROR_SAFE(e, *errStream)
+		SQL_ERROR_SAFE(e, *errStream);
+		return std::string();
 	}
 }
 

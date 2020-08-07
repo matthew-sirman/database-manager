@@ -45,7 +45,7 @@ Product *Product::fromSource(void *buffer, unsigned &elementSize) {
     return product;
 }
 
-ComboboxDataElement Product::toDataElement() const {
+ComboboxDataElement Product::toDataElement(unsigned mode) const {
     return { productName, __handle };
 }
 
@@ -95,7 +95,7 @@ std::string Aperture::apertureName() const {
     return shapeName.str();
 }
 
-ComboboxDataElement Aperture::toDataElement() const {
+ComboboxDataElement Aperture::toDataElement(unsigned mode) const {
     return { apertureName(), __handle };
 }
 
@@ -118,7 +118,7 @@ ApertureShape *ApertureShape::fromSource(void *buffer, unsigned &elementSize) {
     return { apertureShape };
 }
 
-ComboboxDataElement ApertureShape::toDataElement() const {
+ComboboxDataElement ApertureShape::toDataElement(unsigned mode) const {
     return { shape, __handle };
 }
 
@@ -154,7 +154,7 @@ std::string Material::material() const {
     return name.str();
 }
 
-ComboboxDataElement Material::toDataElement() const {
+ComboboxDataElement Material::toDataElement(unsigned mode) const {
     return { material(), __handle };
 }
 
@@ -213,7 +213,7 @@ std::string SideIron::sideIronStr() const {
     return ss.str();
 }
 
-ComboboxDataElement SideIron::toDataElement() const {
+ComboboxDataElement SideIron::toDataElement(unsigned mode) const {
     return { sideIronStr(), __handle };
 }
 
@@ -244,8 +244,15 @@ std::string Machine::machineName() const {
     return manufacturer + " " + model;
 }
 
-ComboboxDataElement Machine::toDataElement() const {
-    return { machineName(), __handle };
+ComboboxDataElement Machine::toDataElement(unsigned mode) const {
+    switch (mode) {
+        case 0:
+            return { machineName(), __handle };
+        case 1:
+            return { manufacturer, __handle };
+        case 2:
+            return { model, __handle };
+    }
 }
 
 MachineDeck::MachineDeck(unsigned int id) : DrawingComponent(id) {
@@ -267,7 +274,7 @@ MachineDeck *MachineDeck::fromSource(void *buffer, unsigned int &elementSize) {
     return machineDeck;
 }
 
-ComboboxDataElement MachineDeck::toDataElement() const {
+ComboboxDataElement MachineDeck::toDataElement(unsigned mode) const {
     return { deck, __handle };
 }
 

@@ -172,6 +172,11 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
 
     connect(ui->searchButton, SIGNAL(clicked()), this, SLOT(searchButtonPressed()));
     connect(ui->searchResultsTable, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(handleSearchElementContextMenu(const QPoint &)));
+    connect(ui->searchResultsTable, &QTableView::doubleClicked, [this](const QModelIndex &index) {
+        if (index.isValid()) {
+            openDrawingView(searchResultsModel->summaryAtRow(index.row()).matID);
+        }
+    });
     ui->searchResultsTable->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->mainTabs, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
     connect(ui->drawingMenu_addDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::AUTOMATIC); });
@@ -270,6 +275,12 @@ void MainMenu::closeEvent(QCloseEvent *event) {
     client->disconnect();
 }
 
+void MainMenu::keyPressEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Return) {
+        searchButtonPressed();
+    }
+}
+
 void MainMenu::sendSourceTableRequests() const {
     // Source each type of drawing component
     sourceTable(RequestType::SOURCE_PRODUCT_TABLE);
@@ -286,24 +297,54 @@ void MainMenu::sourceTable(RequestType requestType) const {
 }
 
 void MainMenu::setupComboboxSources() {
+    static std::unordered_map<unsigned char, unsigned char> shapeOrder = {
+        {1, 1},
+        {2, 4},
+        {3, 2},
+        {4, 3},
+        {5, 5},
+        {6, 0}
+    };
+    std::function<bool(const Aperture &, const Aperture &)> apertureComparator = [](const Aperture &a, const Aperture &b) {
+        if (a.apertureShapeID != b.apertureShapeID) {
+            return shapeOrder[a.apertureShapeID] < shapeOrder[b.apertureShapeID];
+        }
+        return a.width < b.width;
+    };
+
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
     DrawingComponentManager<Aperture>::addCallback([this]() { apertureSource.updateSource(); });
     DrawingComponentManager<ApertureShape>::addCallback([this]() { apertureShapeSource.updateSource(); });
-    DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); });
+    DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); bottomMaterialSource.updateSource(); });
     DrawingComponentManager<SideIron>::addCallback([this]() { sideIronSource.updateSource(); });
-    DrawingComponentManager<Machine>::addCallback([this]() { machineSource.updateSource(); });
+    DrawingComponentManager<Machine>::addCallback([this]() {
+        machineManufacturerSource.updateSource();
+        machineManufacturerSource.makeDistinct();
+        machineModelSource.updateSource(); 
+    });
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
+
+    machineManufacturerSource.setMode(1);
+    machineModelSource.setMode(2);
+    machineModelFilter = machineModelSource.setFilter<MachineModelFilter>();
+
+    apertureSource.sort(apertureComparator);
+
+    connect(ui->manufacturerSearchInput, &DynamicComboBox::currentTextChanged, [this](const QString &text) {
+        machineModelFilter->setManufacturer(text.toStdString());
+    });
 
     ui->productTypeSearchInput->setDataSource(productSource);
     ui->apertureSearchInput->setDataSource(apertureSource);
-    ui->thickness1SearchInput->setDataSource(materialSource);
-    ui->thickness2SearchInput->setDataSource(materialSource);
-    ui->machineSearchInput->setDataSource(machineSource);
+    ui->thicknessSearchInput->setDataSource(topMaterialSource);
+    ui->backingThicknessSearchInput->setDataSource(bottomMaterialSource);
+    ui->manufacturerSearchInput->setDataSource(machineManufacturerSource);
+    ui->modelSearchInput->setDataSource(machineModelSource);
     ui->deckSearchInput->setDataSource(machineDeckSource);
 }
 
 void MainMenu::setupValidators() {
-    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3}[a-zA-Z]?)$"));
+    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3,}[a-zA-Z]?)$"));
 
     ui->drawingNumberSearchInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
@@ -316,24 +357,103 @@ void MainMenu::setupValidators() {
 
 void MainMenu::setupActivators() {
     ui->drawingNumberLabel->addTarget(ui->drawingNumberSearchInput);
+    ui->drawingNumberLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->drawingNumberSearchInput->clear();
+        }
+    });
     ui->drawingNumberLabel->setActive();
 
     ui->widthLabel->addTarget(ui->widthSearchInput);
     ui->widthLabel->addTarget(ui->widthToleranceLabel);
     ui->widthLabel->addTarget(ui->widthToleranceSearchInput);
+    ui->widthLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->widthSearchInput->setValue(0);
+            ui->widthToleranceSearchInput->setValue(0);
+        }
+    });
 
     ui->lengthLabel->addTarget(ui->lengthSearchInput);
     ui->lengthLabel->addTarget(ui->lengthToleranceLabel);
     ui->lengthLabel->addTarget(ui->lengthToleranceSearchInput);
+    ui->lengthLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->lengthSearchInput->setValue(0);
+            ui->lengthToleranceSearchInput->setValue(0);
+        }
+    });
 
     ui->productTypeLabel->addTarget(ui->productTypeSearchInput);
+    ui->productTypeLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->productTypeSearchInput->clearEditText();
+            topMaterialSource.removeFilter();
+            bottomMaterialSource.removeFilter();
+            ui->backingThicknessSearchLabel->setEnabled(true);
+        }
+    });
+
+    connect(ui->productTypeSearchInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        Product &product = DrawingComponentManager<Product>::getComponentByHandle(ui->productTypeSearchInput->itemData(index).toInt());
+
+        if (product.productName == "Rubber Screen Cloth") {
+            topMaterialSource.setFilter<RubberScreenClothMaterialFilter>();
+            ui->backingThicknessSearchLabel->setActive(false);
+            ui->backingThicknessSearchLabel->setEnabled(false);
+        } else if (product.productName == "Extraflex") {
+            topMaterialSource.setFilter<TackyBackMaterialFilter>();
+            bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
+            ui->backingThicknessSearchLabel->setEnabled(true);
+        } else if (product.productName == "Polyflex") {
+            topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
+            bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
+            ui->backingThicknessSearchLabel->setEnabled(true);
+        } else if (product.productName == "Bivitec") {
+            topMaterialSource.setFilter<BivitecMaterialFilter>();
+            ui->backingThicknessSearchLabel->setActive(false);
+            ui->backingThicknessSearchLabel->setEnabled(false);
+        } else if (product.productName == "Flip Flow") {
+            topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
+            ui->backingThicknessSearchLabel->setActive(false);
+            ui->backingThicknessSearchLabel->setEnabled(false);
+        } else if (product.productName == "Rubber Modules and Panels") {
+            topMaterialSource.setFilter<RubberModuleMaterialFilter>();
+            ui->backingThicknessSearchLabel->setActive(false);
+            ui->backingThicknessSearchLabel->setEnabled(false);
+        } else {
+            topMaterialSource.removeFilter();
+            bottomMaterialSource.removeFilter();
+            ui->backingThicknessSearchLabel->setEnabled(true);
+        }
+    });
 
     ui->numberOfBarsLabel->addTarget(ui->numberOfBarsSearchInput);
+    ui->numberOfBarsLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->numberOfBarsSearchInput->setValue(0);
+        }
+    });
 
     ui->apertureLabel->addTarget(ui->apertureSearchInput);
+    ui->apertureLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->apertureSearchInput->clearEditText();
+        }
+    });
 
-    ui->thickness1SearchLabel->addTarget(ui->thickness1SearchInput);
-    ui->thickness2SearchLabel->addTarget(ui->thickness2SearchInput);
+    ui->thicknessSearchLabel->addTarget(ui->thicknessSearchInput);
+    ui->thicknessSearchLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->thicknessSearchInput->clearEditText();
+        }
+    });
+    ui->backingThicknessSearchLabel->addTarget(ui->backingThicknessSearchInput);
+    ui->backingThicknessSearchLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->backingThicknessSearchInput->clearEditText();
+        }
+    });
 
     ui->startDateLabel->addTarget(ui->startDateSearchInput);
 
@@ -341,26 +461,63 @@ void MainMenu::setupActivators() {
 
     ui->sideIronTypeLabel->addTarget(ui->sideIronTypeSearchInput);
     ui->sideIronLengthLabel->addTarget(ui->sideIronLengthSearchInput);
+    ui->sideIronLengthLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->sideIronLengthSearchInput->setValue(0);
+        }
+    });
 
     ui->sidelapsLabel->addTarget(ui->sidelapsSearchInput);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthSearchInput);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthToleranceLabel);
     ui->sidelapWidthLabel->addTarget(ui->sidelapWidthToleranceSearchInput);
+    ui->sidelapWidthLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->sidelapWidthSearchInput->setValue(0);
+            ui->sidelapWidthToleranceSearchInput->setValue(0);
+        }
+    });
     ui->sidelapAttachmentLabel->addTarget(ui->sidelapAttachmentSearchInput);
 
     ui->overlapsLabel->addTarget(ui->overlapsSearchInput);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthSearchInput);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthToleranceLabel);
     ui->overlapWidthLabel->addTarget(ui->overlapWidthToleranceSearchInput);
+    ui->overlapWidthLabel->addActivationCallback([this](bool active) {
+        ui->overlapWidthSearchInput->clear();
+        ui->overlapWidthToleranceSearchInput->setValue(0);
+    });
     ui->overlapAttachmentLabel->addTarget(ui->overlapAttachmentSearchInput);
 
-    ui->machineLabel->addTarget(ui->machineSearchInput);
+    ui->manufacturerLabel->addTarget(ui->manufacturerSearchInput);
+    ui->manufacturerLabel->addActivationCallback([this](bool active) {
+        ui->manufacturerSearchInput->clearEditText();
+    });
+    ui->modelLabel->addTarget(ui->modelSearchInput);
+    ui->modelLabel->addActivationCallback([this](bool active) {
+        ui->modelSearchInput->clearEditText();
+    });
 
     ui->quantityOnDeckLabel->addTarget(ui->quantityOnDeckSearchInput);
+    ui->quantityOnDeckLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->quantityOnDeckSearchInput->setValue(0);
+        }
+    });
 
     ui->positionLabel->addTarget(ui->positionSearchInput);
+    ui->positionLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->positionSearchInput->clear();
+        }
+    });
 
     ui->deckLabel->addTarget(ui->deckSearchInput);
+    ui->deckLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->deckSearchInput->clearEditText();
+        }
+    });
 }
 
 void MainMenu::setupSearchResultsTable() {
@@ -491,11 +648,11 @@ void MainMenu::searchButtonPressed() {
     if (ui->apertureLabel->active()) {
         query.aperture = DrawingComponentManager<Aperture>::getComponentByHandle(ui->apertureSearchInput->currentData().toInt());
     }
-    if (ui->thickness1SearchLabel->active()) {
-        query.topThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness1SearchInput->currentData().toInt());
+    if (ui->thicknessSearchLabel->active()) {
+        query.topThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thicknessSearchInput->currentData().toInt());
     }
-    if (ui->thickness2SearchLabel->active()) {
-        query.bottomThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->thickness2SearchInput->currentData().toInt());
+    if (ui->backingThicknessSearchLabel->active()) {
+        query.bottomThickness = DrawingComponentManager<Material>::getComponentByHandle(ui->backingThicknessSearchInput->currentData().toInt());
     }
     if (ui->startDateLabel->active()) {
         QDate date = ui->startDateSearchInput->date();
@@ -518,10 +675,10 @@ void MainMenu::searchButtonPressed() {
         query.sideIronLength = ui->sideIronLengthSearchInput->value();
     }
     if (ui->sidelapsLabel->active()) {
-        query.sidelapMode = (LapSetting) (ui->sidelapsSearchInput->currentIndex() - 1);
+        query.sidelapMode = (LapSetting) ui->sidelapsSearchInput->currentIndex();
     }
     if (ui->overlapsLabel->active()) {
-        query.overlapMode = (LapSetting) (ui->overlapsSearchInput->currentIndex() - 1);
+        query.overlapMode = (LapSetting) ui->overlapsSearchInput->currentIndex();
     }
     if (ui->sidelapWidthLabel->active()) {
         unsigned width = ui->sidelapWidthSearchInput->value();
@@ -534,13 +691,16 @@ void MainMenu::searchButtonPressed() {
         query.overlapWidth = { width - tolerance, width + tolerance };
     }
     if (ui->sidelapAttachmentLabel->active()) {
-        query.sidelapAttachment = (LapAttachment) (ui->sidelapAttachmentSearchInput->currentIndex() - 1);
+        query.sidelapAttachment = (LapAttachment) ui->sidelapAttachmentSearchInput->currentIndex();
     }
     if (ui->overlapAttachmentLabel->active()) {
-        query.overlapAttachment = (LapAttachment) (ui->overlapAttachmentSearchInput->currentIndex() - 1);
+        query.overlapAttachment = (LapAttachment) ui->overlapAttachmentSearchInput->currentIndex();
     }
-    if (ui->machineLabel->active()) {
-        query.machine = DrawingComponentManager<Machine>::getComponentByHandle(ui->machineSearchInput->currentData().toInt());
+    if (ui->manufacturerLabel->active()) {
+        query.manufacturer = ui->manufacturerSearchInput->currentText().toStdString();
+    }
+    if (ui->modelLabel->active()) {
+        query.machine = DrawingComponentManager<Machine>::getComponentByHandle(ui->modelSearchInput->currentData().toInt());
     }
     if (ui->quantityOnDeckLabel->active()) {
         query.quantityOnDeck = ui->quantityOnDeckSearchInput->value();

@@ -158,6 +158,12 @@ void DatabaseSearchQuery::serialise(void *target) const {
         machine->serialise(buffer);
         buffer += machine->serialisedSize();
     }
+    if (manufacturer.has_value()) {
+        unsigned char sendManufacturer = MIN(255, manufacturer->size());
+        *buffer++ = sendManufacturer;
+        memcpy(buffer, manufacturer->c_str(), sendManufacturer);
+        buffer += sendManufacturer;
+    }
     if (quantityOnDeck.has_value()) {
         // If the quantity on deck is specified,
         // we write it to the buffer.
@@ -257,6 +263,9 @@ unsigned DatabaseSearchQuery::serialisedSize() const {
     if (machine.has_value()) {
         // If we have a machine parameter, increment the size by the space it will take.
         size += machine->serialisedSize();
+    }
+    if (manufacturer.has_value()) {
+        size += sizeof(unsigned char) + manufacturer->size();
     }
     if (quantityOnDeck.has_value()) {
         // If we have a quantity on deck parameter, increment the size by the space it will take.
@@ -429,6 +438,13 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
     } else {
         query->machine = std::nullopt;
     }
+    if (searchParameters & (unsigned) SearchParameters::MACHINE_MANUFACTURER) {
+        unsigned char manufacturerSize = *buffer++;
+        query->manufacturer = std::string((const char *) buffer, manufacturerSize);
+        buffer += manufacturerSize;
+    } else {
+        query->manufacturer = std::nullopt;
+    }
     // If we have a quantity on deck specified, read it from the buffer in the
     // same way it was written. Otherwise, set this field to a nullopt.
     if (searchParameters & (unsigned) SearchParameters::QUANTITY_ON_DECK) {
@@ -520,6 +536,9 @@ unsigned DatabaseSearchQuery::getSearchParameters() const {
     if (machine.has_value()) {
         params |= (unsigned) SearchParameters::MACHINE;
     }
+    if (manufacturer.has_value()) {
+        params |= (unsigned) SearchParameters::MACHINE_MANUFACTURER;
+    }
     if (quantityOnDeck.has_value()) {
         params |= (unsigned) SearchParameters::QUANTITY_ON_DECK;
     }
@@ -548,7 +567,9 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
            "COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) "
            "FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM {0}.sidelaps UNION "
            "SELECT mat_id, 'O' AS type, width, mat_side FROM {0}.overlaps) AS l "
-           "WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps"
+           "WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps, "
+           "COALESCE((SELECT JSON_ARRAYAGG(bs.bar_spacing) FROM {0}.bar_spacings AS bs WHERE bs.mat_id=d.mat_id), "
+           "JSON_ARRAY()) AS spacings"
         << std::endl;
 
     // We then specify the primary table to select from, and begin joining other required tables.
@@ -766,7 +787,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition << ")" << std::endl;
         conditions.push_back(condition.str());
     }
-    if (machine.has_value() || quantityOnDeck.has_value() || position.has_value() || machineDeck.has_value()) {
+    if (machine.has_value() || manufacturer.has_value() || quantityOnDeck.has_value() || position.has_value() || machineDeck.has_value()) {
         // If the query requests that any restrictions concerning the machine template should be imposed,
         // we join to the machine templates table.
         sql << "INNER JOIN {0}.machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
@@ -776,6 +797,12 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         if (machine.has_value()) {
             condition.str(std::string());
             condition << "mt.machine_id=" << machine->componentID();
+            conditions.push_back(condition.str());
+        }
+        if (manufacturer.has_value()) {
+            sql << "INNER JOIN {0}.machines AS m ON mt.machine_id=m.machine_id" << std::endl;
+            condition.str(std::string());
+            condition << "m.manufacturer='" << manufacturer.value() << "'";
             conditions.push_back(condition.str());
         }
         if (quantityOnDeck.has_value()) {
@@ -880,7 +907,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[6][thicknessSlot]).handle();
         }
 
-        // Finally, we deal with any laps there may be in the drawing
+        // Then we deal with any laps there may be in the drawing
         for (const mysqlx::Value &lap : row[8]) {
             // If we encounter a "damaged" lap, we just skip it to avoid a possible
             // error
@@ -901,6 +928,10 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             }
             // Finally, after computing the index, we simply write the size to the summary in the correct slot.
             summary.setLapSize(index, lap[1].get<double>());
+        }
+
+        for (double spacing : row[9]) {
+            summary.addSpacing(spacing);
         }
 
         // Once we have finished creating this summary, we add it to the list
@@ -1087,7 +1118,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     // First we specify the columns we are inserting
     insert << "INSERT INTO {0}.drawings" << std::endl;
     insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
-              "hyperlink, notes)" << std::endl;
+              "rebated, backing_strips, hyperlink, notes)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Next we add the simple values from the drawingData object
@@ -1106,8 +1137,9 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     }
 
     // Finally we add the rest of the details
-    insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", '" <<
-           drawingData->hyperlink() << "', '" << drawingData->notes() << "')" << std::endl;
+    insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", " <<
+        drawingData->rebated() << ", " << drawingData->hasBackingStrips() << ", '" << drawingData->hyperlink() << "', '" <<
+        drawingData->notes() << "')" << std::endl;
 
     // Returns the constructed query string
     return insert.str();
@@ -1406,6 +1438,146 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
     }
 
     // Return the constructed MySQL string
+    return insert.str();
+}
+
+std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
+    std::vector<Drawing::ImpactPad> impactPads = drawingData->impactPads();
+
+    if (impactPads.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.impact_pads" << std::endl;
+    insert << "(mat_id, material_id, aperture_id, aperture_direction, width, length, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::ImpactPad>::const_iterator it = impactPads.begin(); it != impactPads.end(); it++) {
+        Drawing::ImpactPad pad = *it;
+
+        Aperture &ap = pad.aperture();
+
+        insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", '";
+
+        switch (DrawingComponentManager<Aperture>::getComponentByHandle(ap.handle()).componentID()) {
+            case 3:
+                insert << "Longitudinal";
+                break;
+            case 4:
+                insert << "Transverse";
+                break;
+            default:
+                insert << "Nondirectional";
+                break;
+        }
+
+        insert << "', " << pad.width << ", " << pad.length << ", " << pad.pos.x << ", " << pad.pos.y << ")";
+
+        if (it != impactPads.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
+    std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
+
+    if (centreHoles.size() == 0) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.centre_holes" << std::endl;
+    insert << "(mat_id, x_coord, y_coord, shape_width, shape_length, rounded)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::CentreHole>::const_iterator it = centreHoles.begin(); it != centreHoles.end(); it++) {
+        Drawing::CentreHole hole = *it;
+
+        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.centreHoleShape.width << "," <<
+            hole.centreHoleShape.length << ", " << hole.centreHoleShape.rounded << ")";
+
+        if (it != centreHoles.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::deflectorsInsertQuery(unsigned matID) const {
+    std::vector<Drawing::Deflector> deflectors = drawingData->deflectors();
+
+    if (deflectors.size() == 0) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.deflectors" << std::endl;
+    insert << "(mat_id, material_id, size, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::Deflector>::const_iterator it = deflectors.begin(); it != deflectors.end(); it++) {
+        Drawing::Deflector deflector = *it;
+
+        insert << "(" << matID << ", " << deflector.material().componentID() << ", " << deflector.size << ", " << deflector.pos.x <<
+            ", " << deflector.pos.y << ")";
+
+        if (it != deflectors.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::divertorsInsertQuery(unsigned matID) const {
+    std::vector<Drawing::Divertor> divertors = drawingData->divertors();
+
+    if (divertors.size() == 0) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.divertors" << std::endl;
+    insert << "(mat_id, material_id, width, length, mat_side, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::Divertor>::const_iterator it = divertors.begin(); it != divertors.end(); it++) {
+        Drawing::Divertor divertor = *it;
+
+        insert << "(" << matID << ", " << divertor.material().componentID() << ", " << divertor.width << ", " <<
+            divertor.length << ", '";
+
+        switch (divertor.side) {
+            case Drawing::LEFT:
+                insert << "Left";
+                break;
+            case Drawing::RIGHT:
+                insert << "Right";
+                break;
+            default:
+                break;
+        }
+
+        insert << "', " << divertor.verticalPosition << ")";
+
+        if (it != divertors.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
     return insert.str();
 }
 
