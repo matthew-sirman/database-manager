@@ -12,6 +12,7 @@
 
 #include <unordered_set>
 
+#include "Inspector.h"
 #include "../../include/database/Drawing.h"
 #include "../../include/database/DrawingPDFWriter.h"
 #include "../../include/database/componentFilters.h"
@@ -47,6 +48,8 @@ public:
 
 private:
     Ui::AddDrawingPageWidget *ui = nullptr;
+
+    Inspector *inspector = nullptr;
 
     ComboboxComponentDataSource<Product> productSource;
     ComboboxComponentDataSource<Aperture> apertureSource;

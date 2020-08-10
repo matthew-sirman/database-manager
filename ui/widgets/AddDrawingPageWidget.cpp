@@ -11,6 +11,13 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
         : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
 
+    inspector = new Inspector("Inspector");
+    inspector->addUpdateTrigger([this]() { ui->drawingSpecsVisual->setRedrawRequired(); });
+    ui->drawingSpecsVisual->setInspector(inspector);
+
+    ui->visualAndInspectorVerticalLayout->addWidget(inspector->container());
+
+
     ui->drawingNumberInput->setText(drawingNumber.c_str());
 
     drawing.setAsDefault();

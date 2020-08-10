@@ -140,6 +140,10 @@ void DrawingView::setRedrawRequired() {
     refreshRequired = true;
 }
 
+void DrawingView::setInspector(Inspector *inspector) {
+    this->inspector = inspector;
+}
+
 void DrawingView::paintEvent(QPaintEvent *event) {
     QGraphicsScene *graphicsScene = scene();
 
@@ -188,12 +192,14 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
         impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
         impactPadRegionSelector->show();
     }
+    QGraphicsView::mousePressEvent(event);
 }
 
 void DrawingView::mouseMoveEvent(QMouseEvent *event) {
     if (impactPadRegionSelector) {
         impactPadRegionSelector->setGeometry(QRect(impactPadRegionSelector->pos(), snapPoint(event->pos())));
     }
+    QGraphicsView::mouseMoveEvent(event);
 }
 
 void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
@@ -215,6 +221,7 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
         impactPadRegionSelector = nullptr;
         QApplication::restoreOverrideCursor();
     }
+    QGraphicsView::mouseReleaseEvent(event);
 }
 
 void DrawingView::redrawScene() {
@@ -490,23 +497,22 @@ void DrawingView::redrawScene() {
                 ));
             }
 
-            std::vector<Drawing::ImpactPad> impactPads = drawing->impactPads();
-
-            if (impactPadRegions.size() != impactPads.size()) {
+            if (impactPadRegions.size() != drawing->impactPads().size()) {
                 for (ImpactPadGraphicsItem *region : impactPadRegions) {
                     graphicsScene->removeItem(region);
                 }
                 impactPadRegions.clear();
 
-                for (unsigned i = 0; i < impactPads.size(); i++) {
-                    ImpactPadGraphicsItem *impactPad = new ImpactPadGraphicsItem(graphicsScene, QRectF(), impactPads[i]);
+                for (unsigned i = 0; i < drawing->impactPads().size(); i++) {
+                    ImpactPadGraphicsItem *impactPad = new ImpactPadGraphicsItem(graphicsScene, QRectF(), drawing->impactPad(i), inspector);
+                    impactPad->setUpdateCallback([this]() { setRedrawRequired(); });
                     graphicsScene->addItem(impactPad);
                     impactPadRegions.push_back(impactPad);
                 }
             }
 
-            for (unsigned i = 0; i < impactPads.size(); i++) {
-                Drawing::ImpactPad &impactPad = impactPads[i];
+            for (unsigned i = 0; i < impactPadRegions.size(); i++) {
+                Drawing::ImpactPad &impactPad = drawing->impactPad(i);
                 impactPadRegions[i]->setBounds(QRectF(
                     QPointF(matBoundingRegion.left() + (impactPad.pos.x / width) * matBoundingRegion.width(),
                             matBoundingRegion.top() + (impactPad.pos.y / length) * matBoundingRegion.height()),

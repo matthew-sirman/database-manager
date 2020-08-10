@@ -497,6 +497,10 @@ std::vector<Drawing::ImpactPad> Drawing::impactPads() const {
     return __impactPads;
 }
 
+Drawing::ImpactPad &Drawing::impactPad(unsigned index) {
+    return __impactPads[index];
+}
+
 void Drawing::addCentreHole(const CentreHole &centreHole) {
     __centreHoles.push_back(centreHole);
     invokeUpdateCallbacks();

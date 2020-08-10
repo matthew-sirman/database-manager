@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1083</width>
-    <height>589</height>
+    <width>1112</width>
+    <height>608</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -156,12 +156,12 @@ QLabel[hovering=true] {
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
      <item>
       <widget class="QTabWidget" name="drawingFormTabs">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-         <horstretch>1</horstretch>
+         <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
@@ -1189,20 +1189,27 @@ QLabel[hovering=true] {
       </widget>
      </item>
      <item>
-      <widget class="DrawingView" name="drawingSpecsVisual">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>2</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <layout class="QVBoxLayout" name="visualAndInspectorVerticalLayout" stretch="0">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
        </property>
-       <property name="interactive">
-        <bool>true</bool>
-       </property>
-       <property name="resizeAnchor">
-        <enum>QGraphicsView::AnchorViewCenter</enum>
-       </property>
-      </widget>
+       <item>
+        <widget class="DrawingView" name="drawingSpecsVisual">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>2</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="interactive">
+          <bool>true</bool>
+         </property>
+         <property name="resizeAnchor">
+          <enum>QGraphicsView::AnchorViewCenter</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -1236,7 +1243,6 @@ QLabel[hovering=true] {
   <tabstop>apertureInput</tabstop>
   <tabstop>numberOfBarsInput</tabstop>
   <tabstop>tensionTypeInput</tabstop>
-  <tabstop>drawingSpecsVisual</tabstop>
   <tabstop>notesInput</tabstop>
   <tabstop>leftSideIronTypeInput</tabstop>
   <tabstop>leftSideIronLengthInput</tabstop>

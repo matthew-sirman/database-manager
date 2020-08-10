@@ -10,6 +10,7 @@
 #include <QSpinBox>
 #include <QApplication>
 
+#include "Inspector.h"
 #include "DimensionLine.h"
 #include "AddLapWidget.h"
 #include "ImpactPadGraphicsItem.h"
@@ -33,6 +34,8 @@ public:
 
     void setRedrawRequired();
 
+    void setInspector(Inspector *inspector);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
 
@@ -48,6 +51,7 @@ protected:
 
 private:
     Drawing *drawing = nullptr;
+    Inspector *inspector = nullptr;
 
     unsigned numberOfBars;
     std::vector<float> barSpacings;

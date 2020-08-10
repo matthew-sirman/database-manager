@@ -523,6 +523,8 @@ public:
 
     std::vector<ImpactPad> impactPads() const;
 
+    ImpactPad &impactPad(unsigned index);
+
     void addCentreHole(const CentreHole &centreHole);
 
     std::vector<CentreHole> centreHoles() const;

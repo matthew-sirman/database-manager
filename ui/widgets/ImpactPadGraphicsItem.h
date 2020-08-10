@@ -11,12 +11,14 @@
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 
+#include "Inspector.h"
 #include "DimensionLine.h"
 #include "../../include/database/Drawing.h"
 
 class ImpactPadGraphicsItem : public QGraphicsItem {
 public:
-	explicit ImpactPadGraphicsItem(QGraphicsScene *scene, const QRectF &bounds, Drawing::ImpactPad &impactPad);
+	explicit ImpactPadGraphicsItem(QGraphicsScene *scene, const QRectF &bounds, Drawing::ImpactPad &impactPad, 
+		Inspector *inspector = nullptr);
 
 	[[nodiscard]] QRectF boundingRect() const override;
 
@@ -24,11 +26,18 @@ public:
 
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
+	void setUpdateCallback(const std::function<void()> &callback);
+
 protected:
+	void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
 
 private:
 	Drawing::ImpactPad &pad;
+	Inspector *inspector = nullptr;
+
+	unsigned inspectorAcquireID = -1;
 
 	QDoubleSpinBox *widthInputBox = nullptr, *lengthInputBox = nullptr;
 	QGraphicsProxyWidget *widthDimensionInput = nullptr, *lengthDimensionInput = nullptr;
@@ -38,8 +47,7 @@ private:
 
 	QRectF boundingBox;
 
-	bool editModeActive = false;
-
+	std::function<void()> updateCallback = nullptr;
 };
 
 #endif //DATABASE_MANAGER_IMPACTPADGRAPHICSITEM_H
