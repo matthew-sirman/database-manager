@@ -734,9 +734,10 @@ std::string DatabaseManager::nextAutomaticDrawingNumber() {
 						break;
 					}
 				}
+				number = 0;
 			}
 
-			next << charSection << (number + 1) % 100;
+			next << charSection << number + 1;
 
 			return next.str();
 		}

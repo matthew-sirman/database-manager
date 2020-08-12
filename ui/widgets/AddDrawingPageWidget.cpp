@@ -405,19 +405,19 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             case 0:
                 drawing.setTensionType(Drawing::SIDE);
                 if (leftSICache == 0) {
-                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::A);
+                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::A - 1);
                 }
                 if (rightSICache == 0) {
-                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::A);
+                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::A - 1);
                 }
                 break;
             case 1:
                 drawing.setTensionType(Drawing::END);
                 if (leftSICache == 0) {
-                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::C);
+                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::C - 1);
                 }
                 if (rightSICache == 0) {
-                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::C);
+                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::C - 1);
                 }
                 break;
             default:
@@ -440,6 +440,30 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             updatedNotes << drawing.notes() << BACKING_STRIPS_NOTE << std::endl;
             ui->notesInput->setText(updatedNotes.str().c_str());
             addedNotes.insert(HAS_BACKING_STRIPS);
+        }
+    });
+    connect(ui->rubberCoverStrapsAddNoteButton, &QPushButton::clicked, [this]() {
+        if (addedNotes.find(RUBBER_COVER_STRAPS) == addedNotes.end()) {
+            std::stringstream updatedNotes;
+            updatedNotes << drawing.notes() << RUBBER_COVER_STRAPS_NOTES << std::endl;
+            ui->notesInput->setText(updatedNotes.str().c_str());
+            addedNotes.insert(RUBBER_COVER_STRAPS);
+        }
+    });
+    connect(ui->addDrawingWTLStrapNoteButton, &QPushButton::clicked, [this]() {
+        if (addedNotes.find(WEAR_TILE_LINER_STRAPS) == addedNotes.end()) {
+            std::stringstream updatedNotes;
+            updatedNotes << drawing.notes() << DRAWING_WTL_STRAPS_NOTE << std::endl;
+            ui->notesInput->setText(updatedNotes.str().c_str());
+            addedNotes.insert(WEAR_TILE_LINER_STRAPS);
+        }
+    });
+    connect(ui->addSideIronWTLStrapNoteButton, &QPushButton::clicked, [this]() {
+        if (addedNotes.find(WEAR_TILE_LINER_STRAPS) == addedNotes.end()) {
+            std::stringstream updatedNotes;
+            updatedNotes << drawing.notes() << SIDE_IRON_WTL_STRAPS_NOTE << std::endl;
+            ui->notesInput->setText(updatedNotes.str().c_str());
+            addedNotes.insert(WEAR_TILE_LINER_STRAPS);
         }
     });
     connect(ui->notesInput, &QTextEdit::textChanged, [this]() {
@@ -515,7 +539,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
                 ui->machineDeckInput->itemData(index).toInt()));
     });
 
-    connect(ui->openDrawingPDFButton, &QPushButton::pressed, [this]() {
+    connect(ui->browseDrawingPDFButton, &QPushButton::pressed, [this]() {
         const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Drawing PDF File",
                                                                                  QString(),
                                                                                  "PDF (*.pdf)").toStdString();
@@ -524,6 +548,18 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->hyperlinkDisplay->setToolTip(hyperlinkFile.generic_string().c_str());
 
             drawing.setHyperlink(hyperlinkFile.generic_string());
+        }
+    });
+    connect(ui->openDrawingPDFButton, &QPushButton::pressed, [this]() {
+        const std::filesystem::path hyperlinkFile = ui->hyperlinkDisplay->displayText().toStdString();
+
+        if (hyperlinkFile.empty()) {
+            QMessageBox::about(this, "Open PDF", "Cannot open PDF. No PDF file path set.");
+            return;
+        }
+
+        if (!QDesktopServices::openUrl(QUrl::fromLocalFile(hyperlinkFile.generic_string().c_str()))) {
+            QMessageBox::about(this, "Open PDF", ("The PDF could not be found. (" + hyperlinkFile.generic_string() + ")").c_str());
         }
     });
     connect(ui->generatePDFButton, &QPushButton::pressed, [this]() {

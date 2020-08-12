@@ -424,6 +424,9 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             }
         }
 
+        std::sort(leftYPositions.begin(), leftYPositions.end());
+        std::sort(rightYPositions.begin(), rightYPositions.end());
+
         bool matchingSides = true;
 
         if (leftYPositions.size() == rightYPositions.size()) {
@@ -441,6 +444,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             float lastY = 0;
             for (float y : leftYPositions) {
                 divertorsFieldText << (y - lastY);
+                lastY = y;
                 if (y != leftYPositions.back()) {
                     divertorsFieldText << "+";
                 }
@@ -449,6 +453,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             float lastY = 0;
             for (float y : rightYPositions) {
                 divertorsFieldText << (y - lastY);
+                lastY = y;
                 if (y != rightYPositions.back()) {
                     divertorsFieldText << "+";
                 }
@@ -457,6 +462,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             float lastY = 0;
             for (float y : leftYPositions) {
                 divertorsFieldText << (y - lastY);
+                lastY = y;
                 if (y != leftYPositions.back()) {
                     divertorsFieldText << "+";
                 }
@@ -466,6 +472,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             float lastY = 0;
             for (float y : leftYPositions) {
                 divertorsFieldText << (y - lastY);
+                lastY = y;
                 if (y != leftYPositions.back()) {
                     divertorsFieldText << "+";
                 }
@@ -474,6 +481,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             lastY = 0;
             for (float y : rightYPositions) {
                 divertorsFieldText << (y - lastY);
+                lastY = y;
                 if (y != rightYPositions.back()) {
                     divertorsFieldText << "+";
                 }
@@ -499,9 +507,14 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             fieldSCSLogoBox = svgTemplateRenderer.boundsOnElement("field_scs_logo"),
             fieldSCSDetailsBox = svgTemplateRenderer.boundsOnElement("field_scs_details");
 
-    painter.drawText(fieldTitleBox,
-                     (drawing.product().productName + " " + to_str(drawing.numberOfBars()) + " SUPPORT BAR" + (drawing.numberOfBars() == 1 ? "" : "S")).c_str(),
-                     centreAlignedText);
+    std::stringstream title;
+    title << drawing.product().productName;
+
+    if (drawing.product().productName != "Bivitec" && drawing.product().productName != "Flip Flow") {
+        title << " " + to_str(drawing.numberOfBars()) + " Support Bar" + (drawing.numberOfBars() == 1 ? "" : "s");
+    }
+
+    painter.drawText(fieldTitleBox, title.str().c_str(), centreAlignedText);
 
     painter.drawText(fieldDateBox, dateText.str().c_str(), centreAlignedText);
 
@@ -779,6 +792,12 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
 
     painter.setPen(Qt::black);
 
+    double apertureRegionTop =
+            (defaultHorizontalBarSize / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top(),
+            apertureRegionBottom =
+            (1 - (defaultHorizontalBarSize / lengthDim.rCentre)) * matBoundingRegion.height() + matBoundingRegion.top();
+    double apertureRegionHeight = apertureRegionBottom - apertureRegionTop;
+
     for (unsigned apertureRegion = 0; apertureRegion < apertureRegionEndpoints.size() / 2; apertureRegion++) {
         double start = apertureRegionEndpoints[2 * apertureRegion];
         double end = apertureRegionEndpoints[2 * apertureRegion + 1];
@@ -786,12 +805,11 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         QRectF region;
         region.setTopLeft(QPointF(
                 (start / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                (defaultHorizontalBarSize / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()
+                apertureRegionTop
         ));
         region.setBottomRight(QPointF(
                 (end / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                (1 - (defaultHorizontalBarSize / lengthDim.rCentre)) * matBoundingRegion.height() +
-                matBoundingRegion.top()
+                apertureRegionBottom
         ));
 
         painter.drawRect(region);
@@ -824,10 +842,10 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
                 painter,
                 QPointF(
                         (leftInnerSpacing / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                        matBoundingRegion.height() * dimensionInnerSpacingHeight + matBoundingRegion.top()),
+                        apertureRegionHeight * dimensionInnerSpacingHeight + apertureRegionTop),
                 QPointF(
                         (rightInnerSpacing / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                        matBoundingRegion.height() * dimensionInnerSpacingHeight + matBoundingRegion.top()),
+                        apertureRegionHeight * dimensionInnerSpacingHeight + apertureRegionTop),
                 to_str(rightInnerSpacing - leftInnerSpacing).c_str(), DOUBLE_HEADED
         );
 
@@ -841,10 +859,10 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     for (unsigned bar = 0; bar < drawing.numberOfBars() + 2; bar++) {
         QPointF barLeft(
                 (barEndpoints[2 * bar] / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                matBoundingRegion.height() * dimensionBarHeight + matBoundingRegion.top());
+                apertureRegionHeight * dimensionBarHeight + apertureRegionTop);
         QPointF barRight(
                 (barEndpoints[2 * bar + 1] / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                matBoundingRegion.height() * dimensionBarHeight + matBoundingRegion.top());
+                apertureRegionHeight * dimensionBarHeight + apertureRegionTop);
 
         drawArrow(painter, QPointF(barLeft.x() - shortDimensionLineSize * regionWidth, barLeft.y()), barLeft);
         drawArrow(painter, QPointF(barRight.x() + longDimensionLineSize * regionWidth, barRight.y()), barRight,
@@ -945,31 +963,51 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         switch (divertor.side) {
             case Drawing::LEFT:
                 divertorBounds.moveTo(matBoundingRegion.left(), matBoundingRegion.top() +
-                                                        (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
-                divertorBounds.lineTo(matBoundingRegion.left() + (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
-                                      matBoundingRegion.top() + (divertor.verticalPosition - divertor.width / (2 * root2) +
-                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
-                divertorBounds.lineTo(matBoundingRegion.left() + (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
-                                      matBoundingRegion.top() + (divertor.verticalPosition + divertor.width / (2 * root2) +
-                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                (divertor.verticalPosition -
+                                                                 divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left() +
+                                      (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() +
+                                      (divertor.verticalPosition - divertor.width / (2 * root2) +
+                                       divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left() +
+                                      (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() +
+                                      (divertor.verticalPosition + divertor.width / (2 * root2) +
+                                       divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
                 divertorBounds.lineTo(matBoundingRegion.left(), matBoundingRegion.top() +
-                                                        (divertor.verticalPosition + divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                (divertor.verticalPosition +
+                                                                 divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                matBoundingRegion.height());
                 divertorBounds.lineTo(matBoundingRegion.left(), matBoundingRegion.top() +
-                                                        (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                (divertor.verticalPosition -
+                                                                 divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                matBoundingRegion.height());
                 break;
             case Drawing::RIGHT:
                 divertorBounds.moveTo(matBoundingRegion.right(), matBoundingRegion.top() +
-                                                         (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
-                divertorBounds.lineTo(matBoundingRegion.right() - (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
-                                      matBoundingRegion.top() + (divertor.verticalPosition - divertor.width / (2 * root2) +
-                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
-                divertorBounds.lineTo(matBoundingRegion.right() - (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
-                                      matBoundingRegion.top() + (divertor.verticalPosition + divertor.width / (2 * root2) +
-                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                 (divertor.verticalPosition -
+                                                                  divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                 matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right() -
+                                      (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() +
+                                      (divertor.verticalPosition - divertor.width / (2 * root2) +
+                                       divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right() -
+                                      (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() +
+                                      (divertor.verticalPosition + divertor.width / (2 * root2) +
+                                       divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
                 divertorBounds.lineTo(matBoundingRegion.right(), matBoundingRegion.top() +
-                                                         (divertor.verticalPosition + divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                 (divertor.verticalPosition +
+                                                                  divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                 matBoundingRegion.height());
                 divertorBounds.lineTo(matBoundingRegion.right(), matBoundingRegion.top() +
-                                                         (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                                                                 (divertor.verticalPosition -
+                                                                  divertor.width / (2 * root2)) / lengthDim.rCentre *
+                                                                 matBoundingRegion.height());
                 break;
         }
 

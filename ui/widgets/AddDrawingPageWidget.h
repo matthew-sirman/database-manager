@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QFileDialog>
+#include <QDesktopServices>
 #include <QMessageBox>
 
 #include <unordered_set>
@@ -19,6 +20,9 @@
 
 #define REBATED_NOTE "Rebate 50mm in down to 15mm"
 #define BACKING_STRIPS_NOTE "Backing Strips 6mm Tackyback"
+#define RUBBER_COVER_STRAPS_NOTES "Rubber Cover Straps 6mm Tackyback"
+#define DRAWING_WTL_STRAPS_NOTE "Wear Tile Liner Strap 6mm Tackyback"
+#define SIDE_IRON_WTL_STRAPS_NOTE "Wear Tile Liner Strap 6mm Tackyback - Make to suit Side Iron"
 
 namespace Ui {
     class AddDrawingPageWidget;
@@ -97,7 +101,9 @@ private:
 
     enum DrawingNoteType {
         REBATED,
-        HAS_BACKING_STRIPS
+        HAS_BACKING_STRIPS,
+        RUBBER_COVER_STRAPS,
+        WEAR_TILE_LINER_STRAPS
     };
 
     std::unordered_set<DrawingNoteType> addedNotes;

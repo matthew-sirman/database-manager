@@ -460,7 +460,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="9" column="0">
+           <item row="11" column="0">
             <widget class="QLabel" name="notesLabel">
              <property name="styleSheet">
               <string notr="true">QLabel {
@@ -478,7 +478,7 @@ QLabel[hovering=true] {
              </property>
             </widget>
            </item>
-           <item row="9" column="1">
+           <item row="11" column="1">
             <widget class="QTextEdit" name="notesInput"/>
            </item>
            <item row="8" column="1">
@@ -505,6 +505,67 @@ QLabel[hovering=true] {
               <string>Backing Strips</string>
              </property>
             </widget>
+           </item>
+           <item row="9" column="0">
+            <widget class="QLabel" name="rubberCoverStrapsLabel">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+             </property>
+             <property name="text">
+              <string>Rubber Cover Straps</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="1">
+            <widget class="QPushButton" name="rubberCoverStrapsAddNoteButton">
+             <property name="text">
+              <string>Add Note</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="0">
+            <widget class="QLabel" name="wtlStrapLabel">
+             <property name="styleSheet">
+              <string notr="true">QLabel {
+	padding: 3px;
+}
+
+QLabel[hovering=true] {
+	padding: 3px;
+	background-color: #d9d9d9;
+	border-radius: 5px;
+}</string>
+             </property>
+             <property name="text">
+              <string>WTL Strap</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="1">
+            <layout class="QHBoxLayout" name="wearTileLinerNotesHorizonalLayout">
+             <item>
+              <widget class="QPushButton" name="addDrawingWTLStrapNoteButton">
+               <property name="text">
+                <string>Drawing WTL</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="addSideIronWTLStrapNoteButton">
+               <property name="text">
+                <string>Side Iron WTL</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
@@ -1095,9 +1156,16 @@ QLabel[hovering=true] {
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="browseDrawingPDFButton">
+             <property name="text">
+              <string>Browse...</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="openDrawingPDFButton">
              <property name="text">
-              <string>Open Drawing PDF</string>
+              <string>Open PDF</string>
              </property>
             </widget>
            </item>
@@ -1243,6 +1311,7 @@ QLabel[hovering=true] {
   <tabstop>apertureInput</tabstop>
   <tabstop>numberOfBarsInput</tabstop>
   <tabstop>tensionTypeInput</tabstop>
+  <tabstop>drawingSpecsVisual</tabstop>
   <tabstop>notesInput</tabstop>
   <tabstop>leftSideIronTypeInput</tabstop>
   <tabstop>leftSideIronLengthInput</tabstop>
@@ -1253,16 +1322,23 @@ QLabel[hovering=true] {
   <tabstop>rightSideIronDrawingInput</tabstop>
   <tabstop>rightSideIronInvertedInput</tabstop>
   <tabstop>manufacturerInput</tabstop>
+  <tabstop>modelInput</tabstop>
   <tabstop>quantityOnDeckInput</tabstop>
   <tabstop>machinePositionInput</tabstop>
   <tabstop>machineDeckInput</tabstop>
-  <tabstop>openDrawingPDFButton</tabstop>
+  <tabstop>generatePDFButton</tabstop>
+  <tabstop>browseDrawingPDFButton</tabstop>
   <tabstop>pressDrawingHyperlinksAddButton</tabstop>
-  <tabstop>confirmDrawingButton</tabstop>
-  <tabstop>hyperlinkDisplay</tabstop>
   <tabstop>pressDrawingHyperlinksRemoveButton</tabstop>
-  <tabstop>pressDrawingHyperlinkList</tabstop>
+  <tabstop>confirmDrawingButton</tabstop>
   <tabstop>drawingFormTabs</tabstop>
+  <tabstop>rebatedInput</tabstop>
+  <tabstop>backingStripsInput</tabstop>
+  <tabstop>rubberCoverStrapsAddNoteButton</tabstop>
+  <tabstop>addDrawingWTLStrapNoteButton</tabstop>
+  <tabstop>addSideIronWTLStrapNoteButton</tabstop>
+  <tabstop>hyperlinkDisplay</tabstop>
+  <tabstop>pressDrawingHyperlinkList</tabstop>
  </tabstops>
  <resources/>
  <connections/>
