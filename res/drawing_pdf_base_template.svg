@@ -1,9 +1,9 @@
-<svg width="13032.000000000004" height="9416" xmlns="http://www.w3.org/2000/svg">
+<svg width="13032.000000000007" height="9416" xmlns="http://www.w3.org/2000/svg">
  <!-- Created with Method Draw - http://github.com/duopixel/Method-Draw/ -->
 
  <g>
   <title>background</title>
-  <rect fill="none" id="canvas_background" height="94163.247" width="130323.72588" y="-1" x="-1"/>
+  <rect fill="none" id="canvas_background" height="9418" width="13034" y="-1" x="-1"/>
  </g>
  <g>
   <title>Layer 1</title>
@@ -47,29 +47,25 @@
    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9216" width="500" height="200" id="svg_75"/>
    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9016" width="500" height="200" id="svg_76"/>
    <rect fill="none" stroke-width="10" fill-opacity="0" x="1700" y="8816" width="500" height="200" id="svg_77" stroke="#000000"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="9216" width="700" height="200" id="svg_78"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="9016" width="700" height="200" id="svg_79"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="9216" width="700" height="200" id="svg_80"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="9016" width="700" height="200" id="svg_81"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="8600" y="9216" width="700" height="200" id="svg_82"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="8600" y="9016" width="700" height="200" id="svg_83"/>
-   <rect fill="none" stroke-width="10" fill-opacity="0" x="10200" y="8816" width="2832" height="200" id="svg_86" stroke="#000000"/>
+   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8816" width="700" height="200" id="svg_79"/>
+   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="8816" width="1400" height="200" id="svg_83"/>
    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="12500" y="8316" width="532" height="499.9945" id="svg_88"/>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="219.99616" y="9373.16966" id="svg_89" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">REV.</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="979.98291" y="9373.16966" id="svg_90" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DATE</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="1859.96843" y="9373.16966" id="svg_91" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">BY</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="2406.63252" y="9373" id="svg_92" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">CHANGE DESCRIPTION</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="7313.27609" y="9173.1706" id="svg_93" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">SCALE</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="7946.60644" y="9173.1706" id="svg_94" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DRN. BY</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="8739.93605" y="9173.1706" id="svg_95" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DATE</text>
+   <text fill="#000000" stroke="#000000" stroke-width="0" x="7266.5971" y="8973" id="svg_94" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DRN. BY</text>
+   <text fill="#000000" stroke="#000000" stroke-width="0" x="8369.93098" y="8973" id="svg_95" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DATE</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="7226.63264" y="8426.6267" id="svg_96" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">TITLE</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="10219.95198" y="8439.95997" id="svg_97" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DRAWING NUMBER</text>
    <text fill="#000000" stroke="#000000" stroke-width="0" x="12526.60774" y="8426.6267" id="svg_98" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">REV</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="11199.94742" y="8966.62415" id="svg_99" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">SHEET 1 OF 1</text>
    <g id="base_details">
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8316" width="3000" height="700" id="field_number_of_bars"/>
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="9301" y="9016" width="3732" height="400" id="field_scs_logo"/>
+    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8316" width="3000" height="500" id="field_title"/>
+    <rect stroke-opacity="0" fill="none" stroke="#ffffff" stroke-width="10" fill-opacity="0" x="9901" y="8816" width="3132" height="600" id="field_scs_details"/>
     <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="10201" y="8316" width="2300" height="500" id="field_drawing_number"/>
+    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="9016" width="700" height="400" id="field_drawn_by"/>
+    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="9016" width="1400" height="400" id="field_date"/>
+    <rect id="field_scs_logo" height="600" width="600" y="8816" x="9301" fill-opacity="0" stroke-opacity="0" stroke-width="10" stroke="#ffffff" fill="none"/>
    </g>
   </g>
  </g>

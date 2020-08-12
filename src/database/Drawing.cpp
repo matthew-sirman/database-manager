@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 06/07/2020.
 //
@@ -501,6 +499,14 @@ Drawing::ImpactPad &Drawing::impactPad(unsigned index) {
     return __impactPads[index];
 }
 
+void Drawing::removeImpactPad(const Drawing::ImpactPad &pad) {
+    __impactPads.erase(std::find(__impactPads.begin(), __impactPads.end(), pad));
+}
+
+unsigned Drawing::numberOfImpactPads() const {
+    return __impactPads.size();
+}
+
 void Drawing::addCentreHole(const CentreHole &centreHole) {
     __centreHoles.push_back(centreHole);
     invokeUpdateCallbacks();
@@ -508,6 +514,18 @@ void Drawing::addCentreHole(const CentreHole &centreHole) {
 
 std::vector<Drawing::CentreHole> Drawing::centreHoles() const {
     return __centreHoles;
+}
+
+Drawing::CentreHole &Drawing::centreHole(unsigned index) {
+    return __centreHoles[index];
+}
+
+void Drawing::removeCentreHole(const Drawing::CentreHole &hole) {
+    __centreHoles.erase(std::find(__centreHoles.begin(), __centreHoles.end(), hole));
+}
+
+unsigned Drawing::numberOfCentreHoles() const {
+    return __centreHoles.size();
 }
 
 void Drawing::addDeflector(const Deflector &deflector) {
@@ -519,6 +537,18 @@ std::vector<Drawing::Deflector> Drawing::deflectors() const {
     return __deflectors;
 }
 
+Drawing::Deflector &Drawing::deflector(unsigned index) {
+    return __deflectors[index];
+}
+
+void Drawing::removeDeflector(const Drawing::Deflector &deflector) {
+    __deflectors.erase(std::find(__deflectors.begin(), __deflectors.end(), deflector));
+}
+
+unsigned Drawing::numberOfDeflectors() const {
+    return __deflectors.size();
+}
+
 void Drawing::addDivertor(const Divertor &divertor) {
     __divertors.push_back(divertor);
     invokeUpdateCallbacks();
@@ -526,6 +556,18 @@ void Drawing::addDivertor(const Divertor &divertor) {
 
 std::vector<Drawing::Divertor> Drawing::divertors() const {
     return __divertors;
+}
+
+Drawing::Divertor &Drawing::divertor(unsigned index) {
+    return __divertors[index];
+}
+
+void Drawing::removeDivertor(const Drawing::Divertor &divertor) {
+    __divertors.erase(std::find(__divertors.begin(), __divertors.end(), divertor));
+}
+
+unsigned Drawing::numberOfDivertors() const {
+    return __divertors.size();
 }
 
 #pragma clang diagnostic push
@@ -868,13 +910,21 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
         size += sizeof(unsigned);
     }
     // Impact Pads
-    size += sizeof(unsigned char) + drawing.__impactPads.size();
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__impactPads.begin(), drawing.__impactPads.end(), 0,
+                        [](unsigned size, const Drawing::ImpactPad &pad) { return size + pad.serialisedSize(); });
     // Centre Holes
-    size += sizeof(unsigned char) + drawing.__centreHoles.size();
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
+                        [](unsigned size, const Drawing::CentreHole &hole) { return size + hole.serialisedSize(); });
     // Deflectors
-    size += sizeof(unsigned char) + drawing.__deflectors.size();
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__deflectors.begin(), drawing.__deflectors.end(), 0,
+                        [](unsigned size, const Drawing::Deflector &deflector) { return size + deflector.serialisedSize(); });
     // Divertors
-    size += sizeof(unsigned char) + drawing.__divertors.size();
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__divertors.begin(), drawing.__divertors.end(), 0,
+                        [](unsigned size, const Drawing::Divertor &divertor) { return size + divertor.serialisedSize(); });
     // Load Warnings
     size += sizeof(unsigned);
 
@@ -1316,5 +1366,3 @@ unsigned DrawingSummaryCompressionSchema::maxCompressedSize() const {
         matIDSize + widthSize + lengthSize + thicknessHandleSize * 2 + 4 + lapSize * 4 + apertureHandleSize +
         barSpacingCountSize + maxBarSpacingCount * barSpacingSize);
 }
-
-#pragma clang diagnostic pop

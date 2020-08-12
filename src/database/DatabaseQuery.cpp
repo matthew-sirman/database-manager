@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 09/07/2020.
 //
@@ -1461,7 +1459,7 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
 
         insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", '";
 
-        switch (DrawingComponentManager<Aperture>::getComponentByHandle(ap.handle()).componentID()) {
+        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap.apertureShapeID).componentID()) {
             case 3:
                 insert << "Longitudinal";
                 break;
@@ -1908,5 +1906,3 @@ NextDrawing &NextDrawing::deserialise(void *data) {
 
     return *next;
 }
-
-#pragma clang diagnostic pop

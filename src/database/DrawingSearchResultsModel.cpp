@@ -1,6 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
-#pragma ide diagnostic ignored "google-default-arguments"
 //
 // Created by matthew on 13/07/2020.
 //
@@ -111,5 +108,3 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
 DrawingSummary DrawingSearchResultsModel::summaryAtRow(int row) const {
     return summaries[row];
 }
-
-#pragma clang diagnostic pop

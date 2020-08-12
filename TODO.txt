@@ -1,10 +1,8 @@
 HIGH PRIORITY
 
 MEDIUM PRIORITY
-Proper database password
 Fix broken calculations on other PC
 Comment code
-Server send to all for updates
 Find out if two layered mats have top or bottom layer laps
 PyAPI
 Permissions
@@ -12,5 +10,4 @@ Permissions
 LOW PRIORITY
 Auto text selecting line edits
 Dev mode
-Tidy DatabaseManager - less hard coded values
 Dynamic serialisation system (?)

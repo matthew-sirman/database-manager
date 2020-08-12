@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 10/07/2020.
 //
@@ -246,12 +244,12 @@ std::string Machine::machineName() const {
 
 ComboboxDataElement Machine::toDataElement(unsigned mode) const {
     switch (mode) {
-        case 0:
-            return { machineName(), __handle };
         case 1:
             return { manufacturer, __handle };
         case 2:
             return { model, __handle };
+        default:
+            return { machineName(), __handle };
     }
 }
 
@@ -277,5 +275,3 @@ MachineDeck *MachineDeck::fromSource(void *buffer, unsigned int &elementSize) {
 ComboboxDataElement MachineDeck::toDataElement(unsigned mode) const {
     return { deck, __handle };
 }
-
-#pragma clang diagnostic pop

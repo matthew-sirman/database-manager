@@ -83,6 +83,8 @@ public:
 
     void sendRepeatToken(const ClientHandle &clientHandle, unsigned responseCode = 0);
 
+    void sendEmailAddress(const ClientHandle &clientHandle, unsigned responseCode = 0);
+
     void connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                  const std::string &host = "localhost");
 
@@ -131,6 +133,7 @@ private:
     std::ostream *errorStream = &std::cerr;
 
     DatabaseManager *dbManager = nullptr;
+    std::string databaseHost, databaseUsername, databasePassword, databaseSchema;
 
     // Accepts a new client into the server
     void acceptClient(TCPSocket& clientSocket);

@@ -15,6 +15,15 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
 
         break;
     }
+    case RequestType::USER_EMAIL_REQUEST: {
+        unsigned char *buff = (unsigned char *) message + sizeof(RequestType);
+        unsigned char emailLength = *buff++;
+        std::string email = std::string((const char *)buff, emailLength);
+
+        emailReceivedCallback(email);
+
+        break;
+    }
     case RequestType::DRAWING_SEARCH_QUERY:
         if (resultsModel) {
             resultsModel->sourceDataFromBuffer(message);
@@ -85,6 +94,10 @@ void DatabaseResponseHandler::setDrawingInsertResponseHandler(const std::functio
 
 void DatabaseResponseHandler::setRepeatTokenResponseCallback(const std::function<void(const uint256 &token)> &callback) {
     repeatTokenCallback = callback;
+}
+
+void DatabaseResponseHandler::setEmailReceivedCallback(const std::function<void(const std::string &)> &callback) {
+    emailReceivedCallback = callback;
 }
 
 void DatabaseResponseHandler::setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback) {

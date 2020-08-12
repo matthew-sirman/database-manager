@@ -8,16 +8,17 @@
 #include <QGraphicsItem>
 #include <QPainter>
 #include <QDoubleSpinBox>
-#include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsSceneContextMenuEvent>
+#include <QMenu>
 
-#include "Inspector.h"
-#include "DimensionLine.h"
-#include "../../include/database/Drawing.h"
+#include "../Inspector.h"
+#include "../DimensionLine.h"
+#include "../../../include/database/Drawing.h"
 
 class ImpactPadGraphicsItem : public QGraphicsItem {
 public:
-	explicit ImpactPadGraphicsItem(QGraphicsScene *scene, const QRectF &bounds, Drawing::ImpactPad &impactPad, 
+	explicit ImpactPadGraphicsItem(const QRectF &bounds, Drawing::ImpactPad &impactPad, 
 		Inspector *inspector = nullptr);
 
 	[[nodiscard]] QRectF boundingRect() const override;
@@ -26,12 +27,16 @@ public:
 
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-	void setUpdateCallback(const std::function<void()> &callback);
+	[[nodiscard]] bool contains(const QPointF &point) const override;
+
+	void setRemoveFunction(const std::function<void()> &remove);
 
 protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+
+	void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 
 private:
 	Drawing::ImpactPad &pad;
@@ -39,15 +44,12 @@ private:
 
 	unsigned inspectorAcquireID = -1;
 
-	QDoubleSpinBox *widthInputBox = nullptr, *lengthInputBox = nullptr;
-	QGraphicsProxyWidget *widthDimensionInput = nullptr, *lengthDimensionInput = nullptr;
-	WidgetDimensionLine *widthDimensionLine = nullptr, *lengthDimensionLine = nullptr;
-
-	const double dimensionOffset = 0.02;
-
 	QRectF boundingBox;
 
-	std::function<void()> updateCallback = nullptr;
+	ComboboxComponentDataSource<Material> materialSource;
+	ComboboxComponentDataSource<Aperture> apertureSource;
+
+	std::function<void()> removeFunction = nullptr;
 };
 
 #endif //DATABASE_MANAGER_IMPACTPADGRAPHICSITEM_H

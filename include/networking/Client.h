@@ -62,6 +62,8 @@ public:
 
     void requestRepeatToken(unsigned responseCode = 0);
 
+    void requestEmailAddress(unsigned responseCode = 0);
+
     void setResponseHandler(ClientResponseHandler &handler);
 
 private:

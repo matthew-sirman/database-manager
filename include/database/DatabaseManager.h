@@ -125,6 +125,8 @@ public:
     /// </summary>
     void closeConnection();
 
+    bool connected() const;
+
     void setErrorStream(std::ostream &stream = std::cerr);
 
 private:
@@ -135,6 +137,8 @@ private:
     std::string database;
 
     std::ostream *errStream = &std::cerr;
+
+    bool isConnected;
 };
 
 

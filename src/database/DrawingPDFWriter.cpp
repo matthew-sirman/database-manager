@@ -8,865 +8,1052 @@ DrawingPDFWriter::DrawingPDFWriter() {
 
 }
 
-bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing) const {
-	std::string productName = drawing.product().productName;
+bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing,
+                                 const std::string &drawnByInitials) const {
+    std::string productName = drawing.product().productName;
 
-	if (productName == "Rubber Modules and Panels") {
-		QMessageBox::about(nullptr, "Unsupported Type", "Rubber Modules and Panels PDF generation is not supported.");
-		return false;
-	}
+    if (productName == "Rubber Modules and Panels") {
+        QMessageBox::about(nullptr, "Unsupported Type", "Rubber Modules and Panels PDF generation is not supported.");
+        return false;
+    }
 
-	QPdfWriter writer(pdfFilePath.string().c_str());
+    QPdfWriter writer(pdfFilePath.string().c_str());
 
-	writer.setPageSize(QPagedPaintDevice::A4);
-	writer.setPageOrientation(QPageLayout::Landscape);
-	writer.setPageMargins(QMargins(30, 15, 30, 15));
+    writer.setPageSize(QPagedPaintDevice::A4);
+    writer.setPageOrientation(QPageLayout::Landscape);
+    writer.setPageMargins(QMargins(30, 15, 30, 15));
 
-	QSvgRenderer svgTemplateRenderer(QString(":/drawing_pdf_base_template.svg"));
+    QSvgRenderer svgTemplateRenderer(QString(":/drawing_pdf_base_template.svg"));
 
-	QPainter painter;
+    QPainter painter;
 
-	if (!painter.begin(&writer)) {
-		return false; 
-	}
+    if (!painter.begin(&writer)) {
+        return false;
+    }
 
-	drawStandardTemplate(painter, svgTemplateRenderer);
+    drawStandardTemplate(painter, svgTemplateRenderer);
 
-	drawTextDetails(painter, svgTemplateRenderer, drawing);
+    drawTextDetails(painter, svgTemplateRenderer, drawing, drawnByInitials);
 
-	drawRubberScreenCloth(painter, svgTemplateRenderer.boundsOnElement("drawing_target_region"), drawing);
+    drawRubberScreenCloth(painter, svgTemplateRenderer.boundsOnElement("drawing_target_region"), drawing);
 
-	return true;
+    return true;
 }
 
 void DrawingPDFWriter::drawStandardTemplate(QPainter &painter, QSvgRenderer &svgTemplateRenderer) const {
-	QRect viewport = painter.viewport();
+    QRect viewport = painter.viewport();
 
-	painter.setPen(QPen(Qt::black, 5));
+    painter.setPen(QPen(Qt::black, 5));
 
-	painter.drawRect(viewport);
+    painter.drawRect(viewport);
 
-	svgTemplateRenderer.render(&painter);
+    svgTemplateRenderer.render(&painter);
 }
 
-void DrawingPDFWriter::drawLabelAndField(QPainter &painter, double left, double &top, const QString &label, double labelWidth, const QString &field,
-										 double fieldWidth, double hOffset, double vOffset) const {
-	QTextOption topLeftTextOption;
-	topLeftTextOption.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-	topLeftTextOption.setWrapMode(QTextOption::WordWrap);
+void DrawingPDFWriter::drawLabelAndField(QPainter &painter, double left, double &top, const QString &label,
+                                         double labelWidth, const QString &field,
+                                         double fieldWidth, double hOffset, double vOffset) const {
+    QTextOption topLeftTextOption;
+    topLeftTextOption.setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    topLeftTextOption.setWrapMode(QTextOption::WordWrap);
 
-	QRectF labelBounds = QFontMetrics(painter.font()).boundingRect(
-		QRect(left, top, labelWidth, 0)
-		.adjusted(hOffset, vOffset, -hOffset, -vOffset),
-		Qt::TextWordWrap, label
-	);
-	QRectF fieldBounds = QFontMetrics(painter.font()).boundingRect(
-		QRect(left + labelWidth, top, fieldWidth, 0)
-		.adjusted(hOffset, vOffset, -hOffset, -vOffset),
-		Qt::TextWordWrap, field
-	);
+    QRectF labelBounds = QFontMetrics(painter.font()).boundingRect(
+            QRect(left, top, labelWidth, 0)
+                    .adjusted(hOffset, vOffset, -hOffset, -vOffset),
+            Qt::TextWordWrap, label
+    );
+    QRectF fieldBounds = QFontMetrics(painter.font()).boundingRect(
+            QRect(left + labelWidth, top, fieldWidth, 0)
+                    .adjusted(hOffset, vOffset, -hOffset, -vOffset),
+            Qt::TextWordWrap, field
+    );
 
-	double height = MAX(labelBounds.height(), fieldBounds.height()) + 2 * vOffset;
+    double height = MAX(labelBounds.height(), fieldBounds.height()) + 2 * vOffset;
 
-	painter.drawRect(QRectF(left, top, labelWidth, height));
-	painter.drawRect(QRectF(left + labelWidth, top, fieldWidth, height));
-	painter.drawText(labelBounds, label, topLeftTextOption);
-	painter.drawText(fieldBounds, field, topLeftTextOption);
+    painter.drawRect(QRectF(left, top, labelWidth, height));
+    painter.drawRect(QRectF(left + labelWidth, top, fieldWidth, height));
+    painter.drawText(labelBounds, label, topLeftTextOption);
+    painter.drawText(fieldBounds, field, topLeftTextOption);
 
-	top += height;
+    top += height;
 }
 
-void DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing) const {
-	painter.save();
+void
+DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing,
+                                  const std::string &drawnByInitials) const {
+    painter.save();
 
-	const double horizontalOffset = 50.0, verticalOffset = 40.0;
+    const double horizontalOffset = 50.0, verticalOffset = 40.0;
 
-	QTextOption leftAlignedText;
-	leftAlignedText.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    QTextOption leftAlignedText;
+    leftAlignedText.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
-	QRectF
-		generalDetailsBox = svgTemplateRenderer.boundsOnElement("general_details_target_region"),
-		manufacturingDetailsBox = svgTemplateRenderer.boundsOnElement("manufacturing_details_target_region");
+    QTextOption centreAlignedText;
+    centreAlignedText.setAlignment(Qt::AlignCenter);
 
-	const double labelWidth = 1500, fieldWidth = 2300;
-	double currentVPos = generalDetailsBox.top();
+    QRectF
+            generalDetailsBox = svgTemplateRenderer.boundsOnElement("general_details_target_region"),
+            manufacturingDetailsBox = svgTemplateRenderer.boundsOnElement("manufacturing_details_target_region");
 
-	QString labelText, fieldText;
+    const double labelWidth = 1500, fieldWidth = 2300;
+    double currentVPos = generalDetailsBox.top();
 
-	Drawing::MachineTemplate &machineTemplate = drawing.machineTemplate();
+    QString labelText, fieldText;
 
-	labelText = "Manufacturer";
-	fieldText = machineTemplate.machine().manufacturer.c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    Drawing::MachineTemplate machineTemplate = drawing.machineTemplate();
 
-	labelText = "Model";
-	fieldText = machineTemplate.machine().model.c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Manufacturer";
+    fieldText = machineTemplate.machine().manufacturer.c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Deck";
-	fieldText = machineTemplate.deck().deck.c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Model";
+    fieldText = machineTemplate.machine().model.c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Quantity On Deck";
-	fieldText = to_str(machineTemplate.quantityOnDeck).c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Deck";
+    fieldText = machineTemplate.deck().deck.c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Position";
-	fieldText = machineTemplate.position.c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Quantity On Deck";
+    fieldText = to_str(machineTemplate.quantityOnDeck).c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Date";
+    labelText = "Position";
+    fieldText = machineTemplate.position.c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	std::tm date;
-	date.tm_year = drawing.date().year - 1900;
-	date.tm_mon = drawing.date().month - 1;
-	date.tm_mday = drawing.date().day;
+    labelText = "Date";
 
-	std::stringstream dateText;
-	dateText << std::put_time(&date, "%d/%m/%Y");
+    std::tm date;
+    date.tm_year = drawing.date().year - 1900;
+    date.tm_mon = drawing.date().month - 1;
+    date.tm_mday = drawing.date().day;
 
-	fieldText = dateText.str().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    std::stringstream dateText;
+    dateText << std::put_time(&date, "%d/%m/%Y");
 
-	currentVPos = manufacturingDetailsBox.top();
+    fieldText = dateText.str().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Width";
-	fieldText = (to_str(drawing.width()) + "mm").c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    currentVPos = manufacturingDetailsBox.top();
 
-	labelText = "Length";
-	fieldText = (to_str(drawing.length()) + "mm").c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Width";
+    fieldText = (to_str(drawing.width()) + "mm").c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Thickness";
-	std::stringstream thicknessText;
-	thicknessText << drawing.material(Drawing::TOP)->thickness;
+    labelText = "Length";
+    fieldText = (to_str(drawing.length()) + "mm").c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	std::optional<Material> bottomLayer = drawing.material(Drawing::BOTTOM);
-	if (bottomLayer.has_value()) {
-		thicknessText << "+" << bottomLayer->thickness;
-	}
-	fieldText = thicknessText.str().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    labelText = "Thickness";
+    std::stringstream thicknessText;
+    thicknessText << drawing.material(Drawing::TOP)->thickness;
 
-	labelText = "Aperture";
-	fieldText = drawing.aperture().apertureName().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    std::optional<Material> bottomLayer = drawing.material(Drawing::BOTTOM);
+    if (bottomLayer.has_value()) {
+        thicknessText << "+" << bottomLayer->thickness;
+    }
+    fieldText = thicknessText.str().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Side Irons";
+    labelText = "Aperture";
+    fieldText = drawing.aperture().apertureName().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	std::stringstream sideIronText;
-	SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+    labelText = "Side Irons";
 
-	switch (leftSideIron.type) {
-		case SideIronType::A:
-			sideIronText << "Type A ";
-			break;
-		case SideIronType::B:
-			sideIronText << "Type B ";
-			break;
-		case SideIronType::C:
-			sideIronText << "Type C ";
-			break;
-		case SideIronType::D:
-			sideIronText << "Type D ";
-			break;
-		case SideIronType::E:
-			sideIronText << "Type E ";
-			break;
-		case SideIronType::None:
-			sideIronText << "None";
-			break;
-	}
-	if (leftSideIron.type != SideIronType::None) {
-		sideIronText << "(" << leftSideIron.drawingNumber << ")";
-	}
+    std::stringstream sideIronText;
+    SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
 
-	if (leftSideIron.handle() != rightSideIron.handle()) {
-		sideIronText << ", ";
-		switch (rightSideIron.type) {
-			case SideIronType::A:
-				sideIronText << "Type A ";
-				break;
-			case SideIronType::B:
-				sideIronText << "Type B ";
-				break;
-			case SideIronType::C:
-				sideIronText << "Type C ";
-				break;
-			case SideIronType::D:
-				sideIronText << "Type D ";
-				break;
-			case SideIronType::E:
-				sideIronText << "Type E ";
-				break;
-			case SideIronType::None:
-				sideIronText << "None";
-				break;
-		}
-		if (rightSideIron.type != SideIronType::None) {
-			sideIronText << "(" << rightSideIron.drawingNumber << ")";
-		}
-	}
+    switch (leftSideIron.type) {
+        case SideIronType::A:
+            sideIronText << "Type A ";
+            break;
+        case SideIronType::B:
+            sideIronText << "Type B ";
+            break;
+        case SideIronType::C:
+            sideIronText << "Type C ";
+            break;
+        case SideIronType::D:
+            sideIronText << "Type D ";
+            break;
+        case SideIronType::E:
+            sideIronText << "Type E ";
+            break;
+        case SideIronType::None:
+            sideIronText << "None";
+            break;
+    }
+    if (leftSideIron.type != SideIronType::None) {
+        sideIronText << "(" << leftSideIron.drawingNumber << ")";
+    }
 
-	fieldText = sideIronText.str().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    if (leftSideIron.handle() != rightSideIron.handle()) {
+        sideIronText << ", ";
+        switch (rightSideIron.type) {
+            case SideIronType::A:
+                sideIronText << "Type A ";
+                break;
+            case SideIronType::B:
+                sideIronText << "Type B ";
+                break;
+            case SideIronType::C:
+                sideIronText << "Type C ";
+                break;
+            case SideIronType::D:
+                sideIronText << "Type D ";
+                break;
+            case SideIronType::E:
+                sideIronText << "Type E ";
+                break;
+            case SideIronType::None:
+                sideIronText << "None";
+                break;
+        }
+        if (rightSideIron.type != SideIronType::None) {
+            sideIronText << "(" << rightSideIron.drawingNumber << ")";
+        }
+    }
 
-	labelText = "Side Overlaps";
+    fieldText = sideIronText.str().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	std::stringstream sideOverlapsText;
+    labelText = "Side Overlaps";
 
-	if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
-		std::optional<Drawing::Lap>
-			leftOverlap = drawing.overlap(Drawing::LEFT),
-			rightOverlap = drawing.overlap(Drawing::RIGHT),
-			leftSidelap = drawing.sidelap(Drawing::LEFT),
-			rightSidelap = drawing.sidelap(Drawing::RIGHT);
+    std::stringstream sideOverlapsText;
 
-		std::vector<std::string> lapStrings;
-		std::stringstream lapString;
+    if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
+        std::optional<Drawing::Lap>
+                leftOverlap = drawing.overlap(Drawing::LEFT),
+                rightOverlap = drawing.overlap(Drawing::RIGHT),
+                leftSidelap = drawing.sidelap(Drawing::LEFT),
+                rightSidelap = drawing.sidelap(Drawing::RIGHT);
 
-		if (leftOverlap.has_value()) {
-			lapString.str(std::string());
-			lapString << leftOverlap->width << "mm";
-			if (leftOverlap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (rightOverlap.has_value()) {
-			lapString.str(std::string());
-			lapString << rightOverlap->width << "mm";
-			if (rightOverlap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (leftSidelap.has_value()) {
-			lapString.str(std::string());
-			lapString << leftSidelap->width << "mm";
-			if (leftSidelap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (rightSidelap.has_value()) {
-			lapString.str(std::string());
-			lapString << rightSidelap->width << "mm";
-			if (rightSidelap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
+        std::vector<std::string> lapStrings;
+        std::stringstream lapString;
 
-		for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
-			sideOverlapsText << *it;
-			if (it != lapStrings.end() - 1) {
-				sideOverlapsText << ", ";
-			}
-		}
-	} else {
-		sideOverlapsText << "No";
-	}
+        if (leftOverlap.has_value()) {
+            lapString.str(std::string());
+            lapString << leftOverlap->width << "mm";
+            if (leftOverlap->attachmentType == LapAttachment::BONDED) {
+                lapString << " (bonded " << leftOverlap->material().thickness << "mm)";
+            }
+            lapStrings.push_back(lapString.str());
+        }
+        if (rightOverlap.has_value()) {
+            lapString.str(std::string());
+            lapString << rightOverlap->width << "mm";
+            if (rightOverlap->attachmentType == LapAttachment::BONDED) {
+                lapString << " (bonded " << rightOverlap->material().thickness << "mm)";
+            }
+            lapStrings.push_back(lapString.str());
+        }
+        if (leftSidelap.has_value()) {
+            lapString.str(std::string());
+            lapString << leftSidelap->width << "mm";
+            if (leftSidelap->attachmentType == LapAttachment::BONDED) {
+                lapString << " (bonded " << leftSidelap->material().thickness << "mm)";
+            }
+            lapStrings.push_back(lapString.str());
+        }
+        if (rightSidelap.has_value()) {
+            lapString.str(std::string());
+            lapString << rightSidelap->width << "mm";
+            if (rightSidelap->attachmentType == LapAttachment::BONDED) {
+                lapString << " (bonded " << rightSidelap->material().thickness << "mm)";
+            }
+            lapStrings.push_back(lapString.str());
+        }
 
-	fieldText = sideOverlapsText.str().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+        for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
+            sideOverlapsText << *it;
+            if (it != lapStrings.end() - 1) {
+                sideOverlapsText << ", ";
+            }
+        }
+    } else {
+        sideOverlapsText << "No";
+    }
 
-	std::string productName = drawing.product().productName;
+    fieldText = sideOverlapsText.str().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	if (productName == "Rubber Screen Cloth") {
-		if (drawing.material(Drawing::TOP)->thickness >= 15) {
-			labelText = "Rebated";
-			fieldText = drawing.rebated() ? "Yes" : "No";
-			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    std::string productName = drawing.product().productName;
 
-			if (drawing.hasBackingStrips()) {
-				labelText = "Backing Strips";
-				fieldText = "Yes";
-				drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-								  fieldText, fieldWidth, horizontalOffset, verticalOffset);
-			}
-		} else {
-			labelText = "Backing Strips";
-			fieldText = drawing.hasBackingStrips() ? "Yes" : "No";
-			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
-		}
-	} else if (productName == "Extraflex" || productName == "Polyflex") {
-		if (drawing.hasBackingStrips()) {
-			labelText = "Backing Strips";
-			fieldText = "Yes";
-			drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-							  fieldText, fieldWidth, horizontalOffset, verticalOffset);
-		}
-	}
+    if (productName == "Rubber Screen Cloth") {
+        if (drawing.material(Drawing::TOP)->thickness >= 15) {
+            labelText = "Rebated";
+            fieldText = drawing.rebated() ? "Yes" : "No";
+            drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                              fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-	labelText = "Notes";
-	fieldText = drawing.notes().c_str();
-	drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-					  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+            if (drawing.hasBackingStrips()) {
+                labelText = "Backing Strips";
+                fieldText = "Yes";
+                drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                                  fieldText, fieldWidth, horizontalOffset, verticalOffset);
+            }
+        } else {
+            labelText = "Backing Strips";
+            fieldText = drawing.hasBackingStrips() ? "Yes" : "No";
+            drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                              fieldText, fieldWidth, horizontalOffset, verticalOffset);
+        }
+    } else if (productName == "Extraflex" || productName == "Polyflex") {
+        if (drawing.hasBackingStrips()) {
+            labelText = "Backing Strips";
+            fieldText = "Yes";
+            drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                              fieldText, fieldWidth, horizontalOffset, verticalOffset);
+        }
+    }
 
-	/*QRectF
-		fieldManufacturerBox = svgTemplateRenderer.boundsOnElement("field_manufacturer").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldModelBox = svgTemplateRenderer.boundsOnElement("field_model").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldDeckBox = svgTemplateRenderer.boundsOnElement("field_deck").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldQuantityOnDeckBox = svgTemplateRenderer.boundsOnElement("field_quantity_on_deck").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldPositionBox = svgTemplateRenderer.boundsOnElement("field_position").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldDateBox = svgTemplateRenderer.boundsOnElement("field_date").adjusted(horizontalOffset, 0, -horizontalOffset, 0);
+    if (drawing.numberOfImpactPads()) {
+        std::stringstream impactPadFieldText;
+        std::vector<Drawing::ImpactPad> pads = drawing.impactPads();
+        for (unsigned i = 0; i < pads.size(); i++) {
+            Drawing::ImpactPad pad = pads[i];
 
-	Drawing::MachineTemplate &machineTemplate = drawing.machineTemplate();
+            Material &mat = pad.material();
 
-	painter.drawText(fieldManufacturerBox, machineTemplate.machine().manufacturer.c_str(), leftAlignedText);
-	painter.drawText(fieldModelBox, machineTemplate.machine().model.c_str(), leftAlignedText);
-	painter.drawText(fieldDeckBox, machineTemplate.deck().deck.c_str(), leftAlignedText);
-	painter.drawText(fieldQuantityOnDeckBox, to_str(machineTemplate.quantityOnDeck).c_str(), leftAlignedText);
-	painter.drawText(fieldPositionBox, machineTemplate.position.c_str(), leftAlignedText);
+            impactPadFieldText << pad.width << "x" << pad.length << " at " << "(" << pad.pos.x << ", " << pad.pos.y
+                               << ") ";
+            impactPadFieldText << mat.thickness << "mm " << mat.materialName << ", " << pad.aperture().apertureName();
 
-	std::tm date;
-	date.tm_year = drawing.date().year - 1900;
-	date.tm_mon = drawing.date().month - 1;
-	date.tm_mday = drawing.date().day;
+            if (i != pads.size() - 1) {
+                impactPadFieldText << ", ";
+            }
+        }
 
-	std::stringstream dateText;
-	dateText << std::put_time(&date, "%d/%m/%Y");
+        labelText = "Impact Pad(s)";
+        fieldText = impactPadFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                          fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
 
-	painter.drawText(fieldDateBox, dateText.str().c_str(), leftAlignedText);*/
+    if (drawing.numberOfCentreHoles()) {
+        std::stringstream centreHolesFieldText;
+        std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
 
-	/*QRectF
-		fieldWidthBox = svgTemplateRenderer.boundsOnElement("field_width").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldLengthBox = svgTemplateRenderer.boundsOnElement("field_length").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldThicknessBox = svgTemplateRenderer.boundsOnElement("field_thickness").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldApertureBox = svgTemplateRenderer.boundsOnElement("field_aperture").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldSideIronsBox = svgTemplateRenderer.boundsOnElement("field_side_irons").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldSideOverlapsBox = svgTemplateRenderer.boundsOnElement("field_side_overlaps").adjusted(horizontalOffset, 0, -horizontalOffset, 0),
-		fieldNotesBox = svgTemplateRenderer.boundsOnElement("field_notes").adjusted(horizontalOffset, verticalOffset, -horizontalOffset, -verticalOffset);
+        Drawing::CentreHole::Shape shape = holes.front().centreHoleShape;
 
-	painter.drawText(fieldWidthBox, (to_str(drawing.width()) + "mm").c_str(), leftAlignedText);
-	painter.drawText(fieldLengthBox, (to_str(drawing.length()) + "mm").c_str(), leftAlignedText);
+        centreHolesFieldText << shape.width << "x" << shape.length << " ";
+        if (shape.rounded) {
+            centreHolesFieldText << "(rounded) ";
+        }
+        centreHolesFieldText << "at ";
 
-	std::stringstream thicknessText;
-	thicknessText << drawing.material(Drawing::TOP)->thickness;
-	
-	std::optional<Material> bottomLayer = drawing.material(Drawing::BOTTOM);
-	if (bottomLayer.has_value()) {
-		thicknessText << "+" << bottomLayer->thickness;
-	}
+        std::vector<float> positions;
+        positions.reserve(holes.size());
+        for (const Drawing::CentreHole &hole : holes) {
+            positions.push_back(hole.pos.y);
+        }
 
-	painter.drawText(fieldThicknessBox, thicknessText.str().c_str(), leftAlignedText);
-	painter.drawText(fieldApertureBox, drawing.aperture().apertureName().c_str(), leftAlignedText);
+        std::sort(positions.begin(), positions.end());
+        std::vector<float>::iterator last = std::unique(positions.begin(), positions.end());
+        positions.erase(last, positions.end());
 
-	std::stringstream sideIronText;
-	SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+        float lastY = 0;
+        for (float y : positions) {
+            centreHolesFieldText << (y - lastY);
+            lastY = y;
+            if (y != positions.back()) {
+                centreHolesFieldText << "+";
+            }
+        }
 
-	switch (leftSideIron.type) {
-		case SideIronType::A:
-			sideIronText << "Type A ";
-			break;
-		case SideIronType::B:
-			sideIronText << "Type B ";
-			break;
-		case SideIronType::C:
-			sideIronText << "Type C ";
-			break;
-		case SideIronType::D:
-			sideIronText << "Type D ";
-			break;
-		case SideIronType::E:
-			sideIronText << "Type E ";
-			break;
-		case SideIronType::None:
-			sideIronText << "None";
-			break;
-	}
-	if (leftSideIron.type != SideIronType::None) {
-		sideIronText << "(" << leftSideIron.drawingNumber << ")";
-	}
+        labelText = "Centre Holes";
+        fieldText = centreHolesFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                          fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
 
-	if (leftSideIron.handle() != rightSideIron.handle()) {
-		sideIronText << ", ";
-		switch (rightSideIron.type) {
-			case SideIronType::A:
-				sideIronText << "Type A ";
-				break;
-			case SideIronType::B:
-				sideIronText << "Type B ";
-				break;
-			case SideIronType::C:
-				sideIronText << "Type C ";
-				break;
-			case SideIronType::D:
-				sideIronText << "Type D ";
-				break;
-			case SideIronType::E:
-				sideIronText << "Type E ";
-				break;
-			case SideIronType::None:
-				sideIronText << "None";
-				break;
-		}
-		if (rightSideIron.type != SideIronType::None) {
-			sideIronText << "(" << rightSideIron.drawingNumber << ")";
-		}
-	}
+    if (drawing.numberOfDeflectors()) {
+        std::stringstream deflectorsFieldText;
+        std::vector<Drawing::Deflector> deflectors = drawing.deflectors();
 
-	painter.drawText(fieldSideIronsBox, sideIronText.str().c_str(), leftAlignedText);
+        Material &mat = deflectors.front().material();
 
-	std::stringstream sideOverlapsText;
+        deflectorsFieldText << deflectors.front().size << "mm " << mat.thickness << "mm " << mat.materialName << " at ";
 
-	if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
-		std::optional<Drawing::Lap>
-			leftOverlap = drawing.overlap(Drawing::LEFT),
-			rightOverlap = drawing.overlap(Drawing::RIGHT),
-			leftSidelap = drawing.sidelap(Drawing::LEFT),
-			rightSidelap = drawing.sidelap(Drawing::RIGHT);
+        for (unsigned i = 0; i < deflectors.size(); i++) {
+            deflectorsFieldText << "(" << deflectors[i].pos.x << ", " << deflectors[i].pos.y << ")";
+            if (i != deflectors.size() - 1) {
+                deflectorsFieldText << ", ";
+            }
+        }
 
-		std::vector<std::string> lapStrings;
-		std::stringstream lapString;
+        labelText = "Deflectors";
+        fieldText = deflectorsFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                          fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
 
-		if (leftOverlap.has_value()) {
-			lapString.str(std::string());
-			lapString << leftOverlap->width << "mm";
-			if (leftOverlap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (rightOverlap.has_value()) {
-			lapString.str(std::string());
-			lapString << rightOverlap->width << "mm";
-			if (rightOverlap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (leftSidelap.has_value()) {
-			lapString.str(std::string());
-			lapString << leftSidelap->width << "mm";
-			if (leftSidelap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
-		if (rightSidelap.has_value()) {
-			lapString.str(std::string());
-			lapString << rightSidelap->width << "mm";
-			if (rightSidelap->attachmentType == LapAttachment::BONDED) {
-				lapString << " (bonded)";
-			}
-			lapStrings.push_back(lapString.str());
-		}
+    if (drawing.numberOfDivertors()) {
+        std::stringstream divertorsFieldText;
+        std::vector<Drawing::Divertor> divertors = drawing.divertors();
 
-		for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
-			sideOverlapsText << *it;
-			if (it != lapStrings.end() - 1) {
-				sideOverlapsText << ", ";
-			}
-		}
-	} else {
-		sideOverlapsText << "No";
-	}
-	painter.drawText(fieldSideOverlapsBox, sideOverlapsText.str().c_str(), leftAlignedText);
+        Material &mat = divertors.front().material();
 
-	QTextOption topLeftAlignedText;
-	topLeftAlignedText.setWrapMode(QTextOption::WordWrap);
-	topLeftAlignedText.setAlignment(Qt::AlignLeft | Qt::AlignTop);
-	painter.drawText(fieldNotesBox, drawing.notes().c_str(), topLeftAlignedText);*/
+        divertorsFieldText << divertors.front().width << "x" << divertors.front().length << " " << mat.thickness
+                           << "mm " << mat.materialName << " at ";
 
-	QRectF
-		fieldDrawingNumberBox = svgTemplateRenderer.boundsOnElement("field_drawing_number"),
-		fieldNumberOfBarsBox = svgTemplateRenderer.boundsOnElement("field_number_of_bars");
+        std::vector<float> leftYPositions, rightYPositions;
 
-	QTextOption centreAlignedText;
-	centreAlignedText.setAlignment(Qt::AlignCenter);
+        for (const Drawing::Divertor &divertor : divertors) {
+            switch (divertor.side) {
+                case Drawing::LEFT:
+                    leftYPositions.push_back(divertor.verticalPosition);
+                    break;
+                case Drawing::RIGHT:
+                    rightYPositions.push_back(divertor.verticalPosition);
+                    break;
+            }
+        }
 
-	painter.drawText(fieldNumberOfBarsBox, (to_str(drawing.numberOfBars()) + " SUPPORT BARS").c_str(), centreAlignedText);
+        bool matchingSides = true;
 
-	QFont font = painter.font();
-	font.setPointSize(18);
-	painter.setFont(font);
-	painter.drawText(fieldDrawingNumberBox, drawing.drawingNumber().c_str(), centreAlignedText);
+        if (leftYPositions.size() == rightYPositions.size()) {
+            for (unsigned i = 0; i < leftYPositions.size(); i++) {
+                if (leftYPositions[i] != rightYPositions[i]) {
+                    matchingSides = false;
+                    break;
+                }
+            }
+        } else {
+            matchingSides = false;
+        }
 
-	painter.restore();
+        if (matchingSides) {
+            float lastY = 0;
+            for (float y : leftYPositions) {
+                divertorsFieldText << (y - lastY);
+                if (y != leftYPositions.back()) {
+                    divertorsFieldText << "+";
+                }
+            }
+        } else if (leftYPositions.empty()) {
+            float lastY = 0;
+            for (float y : rightYPositions) {
+                divertorsFieldText << (y - lastY);
+                if (y != rightYPositions.back()) {
+                    divertorsFieldText << "+";
+                }
+            }
+        } else if (rightYPositions.empty()) {
+            float lastY = 0;
+            for (float y : leftYPositions) {
+                divertorsFieldText << (y - lastY);
+                if (y != leftYPositions.back()) {
+                    divertorsFieldText << "+";
+                }
+            }
+        } else {
+            divertorsFieldText << "Left: ";
+            float lastY = 0;
+            for (float y : leftYPositions) {
+                divertorsFieldText << (y - lastY);
+                if (y != leftYPositions.back()) {
+                    divertorsFieldText << "+";
+                }
+            }
+            divertorsFieldText << ", Right: ";
+            lastY = 0;
+            for (float y : rightYPositions) {
+                divertorsFieldText << (y - lastY);
+                if (y != rightYPositions.back()) {
+                    divertorsFieldText << "+";
+                }
+            }
+        }
+
+        labelText = "Divertors";
+        fieldText = divertorsFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                          fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
+    labelText = "Notes";
+    fieldText = drawing.notes().c_str();
+    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
+
+    QRectF
+            fieldDrawingNumberBox = svgTemplateRenderer.boundsOnElement("field_drawing_number"),
+            fieldTitleBox = svgTemplateRenderer.boundsOnElement("field_title"),
+            fieldDateBox = svgTemplateRenderer.boundsOnElement("field_date"),
+            fieldDrawnByBox = svgTemplateRenderer.boundsOnElement("field_drawn_by"),
+            fieldSCSLogoBox = svgTemplateRenderer.boundsOnElement("field_scs_logo"),
+            fieldSCSDetailsBox = svgTemplateRenderer.boundsOnElement("field_scs_details");
+
+    painter.drawText(fieldTitleBox,
+                     (drawing.product().productName + " " + to_str(drawing.numberOfBars()) + " SUPPORT BAR" + (drawing.numberOfBars() == 1 ? "" : "S")).c_str(),
+                     centreAlignedText);
+
+    painter.drawText(fieldDateBox, dateText.str().c_str(), centreAlignedText);
+
+    painter.drawText(fieldDrawnByBox, drawnByInitials.c_str(), centreAlignedText);
+
+    painter.drawImage(fieldSCSLogoBox, QImage(":/scs_logo.png"));
+
+    std::stringstream details;
+
+    details << "SCREENING CONSULTANCY & SUPPLIES, ";
+    details << "42 SOMERS ROAD, RUGBY, WARWICKSHIRE, CV227DH, ";
+    details << "TEL: 01788 553300 EMAIL: SALES@SCSRUGBY.CO.UK" << std::endl;
+    details << "PROPRIETARY AND CONFIDENTIAL. THE INFORMATION CONTAINED IN THIS ";
+    details << "DRAWING IS THE SOLE PROPERTY OF SCS LTD. ";
+    details << "ANY REPRODUCTION IN PART OR AS A WHOLE WITHOUT THE WRITTEN PERMISSION ";
+    details << "OF SCS LTD. IS PROHIBITED.";
+
+    QFont font = painter.font();
+    font.setPointSize(5);
+    painter.setFont(font);
+
+    painter.drawText(fieldSCSDetailsBox, details.str().c_str(), centreAlignedText);
+
+    font.setPointSize(18);
+    painter.setFont(font);
+    painter.drawText(fieldDrawingNumberBox, drawing.drawingNumber().c_str(), centreAlignedText);
+
+    painter.restore();
 }
 
 void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const {
-	const double maxDimensionPercentage = 0.8;
-	const double horizontalBarSizePercentage = 0.03;
-	const double dimensionSpacingHeight = 0.7, dimensionBarHeight = 0.8, dimensionInnerSpacingHeight = 0.9;
-	const double dimensionHorizontalLapOffset = 0.3, dimensionVerticalLapOffset = 0.3;
-	const double shortDimensionLineSize = 0.02, longDimensionLineSize = 0.04;
-	const double mainDimensionLineSize = 0.06;
+    const double maxDimensionPercentage = 0.8;
+    const double defaultHorizontalBarSize = 45;
+    const double dimensionSpacingHeight = 0.7, dimensionBarHeight = 0.8, dimensionInnerSpacingHeight = 0.9;
+    const double dimensionHorizontalLapOffset = 0.3, dimensionVerticalLapOffset = 0.3;
+    const double shortDimensionLineSize = 0.02, longDimensionLineSize = 0.04;
+    const double mainDimensionLineSize = 0.06;
 
-	QPen dashDotPen = QPen(QBrush(Qt::black), 1, Qt::DashDotLine);
-	dashDotPen.setDashPattern({ 96, 48, 4, 48 });
+    QPen dashDotPen = QPen(QBrush(Qt::black), 1, Qt::DashDotLine);
+    dashDotPen.setDashPattern({96, 48, 4, 48});
 
-	QPen dashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
-	dashPen.setDashPattern({ 96, 48 });
+    QPen dashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
+    dashPen.setDashPattern({96, 48});
 
-	double regionWidth = drawingRegion.width(), regionHeight = drawingRegion.height();
+    QPen smallDashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
+    smallDashPen.setDashPattern({48, 24});
 
-	std::optional<Drawing::Lap> leftLap, rightLap, topLap, bottomLap;
+    double regionWidth = drawingRegion.width(), regionHeight = drawingRegion.height();
 
-	switch (drawing.tensionType()) {
-		case Drawing::SIDE:
-			leftLap = drawing.sidelap(Drawing::LEFT);
-			rightLap = drawing.sidelap(Drawing::RIGHT);
-			topLap = drawing.overlap(Drawing::LEFT);
-			bottomLap = drawing.overlap(Drawing::RIGHT);
-			break;
-		case Drawing::END:
-			leftLap = drawing.overlap(Drawing::LEFT);
-			rightLap = drawing.overlap(Drawing::RIGHT);
-			topLap = drawing.sidelap(Drawing::LEFT);
-			bottomLap = drawing.sidelap(Drawing::RIGHT);
-			break;
-	}
+    std::optional<Drawing::Lap> leftLap, rightLap, topLap, bottomLap;
 
-	struct {
-		double rLeft = 0;
-		double rCentre = 0;
-		double rRight = 0;
+    switch (drawing.tensionType()) {
+        case Drawing::SIDE:
+            leftLap = drawing.sidelap(Drawing::LEFT);
+            rightLap = drawing.sidelap(Drawing::RIGHT);
+            topLap = drawing.overlap(Drawing::LEFT);
+            bottomLap = drawing.overlap(Drawing::RIGHT);
+            break;
+        case Drawing::END:
+            leftLap = drawing.overlap(Drawing::LEFT);
+            rightLap = drawing.overlap(Drawing::RIGHT);
+            topLap = drawing.sidelap(Drawing::LEFT);
+            bottomLap = drawing.sidelap(Drawing::RIGHT);
+            break;
+    }
 
-		inline double total() const {
-			return rLeft + rCentre + rRight;
-		}
-	} widthDim, lengthDim;
+    struct {
+        double rLeft = 0;
+        double rCentre = 0;
+        double rRight = 0;
 
-	widthDim.rCentre = drawing.width();
-	lengthDim.rCentre = drawing.length();
+        inline double total() const {
+            return rLeft + rCentre + rRight;
+        }
+    } widthDim, lengthDim;
 
-	if (leftLap.has_value()) {
-		widthDim.rLeft = leftLap->width;
-	}
-	if (rightLap.has_value()) {
-		widthDim.rRight = rightLap->width;
-	}
-	if (topLap.has_value()) {
-		lengthDim.rLeft = topLap->width;
-	}
-	if (bottomLap.has_value()) {
-		lengthDim.rRight = bottomLap->width;
-	}
+    widthDim.rCentre = drawing.width();
+    lengthDim.rCentre = drawing.length();
 
-	double pWidth, pLength;
+    if (leftLap.has_value()) {
+        widthDim.rLeft = leftLap->width;
+    }
+    if (rightLap.has_value()) {
+        widthDim.rRight = rightLap->width;
+    }
+    if (topLap.has_value()) {
+        lengthDim.rLeft = topLap->width;
+    }
+    if (bottomLap.has_value()) {
+        lengthDim.rRight = bottomLap->width;
+    }
 
-	if (widthDim.total() / regionWidth > lengthDim.total() / regionHeight) {
-		pWidth = maxDimensionPercentage;
-		pLength = maxDimensionPercentage * ((lengthDim.total() / regionHeight) / (widthDim.total() / regionWidth));
-	} else {
-		pLength = maxDimensionPercentage;
-		pWidth = maxDimensionPercentage * ((widthDim.total() / regionWidth) / (lengthDim.total() / regionHeight));
-	}
+    double pWidth, pLength;
 
-	QRectF matBoundingRegion;
-	matBoundingRegion.setTopLeft(QPointF(
-		(0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * regionWidth + drawingRegion.left(),
-		(0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * regionHeight + drawingRegion.top()
-	));
-	matBoundingRegion.setBottomRight(QPointF(
-		(0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * regionWidth + drawingRegion.left(),
-		(0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * regionHeight + drawingRegion.top()
-	));
+    if (widthDim.total() / regionWidth > lengthDim.total() / regionHeight) {
+        pWidth = maxDimensionPercentage;
+        pLength = maxDimensionPercentage * ((lengthDim.total() / regionHeight) / (widthDim.total() / regionWidth));
+    } else {
+        pLength = maxDimensionPercentage;
+        pWidth = maxDimensionPercentage * ((widthDim.total() / regionWidth) / (lengthDim.total() / regionHeight));
+    }
 
-	painter.drawRect(matBoundingRegion);
+    QRectF matBoundingRegion;
+    matBoundingRegion.setTopLeft(QPointF(
+            (0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * regionWidth + drawingRegion.left(),
+            (0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * regionHeight + drawingRegion.top()
+    ));
+    matBoundingRegion.setBottomRight(QPointF(
+            (0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * regionWidth + drawingRegion.left(),
+            (0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * regionHeight + drawingRegion.top()
+    ));
 
-	QLineF leftWidthExtender(
-		QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) *regionHeight + drawingRegion.top()),
-		QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength) - mainDimensionLineSize) *regionHeight + drawingRegion.top()));
-	QLineF rightWidthExtender(
-		QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) *regionHeight + drawingRegion.top()),
-		QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength) - mainDimensionLineSize) *regionHeight + drawingRegion.top()));
+    painter.drawRect(matBoundingRegion);
 
-	painter.setPen(dashPen);
-	painter.drawLine(leftWidthExtender);
-	painter.drawLine(rightWidthExtender);
-	painter.setPen(Qt::black);
+    QLineF leftWidthExtender(
+            QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
+            QPointF(matBoundingRegion.left(),
+                    (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
+    QLineF rightWidthExtender(
+            QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
+            QPointF(matBoundingRegion.right(),
+                    (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
 
-	drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), to_str(drawing.width()).c_str(), DOUBLE_HEADED);
+    painter.setPen(dashPen);
+    painter.drawLine(leftWidthExtender);
+    painter.drawLine(rightWidthExtender);
+    painter.setPen(Qt::black);
 
-	QLineF topLengthExtender(
-		QPointF((0.5 * (1.0 - pWidth)) *regionWidth + drawingRegion.left(), matBoundingRegion.top()),
-		QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) *regionWidth + drawingRegion.left(), matBoundingRegion.top()));
-	QLineF bottomLengthExtender(
-		QPointF((0.5 * (1.0 - pWidth)) *regionWidth + drawingRegion.left(), matBoundingRegion.bottom()),
-		QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) *regionWidth + drawingRegion.left(), matBoundingRegion.bottom()));
+    drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), to_str(drawing.width()).c_str(),
+              DOUBLE_HEADED);
 
-	painter.setPen(dashPen);
-	painter.drawLine(topLengthExtender);
-	painter.drawLine(bottomLengthExtender);
-	painter.setPen(Qt::black);
+    QLineF topLengthExtender(
+            QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.top()),
+            QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
+                    matBoundingRegion.top()));
+    QLineF bottomLengthExtender(
+            QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.bottom()),
+            QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
+                    matBoundingRegion.bottom()));
 
-	drawArrow(painter, topLengthExtender.center(), bottomLengthExtender.center(), to_str(drawing.length()).c_str(), DOUBLE_HEADED, true);
+    painter.setPen(dashPen);
+    painter.drawLine(topLengthExtender);
+    painter.drawLine(bottomLengthExtender);
+    painter.setPen(Qt::black);
 
-	if (leftLap.has_value()) {
-		QRectF leftLapRegion;
-		leftLapRegion.setLeft(
-			(0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left()
-		);
-		leftLapRegion.setTopRight(matBoundingRegion.topLeft());
-		leftLapRegion.setBottomRight(matBoundingRegion.bottomLeft());
+    drawArrow(painter, topLengthExtender.center(), bottomLengthExtender.center(), to_str(drawing.length()).c_str(),
+              DOUBLE_HEADED, true);
 
-		painter.drawRect(leftLapRegion);
+    if (leftLap.has_value()) {
+        QRectF leftLapRegion;
+        leftLapRegion.setLeft(
+                (0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left()
+        );
+        leftLapRegion.setTopRight(matBoundingRegion.topLeft());
+        leftLapRegion.setBottomRight(matBoundingRegion.bottomLeft());
 
-		QPointF lapLeft(leftLapRegion.left(), matBoundingRegion.height() *dimensionVerticalLapOffset + matBoundingRegion.top());
-		QPointF lapRight(leftLapRegion.right(), matBoundingRegion.height() *dimensionVerticalLapOffset + matBoundingRegion.top());
+        painter.drawRect(leftLapRegion);
 
-		std::string lapString = to_str(leftLap->width) + "mm";
-		if (leftLap->attachmentType == LapAttachment::BONDED) {
-			lapString += " Bonded";
-		}
+        QPointF lapLeft(leftLapRegion.left(),
+                        matBoundingRegion.height() * dimensionVerticalLapOffset + matBoundingRegion.top());
+        QPointF lapRight(leftLapRegion.right(),
+                         matBoundingRegion.height() * dimensionVerticalLapOffset + matBoundingRegion.top());
 
-		drawArrow(painter, QPointF(lapLeft.x() - longDimensionLineSize * regionWidth, lapLeft.y()), lapLeft,
-			lapString.c_str());
-		drawArrow(painter, QPointF(lapRight.x() + shortDimensionLineSize * regionWidth, lapRight.y()), lapRight);
-	}
-	if (rightLap.has_value()) {
-		QRectF rightLapRegion;
-		rightLapRegion.setRight(
-			(0.5 * (1.0 + pWidth)) * regionWidth + drawingRegion.left()
-		);
-		rightLapRegion.setTopLeft(matBoundingRegion.topRight());
-		rightLapRegion.setBottomLeft(matBoundingRegion.bottomRight());
+        std::string lapString = to_str(leftLap->width) + "mm";
+        if (leftLap->attachmentType == LapAttachment::BONDED) {
+            lapString += " Bonded";
+        }
 
-		painter.drawRect(rightLapRegion);
+        drawArrow(painter, QPointF(lapLeft.x() - longDimensionLineSize * regionWidth, lapLeft.y()), lapLeft,
+                  lapString.c_str());
+        drawArrow(painter, QPointF(lapRight.x() + shortDimensionLineSize * regionWidth, lapRight.y()), lapRight);
+    }
+    if (rightLap.has_value()) {
+        QRectF rightLapRegion;
+        rightLapRegion.setRight(
+                (0.5 * (1.0 + pWidth)) * regionWidth + drawingRegion.left()
+        );
+        rightLapRegion.setTopLeft(matBoundingRegion.topRight());
+        rightLapRegion.setBottomLeft(matBoundingRegion.bottomRight());
 
-		QPointF lapLeft(rightLapRegion.left(), matBoundingRegion.height() *dimensionVerticalLapOffset + matBoundingRegion.top());
-		QPointF lapRight(rightLapRegion.right(), matBoundingRegion.height() *dimensionVerticalLapOffset + matBoundingRegion.top());
+        painter.drawRect(rightLapRegion);
 
-		std::string lapString = to_str(rightLap->width) + "mm";
-		if (rightLap->attachmentType == LapAttachment::BONDED) {
-			lapString += " Bonded";
-		}
+        QPointF lapLeft(rightLapRegion.left(),
+                        matBoundingRegion.height() * dimensionVerticalLapOffset + matBoundingRegion.top());
+        QPointF lapRight(rightLapRegion.right(),
+                         matBoundingRegion.height() * dimensionVerticalLapOffset + matBoundingRegion.top());
 
-		drawArrow(painter, QPointF(lapLeft.x() - shortDimensionLineSize * regionWidth, lapLeft.y()), lapLeft);
-		drawArrow(painter, QPointF(lapRight.x() + longDimensionLineSize * regionWidth, lapRight.y()), lapRight,
-			lapString.c_str(), SINGLE_HEADED, true);
-	}
-	if (topLap.has_value()) {
-		QRectF topLapRegion;
-		topLapRegion.setTop(
-			(0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()
-		);
-		topLapRegion.setBottomLeft(matBoundingRegion.topLeft());
-		topLapRegion.setBottomRight(matBoundingRegion.topRight());
+        std::string lapString = to_str(rightLap->width) + "mm";
+        if (rightLap->attachmentType == LapAttachment::BONDED) {
+            lapString += " Bonded";
+        }
 
-		painter.drawRect(topLapRegion);
+        drawArrow(painter, QPointF(lapLeft.x() - shortDimensionLineSize * regionWidth, lapLeft.y()), lapLeft);
+        drawArrow(painter, QPointF(lapRight.x() + longDimensionLineSize * regionWidth, lapRight.y()), lapRight,
+                  lapString.c_str(), SINGLE_HEADED, true);
+    }
+    if (topLap.has_value()) {
+        QRectF topLapRegion;
+        topLapRegion.setTop(
+                (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()
+        );
+        topLapRegion.setBottomLeft(matBoundingRegion.topLeft());
+        topLapRegion.setBottomRight(matBoundingRegion.topRight());
 
-		QPointF lapTop(matBoundingRegion.width() *dimensionHorizontalLapOffset + matBoundingRegion.left(), topLapRegion.top());
-		QPointF lapBottom(matBoundingRegion.width() *dimensionHorizontalLapOffset + matBoundingRegion.left(), topLapRegion.bottom());
+        painter.drawRect(topLapRegion);
 
-		std::string lapString = to_str(topLap->width) + "mm";
-		if (topLap->attachmentType == LapAttachment::BONDED) {
-			lapString += " Bonded";
-		}
+        QPointF lapTop(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(),
+                       topLapRegion.top());
+        QPointF lapBottom(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(),
+                          topLapRegion.bottom());
 
-		drawArrow(painter, QPointF(lapTop.x(), lapTop.y() - longDimensionLineSize * regionHeight), lapTop,
-			lapString.c_str());
-		drawArrow(painter, QPointF(lapBottom.x(), lapBottom.y() + shortDimensionLineSize * regionHeight), lapBottom);
-	}
-	if (bottomLap.has_value()) {
-		QRectF bottomLapRegion;
-		bottomLapRegion.setBottom(
-			(0.5 * (1.0 + pLength)) * regionHeight + drawingRegion.top()
-		);
-		bottomLapRegion.setTopLeft(matBoundingRegion.bottomLeft());
-		bottomLapRegion.setTopRight(matBoundingRegion.bottomRight());
+        std::string lapString = to_str(topLap->width) + "mm";
+        if (topLap->attachmentType == LapAttachment::BONDED) {
+            lapString += " Bonded";
+        }
 
-		painter.drawRect(bottomLapRegion);
+        drawArrow(painter, QPointF(lapTop.x(), lapTop.y() - longDimensionLineSize * regionHeight), lapTop,
+                  lapString.c_str());
+        drawArrow(painter, QPointF(lapBottom.x(), lapBottom.y() + shortDimensionLineSize * regionHeight), lapBottom);
+    }
+    if (bottomLap.has_value()) {
+        QRectF bottomLapRegion;
+        bottomLapRegion.setBottom(
+                (0.5 * (1.0 + pLength)) * regionHeight + drawingRegion.top()
+        );
+        bottomLapRegion.setTopLeft(matBoundingRegion.bottomLeft());
+        bottomLapRegion.setTopRight(matBoundingRegion.bottomRight());
 
-		QPointF lapTop(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(), bottomLapRegion.top());
-		QPointF lapBottom(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(), bottomLapRegion.bottom());
+        painter.drawRect(bottomLapRegion);
 
-		std::string lapString = to_str(bottomLap->width) + "mm";
-		if (bottomLap->attachmentType == LapAttachment::BONDED) {
-			lapString += " Bonded";
-		}
+        QPointF lapTop(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(),
+                       bottomLapRegion.top());
+        QPointF lapBottom(matBoundingRegion.width() * dimensionHorizontalLapOffset + matBoundingRegion.left(),
+                          bottomLapRegion.bottom());
 
-		drawArrow(painter, QPointF(lapTop.x(), lapTop.y() - shortDimensionLineSize * regionHeight), lapTop);
-		drawArrow(painter, QPointF(lapBottom.x(), lapBottom.y() + longDimensionLineSize * regionHeight), lapBottom,
-			lapString.c_str());
-	}
+        std::string lapString = to_str(bottomLap->width) + "mm";
+        if (bottomLap->attachmentType == LapAttachment::BONDED) {
+            lapString += " Bonded";
+        }
 
-	std::vector<double> apertureRegionEndpoints;
-	apertureRegionEndpoints.push_back(drawing.leftBar());
+        drawArrow(painter, QPointF(lapTop.x(), lapTop.y() - shortDimensionLineSize * regionHeight), lapTop);
+        drawArrow(painter, QPointF(lapBottom.x(), lapBottom.y() + longDimensionLineSize * regionHeight), lapBottom,
+                  lapString.c_str());
+    }
 
-	double currentMatPosition = 0;
+    std::vector<double> apertureRegionEndpoints;
+    apertureRegionEndpoints.push_back(drawing.leftBar());
 
-	painter.setPen(dashDotPen);
+    double currentMatPosition = 0;
 
-	for (unsigned bar = 0; bar < drawing.numberOfBars(); bar++) {
-		currentMatPosition += drawing.barSpacing(bar);
+    painter.setPen(dashDotPen);
 
-		QLineF barCentreDividerLine;
-		barCentreDividerLine.setP1(QPointF(
-			(currentMatPosition / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(),
-			horizontalBarSizePercentage *matBoundingRegion.height() + matBoundingRegion.top()
-		));
-		barCentreDividerLine.setP2(QPointF(
-			(currentMatPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-			(1 - horizontalBarSizePercentage) * matBoundingRegion.height() + matBoundingRegion.top()
-		));
+    for (unsigned bar = 0; bar < drawing.numberOfBars(); bar++) {
+        currentMatPosition += drawing.barSpacing(bar);
 
-		painter.drawLine(barCentreDividerLine);
+        QLineF barCentreDividerLine;
+        barCentreDividerLine.setP1(QPointF(
+                (currentMatPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (defaultHorizontalBarSize / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()
+        ));
+        barCentreDividerLine.setP2(QPointF(
+                (currentMatPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (1 - (defaultHorizontalBarSize / lengthDim.rCentre)) * matBoundingRegion.height() +
+                matBoundingRegion.top()
+        ));
 
-		double barWidth = drawing.barWidth(bar + 1);
-		apertureRegionEndpoints.push_back(currentMatPosition - barWidth / 2);
-		apertureRegionEndpoints.push_back(currentMatPosition + barWidth / 2);
-	}
+        painter.drawLine(barCentreDividerLine);
 
-	apertureRegionEndpoints.push_back(widthDim.rCentre - drawing.rightBar());
+        double barWidth = drawing.barWidth(bar + 1);
+        apertureRegionEndpoints.push_back(currentMatPosition - barWidth / 2);
+        apertureRegionEndpoints.push_back(currentMatPosition + barWidth / 2);
+    }
 
-	painter.setPen(Qt::black);
+    apertureRegionEndpoints.push_back(widthDim.rCentre - drawing.rightBar());
 
-	for (unsigned apertureRegion = 0; apertureRegion < apertureRegionEndpoints.size() / 2; apertureRegion++) {
-		double start = apertureRegionEndpoints[2 * apertureRegion];
-		double end = apertureRegionEndpoints[2 * apertureRegion + 1];
+    painter.setPen(Qt::black);
 
-		QRectF region;
-		region.setTopLeft(QPointF(
-			(start / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-			horizontalBarSizePercentage * matBoundingRegion.height() + matBoundingRegion.top()
-		));
-		region.setBottomRight(QPointF(
-			(end / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-			(1 - horizontalBarSizePercentage) * matBoundingRegion.height() + matBoundingRegion.top()
-		));
+    for (unsigned apertureRegion = 0; apertureRegion < apertureRegionEndpoints.size() / 2; apertureRegion++) {
+        double start = apertureRegionEndpoints[2 * apertureRegion];
+        double end = apertureRegionEndpoints[2 * apertureRegion + 1];
 
-		painter.drawRect(region);
-	}
+        QRectF region;
+        region.setTopLeft(QPointF(
+                (start / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (defaultHorizontalBarSize / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()
+        ));
+        region.setBottomRight(QPointF(
+                (end / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (1 - (defaultHorizontalBarSize / lengthDim.rCentre)) * matBoundingRegion.height() +
+                matBoundingRegion.top()
+        ));
 
-	double spacingPosition = 0;
+        painter.drawRect(region);
+    }
 
-	for (unsigned spacingDimension = 0; spacingDimension <= drawing.numberOfBars(); spacingDimension++) {
-		double nextSpacingPosition = spacingPosition + drawing.barSpacing(spacingDimension);
+    double spacingPosition = 0;
 
-		drawArrow(
-			painter,
-			QPointF(
-				(spacingPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-				matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
-			QPointF(
-				(nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-				matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
-			to_str(drawing.barSpacing(spacingDimension)).c_str(), DOUBLE_HEADED
-		);
+    for (unsigned spacingDimension = 0; spacingDimension <= drawing.numberOfBars(); spacingDimension++) {
+        double nextSpacingPosition = spacingPosition + drawing.barSpacing(spacingDimension);
 
-		double leftInnerSpacing = apertureRegionEndpoints[2 * spacingDimension], rightInnerSpacing = apertureRegionEndpoints[2 * spacingDimension + 1];
+        if (drawing.numberOfBars() != 0) {
+            drawArrow(
+                    painter,
+                    QPointF(
+                            (spacingPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                            matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
+                    QPointF(
+                            (nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
+                            matBoundingRegion.left(),
+                            matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
+                    to_str(drawing.barSpacing(spacingDimension)).c_str(), DOUBLE_HEADED
+            );
+        }
 
-		drawArrow(
-			painter,
-			QPointF(
-				(leftInnerSpacing / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(),
-				matBoundingRegion.height() *dimensionInnerSpacingHeight + matBoundingRegion.top()),
-			QPointF(
-				(rightInnerSpacing / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(),
-				matBoundingRegion.height() *dimensionInnerSpacingHeight + matBoundingRegion.top()),
-			to_str(rightInnerSpacing - leftInnerSpacing).c_str(), DOUBLE_HEADED
-		);
+        double leftInnerSpacing = apertureRegionEndpoints[2 *
+                                                          spacingDimension], rightInnerSpacing = apertureRegionEndpoints[
+                2 * spacingDimension + 1];
 
-		spacingPosition = nextSpacingPosition;
-	}
+        drawArrow(
+                painter,
+                QPointF(
+                        (leftInnerSpacing / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                        matBoundingRegion.height() * dimensionInnerSpacingHeight + matBoundingRegion.top()),
+                QPointF(
+                        (rightInnerSpacing / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                        matBoundingRegion.height() * dimensionInnerSpacingHeight + matBoundingRegion.top()),
+                to_str(rightInnerSpacing - leftInnerSpacing).c_str(), DOUBLE_HEADED
+        );
 
-	std::vector<double> barEndpoints = apertureRegionEndpoints;
-	barEndpoints.insert(barEndpoints.begin(), 0);
-	barEndpoints.push_back(widthDim.rCentre);
+        spacingPosition = nextSpacingPosition;
+    }
 
-	for (unsigned bar = 0; bar < drawing.numberOfBars() + 2; bar++) {
-		QPointF barLeft((barEndpoints[2 * bar] / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-			matBoundingRegion.height() * dimensionBarHeight + matBoundingRegion.top());
-		QPointF barRight((barEndpoints[2 * bar + 1] / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(),
-			matBoundingRegion.height() *dimensionBarHeight + matBoundingRegion.top());
+    std::vector<double> barEndpoints = apertureRegionEndpoints;
+    barEndpoints.insert(barEndpoints.begin(), 0);
+    barEndpoints.push_back(widthDim.rCentre);
 
-		drawArrow(painter, QPointF(barLeft.x() - shortDimensionLineSize * regionWidth, barLeft.y()), barLeft);
-		drawArrow(painter, QPointF(barRight.x() + longDimensionLineSize * regionWidth, barRight.y()), barRight,
-			to_str(drawing.barWidth(bar)).c_str(), SINGLE_HEADED, true);
-	}
+    for (unsigned bar = 0; bar < drawing.numberOfBars() + 2; bar++) {
+        QPointF barLeft(
+                (barEndpoints[2 * bar] / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                matBoundingRegion.height() * dimensionBarHeight + matBoundingRegion.top());
+        QPointF barRight(
+                (barEndpoints[2 * bar + 1] / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                matBoundingRegion.height() * dimensionBarHeight + matBoundingRegion.top());
+
+        drawArrow(painter, QPointF(barLeft.x() - shortDimensionLineSize * regionWidth, barLeft.y()), barLeft);
+        drawArrow(painter, QPointF(barRight.x() + longDimensionLineSize * regionWidth, barRight.y()), barRight,
+                  to_str(drawing.barWidth(bar)).c_str(), SINGLE_HEADED, true);
+    }
+
+    painter.save();
+
+    for (const Drawing::ImpactPad &pad : drawing.impactPads()) {
+        QRectF padRegion(
+                QPointF((pad.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                        (pad.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+                QSizeF((pad.width / widthDim.rCentre) * matBoundingRegion.width(),
+                       (pad.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(255, 255, 0, 127));
+        painter.drawRect(padRegion);
+    }
+
+    painter.restore();
+
+    for (const Drawing::CentreHole &hole : drawing.centreHoles()) {
+        QRectF holeBounds = QRectF(
+                QPointF(matBoundingRegion.left() +
+                        ((hole.pos.x - hole.centreHoleShape.width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+                        matBoundingRegion.top() +
+                        ((hole.pos.y - hole.centreHoleShape.length / 2) / lengthDim.rCentre) *
+                        matBoundingRegion.height()),
+                QSizeF((hole.centreHoleShape.width / widthDim.rCentre) * matBoundingRegion.width(),
+                       (hole.centreHoleShape.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+
+        painter.setPen(Qt::red);
+
+        if (!hole.centreHoleShape.rounded) {
+            painter.drawRect(holeBounds);
+            painter.setPen(smallDashPen);
+            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
+            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+                             QPointF(holeBounds.right(), holeBounds.center().y()));
+        } else {
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath roundedRectPath;
+            double radius =
+                    (std::min(hole.centreHoleShape.width, hole.centreHoleShape.length) / 2.0) / widthDim.rCentre *
+                    matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(holeBounds, radius, radius);
+            painter.drawPath(roundedRectPath);
+            painter.setPen(smallDashPen);
+            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
+            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+                             QPointF(holeBounds.right(), holeBounds.center().y()));
+        }
+    }
+
+    painter.restore();
+
+    double root2 = std::sqrt(2);
+
+    for (const Drawing::Deflector &deflector : drawing.deflectors()) {
+        QPainterPath deflectorBounds;
+
+        deflectorBounds.moveTo(
+                matBoundingRegion.left() + (deflector.pos.x / widthDim.rCentre) * matBoundingRegion.width(),
+                matBoundingRegion.top() +
+                (deflector.pos.y - deflector.size / root2) / lengthDim.rCentre * matBoundingRegion.height());
+        deflectorBounds.lineTo(matBoundingRegion.left() +
+                               (deflector.pos.x + deflector.size / root2) / widthDim.rCentre *
+                               matBoundingRegion.width(), matBoundingRegion.top() +
+                                                          (deflector.pos.y / lengthDim.rCentre) *
+                                                          matBoundingRegion.height());
+        deflectorBounds.lineTo(
+                matBoundingRegion.left() + (deflector.pos.x / widthDim.rCentre) * matBoundingRegion.width(),
+                matBoundingRegion.top() +
+                (deflector.pos.y + deflector.size / root2) / lengthDim.rCentre * matBoundingRegion.height());
+        deflectorBounds.lineTo(matBoundingRegion.left() +
+                               (deflector.pos.x - deflector.size / root2) / widthDim.rCentre *
+                               matBoundingRegion.width(), matBoundingRegion.top() +
+                                                          (deflector.pos.y / lengthDim.rCentre) *
+                                                          matBoundingRegion.height());
+        deflectorBounds.lineTo(
+                matBoundingRegion.left() + (deflector.pos.x / widthDim.rCentre) * matBoundingRegion.width(),
+                matBoundingRegion.top() +
+                (deflector.pos.y - deflector.size / root2) / lengthDim.rCentre * matBoundingRegion.height());
+
+        painter.setPen(Qt::red);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.drawPath(deflectorBounds);
+    }
+
+    painter.restore();
+
+    for (const Drawing::Divertor &divertor : drawing.divertors()) {
+        QPainterPath divertorBounds;
+
+        switch (divertor.side) {
+            case Drawing::LEFT:
+                divertorBounds.moveTo(matBoundingRegion.left(), matBoundingRegion.top() +
+                                                        (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left() + (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() + (divertor.verticalPosition - divertor.width / (2 * root2) +
+                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left() + (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() + (divertor.verticalPosition + divertor.width / (2 * root2) +
+                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left(), matBoundingRegion.top() +
+                                                        (divertor.verticalPosition + divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.left(), matBoundingRegion.top() +
+                                                        (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                break;
+            case Drawing::RIGHT:
+                divertorBounds.moveTo(matBoundingRegion.right(), matBoundingRegion.top() +
+                                                         (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right() - (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() + (divertor.verticalPosition - divertor.width / (2 * root2) +
+                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right() - (divertor.length / root2) / widthDim.rCentre * matBoundingRegion.width(),
+                                      matBoundingRegion.top() + (divertor.verticalPosition + divertor.width / (2 * root2) +
+                                                         divertor.length / root2) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right(), matBoundingRegion.top() +
+                                                         (divertor.verticalPosition + divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                divertorBounds.lineTo(matBoundingRegion.right(), matBoundingRegion.top() +
+                                                         (divertor.verticalPosition - divertor.width / (2 * root2)) / lengthDim.rCentre * matBoundingRegion.height());
+                break;
+        }
+
+        painter.setPen(Qt::red);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.drawPath(divertorBounds);
+    }
+
+    painter.restore();
 }
 
-void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label, ArrowMode mode, bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle) {
-	painter.save();
-	painter.setPen(tailPen);
+void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label, ArrowMode mode,
+                                 bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle) {
+    painter.save();
+    painter.setPen(tailPen);
 
-	QLineF tail(from, to);
+    QLineF tail(from, to);
 
-	painter.drawLine(tail);
+    painter.drawLine(tail);
 
-	if (!label.isEmpty()) {
-		const double padding = 10;
+    if (!label.isEmpty()) {
+        const double padding = 10;
 
-		QTextOption centreAlignedText;
-		centreAlignedText.setAlignment(Qt::AlignCenter);
+        QTextOption centreAlignedText;
+        centreAlignedText.setAlignment(Qt::AlignCenter);
 
-		QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding, padding);
-		tail.center();
+        QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding,
+                                                                                        padding);
+        tail.center();
 
-		QLineF boundsDiameter(labelBounds.center(), labelBounds.topLeft());
+        QLineF boundsDiameter(labelBounds.center(), labelBounds.topLeft());
 
-		double l = boundsDiameter.length();
-		double alpha = boundsDiameter.angle();
-		double theta = tail.angle();
+        double l = boundsDiameter.length();
+        double alpha = boundsDiameter.angle();
+        double theta = tail.angle();
 
-		QLineF arrowToTextCentre = QLineF(tail.center(), to).normalVector();
-		if (!flipLabel) {
-			arrowToTextCentre.setLength(l * cos(qDegreesToRadians(abs(90 - theta) - alpha)));
-		} else {
-			arrowToTextCentre.setLength(-l * cos(qDegreesToRadians(abs(90 - theta) - alpha)));
-		}
+        QLineF arrowToTextCentre = QLineF(tail.center(), to).normalVector();
+        if (!flipLabel) {
+            arrowToTextCentre.setLength(l * cos(qDegreesToRadians(abs(90 - theta) - alpha)));
+        } else {
+            arrowToTextCentre.setLength(-l * cos(qDegreesToRadians(abs(90 - theta) - alpha)));
+        }
 
-		labelBounds.moveCenter(arrowToTextCentre.p2());
+        labelBounds.moveCenter(arrowToTextCentre.p2());
 
-		painter.drawText(labelBounds, label, centreAlignedText);
-	}
+        painter.drawText(labelBounds, label, centreAlignedText);
+    }
 
-	painter.setPen(headPen);
+    painter.setPen(headPen);
 
-	switch (mode) {
-		case DOUBLE_HEADED: {
-			QPainterPath path;
-			QLineF h1, h2;
-			h1.setP1(from);
-			h2.setP1(from);
-			h1.setAngle(tail.angle() + angle);
-			h1.setLength(headSize);
-			h2.setAngle(tail.angle() - angle);
-			h2.setLength(headSize);
-			path.moveTo(h1.p2());
-			path.lineTo(from);
-			path.lineTo(h2.p2());
+    switch (mode) {
+        case DOUBLE_HEADED: {
+            QPainterPath path;
+            QLineF h1, h2;
+            h1.setP1(from);
+            h2.setP1(from);
+            h1.setAngle(tail.angle() + angle);
+            h1.setLength(headSize);
+            h2.setAngle(tail.angle() - angle);
+            h2.setLength(headSize);
+            path.moveTo(h1.p2());
+            path.lineTo(from);
+            path.lineTo(h2.p2());
 
-			painter.drawPath(path);
-		}
-		case SINGLE_HEADED: {
-			QPainterPath path;
-			QLineF h1, h2;
-			h1.setP1(to);
-			h2.setP1(to);
-			h1.setAngle(tail.angle() + 180 + angle);
-			h1.setLength(headSize);
-			h2.setAngle(tail.angle() + 180 - angle);
-			h2.setLength(headSize);
-			path.moveTo(h1.p2());
-			path.lineTo(to);
-			path.lineTo(h2.p2());
+            painter.drawPath(path);
+        }
+        case SINGLE_HEADED: {
+            QPainterPath path;
+            QLineF h1, h2;
+            h1.setP1(to);
+            h2.setP1(to);
+            h1.setAngle(tail.angle() + 180 + angle);
+            h1.setLength(headSize);
+            h2.setAngle(tail.angle() + 180 - angle);
+            h2.setLength(headSize);
+            path.moveTo(h1.p2());
+            path.lineTo(to);
+            path.lineTo(h2.p2());
 
-			painter.drawPath(path);
-		}
-		case NO_HEAD:
-			break;
-	}
+            painter.drawPath(path);
+        }
+        case NO_HEAD:
+            break;
+    }
 
-	painter.restore();
+    painter.restore();
 }

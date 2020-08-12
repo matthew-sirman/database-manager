@@ -92,5 +92,5 @@ bool MachineModelFilter::__filter(std::vector<unsigned>::const_iterator element)
 		return false;
 	}
 	Machine &machine = DrawingComponentManager<Machine>::getComponentByHandle(*element);
-	return machine.model != std::string() && machine.manufacturer == manufacturer.value();
+	return machine.manufacturer == manufacturer.value();
 }

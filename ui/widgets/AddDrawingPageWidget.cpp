@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 14/07/2020.
 //
@@ -16,7 +14,6 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     ui->drawingSpecsVisual->setInspector(inspector);
 
     ui->visualAndInspectorVerticalLayout->addWidget(inspector->container());
-
 
     ui->drawingNumberInput->setText(drawingNumber.c_str());
 
@@ -52,12 +49,22 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
             SLOT(capitaliseLineEdit(const QString &)));
 
+    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
+    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
+
     setMode(ADD_NEW_DRAWING);
 }
 
-AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode, QWidget *parent)
-    : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
+AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode,
+                                           QWidget *parent)
+        : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
     ui->setupUi(this);
+
+    inspector = new Inspector("Inspector");
+    inspector->addUpdateTrigger([this]() { ui->drawingSpecsVisual->setRedrawRequired(); });
+    ui->drawingSpecsVisual->setInspector(inspector);
+
+    ui->visualAndInspectorVerticalLayout->addWidget(inspector->container());
 
     this->drawing = drawing;
     if (mode == CLONE_DRAWING) {
@@ -76,13 +83,13 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
 
     ui->drawingNumberInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberInput, SIGNAL(textEdited(const QString &)), this,
-        SLOT(capitaliseLineEdit(const QString &)));
+            SLOT(capitaliseLineEdit(const QString &)));
 
     QRegExpValidator *positionValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
 
     ui->machinePositionInput->setValidator(positionValidator);
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
-        SLOT(capitaliseLineEdit(const QString &)));
+            SLOT(capitaliseLineEdit(const QString &)));
 
     setMode(mode);
 
@@ -109,14 +116,15 @@ AddDrawingPageWidget::~AddDrawingPageWidget() {
 
 void AddDrawingPageWidget::setupComboboxSources() {
     static std::unordered_map<unsigned char, unsigned char> shapeOrder = {
-        {1, 1},
-        {2, 4},
-        {3, 2},
-        {4, 3},
-        {5, 5},
-        {6, 0}
+            {1, 1},
+            {2, 4},
+            {3, 2},
+            {4, 3},
+            {5, 5},
+            {6, 0}
     };
-    std::function<bool(const Aperture &, const Aperture &)> apertureComparator = [](const Aperture &a, const Aperture &b) {
+    std::function<bool(const Aperture &, const Aperture &)> apertureComparator = [](const Aperture &a,
+                                                                                    const Aperture &b) {
         if (a.apertureShapeID != b.apertureShapeID) {
             return shapeOrder[a.apertureShapeID] < shapeOrder[b.apertureShapeID];
         }
@@ -124,7 +132,7 @@ void AddDrawingPageWidget::setupComboboxSources() {
     };
 
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
-    DrawingComponentManager<Aperture>::addCallback([this, apertureComparator]() { 
+    DrawingComponentManager<Aperture>::addCallback([this, apertureComparator]() {
         apertureSource.updateSource();
         apertureSource.sort(apertureComparator);
     });
@@ -154,10 +162,6 @@ void AddDrawingPageWidget::setupComboboxSources() {
     machineDeckSource.updateSource();
 
     machineModelFilter = machineModelSource.setFilter<MachineModelFilter>();
-
-    connect(ui->manufacturerInput, &DynamicComboBox::currentTextChanged, [this](const QString &text) {
-        machineModelFilter->setManufacturer(text.toStdString());
-    });
 
     apertureSource.sort(apertureComparator);
 
@@ -267,7 +271,8 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         }
     });
     connect(ui->productInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        Product &product = DrawingComponentManager<Product>::getComponentByHandle(ui->productInput->itemData(index).toInt());
+        Product &product = DrawingComponentManager<Product>::getComponentByHandle(
+                ui->productInput->itemData(index).toInt());
 
         if (product.productName == "Rubber Screen Cloth") {
             topMaterialSource.setFilter<RubberScreenClothMaterialFilter>();
@@ -355,13 +360,32 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setProduct(product);
     });
     connect(ui->dateInput, &QDateEdit::dateChanged, [this](const QDate &date) {
-        drawing.setDate({ (unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day() });
+        drawing.setDate({(unsigned short) date.year(), (unsigned char) date.month(), (unsigned char) date.day()});
     });
 
     connect(ui->widthInput, qOverload<double>(&QDoubleSpinBox::valueChanged),
             [this](double d) { drawing.setWidth((float) d); });
-    connect(ui->lengthInput, qOverload<double>(&QDoubleSpinBox::valueChanged),
-            [this](double d) { drawing.setLength((float) d); });
+    connect(ui->lengthInput, qOverload<double>(&QDoubleSpinBox::valueChanged), [this](double d) {
+        drawing.setLength((float) d);
+        switch (drawing.tensionType()) {
+            case Drawing::SIDE:
+                if (leftSICache == 0) {
+                    ui->leftSideIronLengthInput->setValue(d - 10);
+                }
+                if (rightSICache == 0) {
+                    ui->rightSideIronLengthInput->setValue(d - 10);
+                }
+                break;
+            case Drawing::END:
+                if (leftSICache == 0) {
+                    ui->leftSideIronLengthInput->setValue(d - 20);
+                }
+                if (rightSICache == 0) {
+                    ui->rightSideIronLengthInput->setValue(d - 20);
+                }
+                break;
+        }
+    });
     connect(ui->topMaterialInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setMaterial(Drawing::MaterialLayer::TOP, DrawingComponentManager<Material>::getComponentByHandle(
                 ui->topMaterialInput->itemData(index).toInt()));
@@ -381,19 +405,19 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             case 0:
                 drawing.setTensionType(Drawing::SIDE);
                 if (leftSICache == 0) {
-                    ui->leftSideIronTypeInput->setCurrentIndex(0);
+                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::A);
                 }
                 if (rightSICache == 0) {
-                    ui->rightSideIronTypeInput->setCurrentIndex(0);
+                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::A);
                 }
                 break;
             case 1:
                 drawing.setTensionType(Drawing::END);
                 if (leftSICache == 0) {
-                    ui->leftSideIronTypeInput->setCurrentIndex(2);
+                    ui->leftSideIronTypeInput->setCurrentIndex((int) SideIronType::C);
                 }
                 if (rightSICache == 0) {
-                    ui->rightSideIronTypeInput->setCurrentIndex(2);
+                    ui->rightSideIronTypeInput->setCurrentIndex((int) SideIronType::C);
                 }
                 break;
             default:
@@ -424,7 +448,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
     connect(ui->leftSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         if (leftSideIronFilter) {
-            leftSideIronFilter->setSideIronType((SideIronType)(index + 1));
+            leftSideIronFilter->setSideIronType((SideIronType) (index + 1));
         }
     });
 
@@ -450,7 +474,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
     connect(ui->rightSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         if (rightSideIronFilter) {
-            rightSideIronFilter->setSideIronType((SideIronType)(index + 1));
+            rightSideIronFilter->setSideIronType((SideIronType) (index + 1));
         }
     });
 
@@ -469,8 +493,16 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setSideIronInverted(Drawing::RIGHT, checked);
     });
 
+    connect(ui->manufacturerInput, &DynamicComboBox::currentTextChanged, [this](const QString &text) {
+        machineModelFilter->setManufacturer(text.toStdString());
+        ui->modelInput->updateSourceList();
+        drawing.setMachine(
+                DrawingComponentManager<Machine>::getComponentByHandle(ui->modelInput->itemData(0).toInt()));
+    });
+
     connect(ui->modelInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMachine(DrawingComponentManager<Machine>::getComponentByHandle(ui->modelInput->itemData(index).toInt()));
+        drawing.setMachine(
+                DrawingComponentManager<Machine>::getComponentByHandle(ui->modelInput->itemData(index).toInt()));
     });
     connect(ui->quantityOnDeckInput, qOverload<int>(&QSpinBox::valueChanged), [this](int newValue) {
         drawing.setQuantityOnDeck(newValue);
@@ -479,11 +511,14 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setMachinePosition(newPosition.toStdString());
     });
     connect(ui->machineDeckInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
-        drawing.setMachineDeck(DrawingComponentManager<MachineDeck>::getComponentByHandle(ui->machineDeckInput->itemData(index).toInt()));
+        drawing.setMachineDeck(DrawingComponentManager<MachineDeck>::getComponentByHandle(
+                ui->machineDeckInput->itemData(index).toInt()));
     });
 
     connect(ui->openDrawingPDFButton, &QPushButton::pressed, [this]() {
-        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Drawing PDF File", QString(), "PDF (*.pdf)").toStdString();
+        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Drawing PDF File",
+                                                                                 QString(),
+                                                                                 "PDF (*.pdf)").toStdString();
         if (!hyperlinkFile.empty()) {
             ui->hyperlinkDisplay->setText(hyperlinkFile.generic_string().c_str());
             ui->hyperlinkDisplay->setToolTip(hyperlinkFile.generic_string().c_str());
@@ -503,12 +538,25 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
             if (std::filesystem::exists(pdfFile)) {
                 if (QMessageBox::question(this, "Overwrite PDF",
-                    "A PDF for this drawing already exists. Would you like to overwrite it?") != QMessageBox::Yes) {
+                                          "A PDF for this drawing already exists. Would you like to overwrite it?") !=
+                    QMessageBox::Yes) {
                     return;
                 }
             }
 
-            if (pdfWriter.createPDF(pdfFile.generic_string().c_str(), drawing)) {
+            std::stringstream initials;
+
+            std::string userEmailCopy = userEmail;
+            size_t nextDot;
+            while ((nextDot = userEmailCopy.find('.')) < userEmailCopy.find('@')) {
+                initials << (char) std::toupper(userEmailCopy.front());
+                userEmailCopy.erase(0, nextDot + 1);
+            }
+            if (!userEmailCopy.empty()) {
+                initials << (char) std::toupper(userEmailCopy.front());
+            }
+
+            if (pdfWriter.createPDF(pdfFile.generic_string().c_str(), drawing, initials.str())) {
                 QMessageBox::about(this, "PDF Generator", "Automatic PDF generated.");
             } else {
                 QMessageBox::about(this, "PDF Generator", "PDF Generation failed. Is the PDF file already open?");
@@ -522,8 +570,10 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         }
     });
     connect(ui->pressDrawingHyperlinksAddButton, &QPushButton::pressed, [this]() {
-        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this, "Select a Press Program PDF File",
-                                                                   QString(), "PDF (*.pdf)").toStdString();
+        const std::filesystem::path hyperlinkFile = QFileDialog::getOpenFileName(this,
+                                                                                 "Select a Press Program PDF File",
+                                                                                 QString(),
+                                                                                 "PDF (*.pdf)").toStdString();
         if (!hyperlinkFile.empty()) {
             ui->pressDrawingHyperlinkList->addItem(hyperlinkFile.generic_string().c_str());
 
@@ -564,7 +614,8 @@ void AddDrawingPageWidget::loadDrawing() {
         ui->topMaterialInput->setCurrentIndex(ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()));
         if (drawing.material(Drawing::BOTTOM).has_value()) {
             ui->bottomMaterialLabel->setActive();
-            ui->bottomMaterialInput->setCurrentIndex(ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
+            ui->bottomMaterialInput->setCurrentIndex(
+                    ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
         }
     }
     if (!drawing.loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
@@ -572,12 +623,12 @@ void AddDrawingPageWidget::loadDrawing() {
     }
     ui->numberOfBarsInput->setValue(drawing.numberOfBars());
     switch (drawing.tensionType()) {
-    case Drawing::TensionType::SIDE:
-        ui->tensionTypeInput->setCurrentText("Side");
-        break;
-    case Drawing::TensionType::END:
-        ui->tensionTypeInput->setCurrentText("End");
-        break;
+        case Drawing::TensionType::SIDE:
+            ui->tensionTypeInput->setCurrentText("Side");
+            break;
+        case Drawing::TensionType::END:
+            ui->tensionTypeInput->setCurrentText("End");
+            break;
     }
     ui->rebatedInput->setChecked(drawing.rebated());
     ui->backingStripsInput->setChecked(drawing.hasBackingStrips());
@@ -652,7 +703,8 @@ bool AddDrawingPageWidget::checkDrawing(unsigned exclusions) {
             QMessageBox::about(this, "Drawing Error", "Invalid Bar Spacings. Make sure they add to the width");
             return false;
         case Drawing::INVALID_BAR_WIDTHS:
-            QMessageBox::about(this, "Drawing Error", "Invalid Bar Widths. Make sure they are all positive and non-zero");
+            QMessageBox::about(this, "Drawing Error",
+                               "Invalid Bar Widths. Make sure they are all positive and non-zero");
             return false;
         case Drawing::INVALID_SIDE_IRONS:
             QMessageBox::about(this, "Drawing Error", "Invalid Side Irons");
@@ -679,12 +731,16 @@ void AddDrawingPageWidget::confirmDrawing() {
     if (checkDrawing()) {
         switch (addMode) {
             case ADD_NEW_DRAWING:
+            case CLONE_DRAWING:
                 confirmationCallback(drawing, false);
+                drawingAdded = true;
                 break;
             case EDIT_DRAWING:
-                switch (QMessageBox::question(this, "Confirm Update", "Are you sure you wish to update this drawing?")) {
+                switch (QMessageBox::question(this, "Confirm Update",
+                                              "Are you sure you wish to update this drawing?")) {
                     case QMessageBox::Yes:
                         confirmationCallback(drawing, true);
+                        drawingAdded = true;
                         break;
                     default:
                         break;
@@ -712,6 +768,23 @@ void AddDrawingPageWidget::setMode(AddDrawingPageWidget::AddDrawingMode mode) {
     }
 }
 
+void AddDrawingPageWidget::setUserEmail(const std::string &email) {
+    userEmail = email;
+}
+
+void AddDrawingPageWidget::closeEvent(QCloseEvent *event) {
+    if (!drawingAdded) {
+        if (QMessageBox::question(this, "Close Page",
+                                  "Are you sure you wish to close this page without adding your drawing "
+                                  "to the database?") == QMessageBox::No) {
+            event->ignore();
+            return;
+        }
+    }
+
+    QWidget::closeEvent(event);
+}
+
 void AddDrawingPageWidget::capitaliseLineEdit(const QString &text) {
     QLineEdit *lineEdit = qobject_cast<QLineEdit *>(sender());
     if (!lineEdit) {
@@ -719,5 +792,3 @@ void AddDrawingPageWidget::capitaliseLineEdit(const QString &text) {
     }
     lineEdit->setText(text.toUpper());
 }
-
-#pragma clang diagnostic pop

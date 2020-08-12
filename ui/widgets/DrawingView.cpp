@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 17/07/2020.
 //
@@ -167,59 +165,187 @@ void DrawingView::resizeEvent(QResizeEvent *event) {
 }
 
 void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
-    if (drawingBorderRect) {
-        if (drawingBorderRect->contains(event->pos())) {
-            QMenu *menu = new QMenu();
+    if (addPartState != AddPartState::NONE) {
+        addPartState = AddPartState::NONE;
+        QApplication::restoreOverrideCursor();
+    } else {
+        if (drawingBorderRect) {
+            if (drawingBorderRect->contains(event->pos())) {
+                for (ImpactPadGraphicsItem *impactPad : impactPadRegions) {
+                    if (impactPad->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
+                if (centreHoleSet) {
+                    if (centreHoleSet->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
+                if (deflectorSet) {
+                    if (deflectorSet->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
+                if (divertorSet) {
+                    if (divertorSet->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
 
-            menu->addAction("Add Impact Pad", [this]() {
-                updateSnapLines();
-                impactPadRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
-                QApplication::setOverrideCursor(Qt::CrossCursor);
-            });
-            menu->addAction("Add Centre Holes", [this]() {});
-            menu->addAction("Add Deflectors", [this]() {});
-            menu->addAction("Add Divertors", [this]() {});
+                QMenu *menu = new QMenu();
 
-            menu->popup(event->globalPos());
+                menu->addAction("Add Impact Pad", [this]() {
+                    updateSnapLines();
+                    impactPadRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_IMPACT_PAD;
+                });
+                menu->addAction("Add Centre Holes", [this]() {
+                    updateCentreSnapLines();
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_CENTRE_HOLES;
+                });
+                menu->addAction("Add Deflectors", [this]() {
+                    updateCentreSnapLines();
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_DEFLECTORS;
+                });
+                menu->addAction("Add Divertors", [this]() {
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_DIVERTORS;
+                });
+
+                menu->popup(event->globalPos());
+            }
         }
     }
 
+    base_event_handler:
     QGraphicsView::contextMenuEvent(event);
 }
 
 void DrawingView::mousePressEvent(QMouseEvent *event) {
-    if (impactPadRegionSelector) {
-        impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
-        impactPadRegionSelector->show();
+    if (drawingBorderRect->rect().contains(event->pos()) && event->button() == Qt::LeftButton) {
+        switch (addPartState) {
+            case AddPartState::ADD_IMPACT_PAD:
+                if (impactPadRegionSelector) {
+                    impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                    impactPadAnchorPoint = snapPoint(event->pos());
+                    impactPadRegionSelector->show();
+                }
+                break;
+            case AddPartState::ADD_CENTRE_HOLES: {
+                Drawing::CentreHole hole;
+
+                QPointF holeCentre = snapPointToCentreF(event->pos());
+                hole.pos.x = ((holeCentre.x() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                             drawing->width();
+                hole.pos.y = ((holeCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                             drawing->length();
+                hole.centreHoleShape = centreHoleSet->currentShape();
+
+                drawing->addCentreHole(hole);
+                centreHoleSet->clearCentreHoles();
+                for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
+                    centreHoleSet->addCentreHole(drawing->centreHole(i));
+                }
+
+                setRedrawRequired();
+
+                break;
+            }
+            case AddPartState::ADD_DEFLECTORS: {
+                Drawing::Deflector deflector;
+
+                QPointF deflectorCentre = snapPointToCentreF(event->pos());
+                deflector.pos.x =
+                        ((deflectorCentre.x() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                        drawing->width();
+                deflector.pos.y =
+                        ((deflectorCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                        drawing->length();
+                deflector.size = deflectorSet->deflectorSize();
+                deflector.setMaterial(deflectorSet->deflectorMaterial());
+
+                drawing->addDeflector(deflector);
+                deflectorSet->clearDeflectors();
+                for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
+                    deflectorSet->addDeflector(drawing->deflector(i));
+                }
+
+                setRedrawRequired();
+
+                break;
+            }
+            case AddPartState::ADD_DIVERTORS: {
+                Drawing::Divertor divertor;
+
+                divertor.verticalPosition =
+                        ((event->pos().y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                        drawing->length();
+                divertor.length = divertorSet->divertorLength();
+                divertor.width = divertorSet->divertorWidth();
+                divertor.side =
+                        event->pos().x() < drawingBorderRect->rect().center().x() ? Drawing::LEFT : Drawing::RIGHT;
+                divertor.setMaterial(divertorSet->divertorMaterial());
+
+                drawing->addDivertor(divertor);
+                divertorSet->clearDivertors();
+                for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
+                    divertorSet->addDivertor(drawing->divertor(i));
+                }
+
+                setRedrawRequired();
+
+                break;
+            }
+            default:
+                break;
+        }
     }
     QGraphicsView::mousePressEvent(event);
 }
 
 void DrawingView::mouseMoveEvent(QMouseEvent *event) {
-    if (impactPadRegionSelector) {
-        impactPadRegionSelector->setGeometry(QRect(impactPadRegionSelector->pos(), snapPoint(event->pos())));
+    if (impactPadRegionSelector && addPartState == AddPartState::ADD_IMPACT_PAD &&
+        drawingBorderRect->rect().contains(event->pos())) {
+        QPoint startPoint = impactPadAnchorPoint;
+        QPoint endPoint = snapPoint(event->pos());
+
+        QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
+                bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
+
+        impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
     QGraphicsView::mouseMoveEvent(event);
 }
 
 void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
-    if (impactPadRegionSelector) {
-        QRectF impactPadRect = QRectF(impactPadRegionSelector->pos(), impactPadRegionSelector->size());
-        impactPadRect.setTopLeft(snapPointF(impactPadRect.topLeft()));
-        impactPadRect.setBottomRight(snapPointF(impactPadRect.bottomRight()));
+    if (impactPadRegionSelector && addPartState == AddPartState::ADD_IMPACT_PAD) {
+        if (event->button() == Qt::LeftButton) {
+            QRectF impactPadRect = QRectF(impactPadRegionSelector->pos(), impactPadRegionSelector->size());
+            impactPadRect.setTopLeft(snapPointF(impactPadRect.topLeft()));
+            impactPadRect.setBottomRight(snapPointF(impactPadRect.bottomRight()));
 
-        Drawing::ImpactPad pad;
-        
-        pad.pos.x = ((impactPadRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) * drawing->width();
-        pad.pos.y = ((impactPadRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) * drawing->length();
-        pad.width = (impactPadRect.width() / drawingBorderRect->rect().width()) * drawing->width();
-        pad.length = (impactPadRect.height() / drawingBorderRect->rect().height()) * drawing->length();
+            Drawing::ImpactPad pad;
 
-        drawing->addImpactPad(pad);
+            pad.pos.x =
+                    ((impactPadRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                    drawing->width();
+            pad.pos.y = ((impactPadRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                        drawing->length();
+            pad.width = (impactPadRect.width() / drawingBorderRect->rect().width()) * drawing->width();
+            pad.length = (impactPadRect.height() / drawingBorderRect->rect().height()) * drawing->length();
 
+            pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(1));
+            pad.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
+
+            drawing->addImpactPad(pad);
+            addPartState = AddPartState::NONE;
+            QApplication::restoreOverrideCursor();
+        }
         delete impactPadRegionSelector;
         impactPadRegionSelector = nullptr;
-        QApplication::restoreOverrideCursor();
     }
     QGraphicsView::mouseReleaseEvent(event);
 }
@@ -231,8 +357,6 @@ void DrawingView::redrawScene() {
         double width = drawing->width(), length = drawing->length();
 
         if (width != 0 && length != 0) {
-            // double regionWidth = size().width(), regionHeight = size().height();
-
             std::optional<Drawing::Lap> leftLap, rightLap, topLap, bottomLap;
 
             double sceneWidth = viewport()->width(), sceneHeight = viewport()->height();
@@ -292,12 +416,12 @@ void DrawingView::redrawScene() {
 
             QRectF matBoundingRegion;
             matBoundingRegion.setTopLeft(QPointF(
-                (0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * sceneWidth,
-                (0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * sceneHeight
+                    (0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * sceneWidth,
+                    (0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * sceneHeight
             ));
             matBoundingRegion.setBottomRight(QPointF(
-                (0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * sceneWidth,
-                (0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * sceneHeight
+                    (0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * sceneWidth,
+                    (0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * sceneHeight
             ));
 
             if (drawingBorderRect) {
@@ -307,34 +431,36 @@ void DrawingView::redrawScene() {
             }
 
             QLineF leftWidthExtender(
-                QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) * sceneHeight),
-                QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength) - dimensionLineOffset * sceneAspect) *sceneHeight));
+                    QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) * sceneHeight),
+                    QPointF(matBoundingRegion.left(),
+                            (0.5 * (1.0 - pLength) - dimensionLineOffset * sceneAspect) * sceneHeight));
             QLineF rightWidthExtender(
-                QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) *sceneHeight),
-                QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength) - dimensionLineOffset * sceneAspect) *sceneHeight));
+                    QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) * sceneHeight),
+                    QPointF(matBoundingRegion.right(),
+                            (0.5 * (1.0 - pLength) - dimensionLineOffset * sceneAspect) * sceneHeight));
 
             if (widthDimension) {
                 widthDimension->setBounds(QRectF(leftWidthExtender.p2(), rightWidthExtender.p1()));
                 widthDimension->setLabel(("Width: " + to_str(width)).c_str());
             } else {
                 widthDimension = new DimensionLine(QRectF(leftWidthExtender.p2(), rightWidthExtender.p1()),
-                    DimensionLine::HORIZONTAL, ("Width: " + to_str(width)).c_str());
+                                                   DimensionLine::HORIZONTAL, ("Width: " + to_str(width)).c_str());
                 graphicsScene->addItem(widthDimension);
             }
 
             QLineF topLengthExtender(
-                QPointF((0.5 * (1.0 - pWidth)) *sceneWidth, matBoundingRegion.top()),
-                QPointF((0.5 * (1.0 - pWidth) - dimensionLineOffset) *sceneWidth, matBoundingRegion.top()));
+                    QPointF((0.5 * (1.0 - pWidth)) * sceneWidth, matBoundingRegion.top()),
+                    QPointF((0.5 * (1.0 - pWidth) - dimensionLineOffset) * sceneWidth, matBoundingRegion.top()));
             QLineF bottomLengthExtender(
-                QPointF((0.5 * (1.0 - pWidth)) *sceneWidth, matBoundingRegion.bottom()),
-                QPointF((0.5 * (1.0 - pWidth) - dimensionLineOffset) *sceneWidth, matBoundingRegion.bottom()));
+                    QPointF((0.5 * (1.0 - pWidth)) * sceneWidth, matBoundingRegion.bottom()),
+                    QPointF((0.5 * (1.0 - pWidth) - dimensionLineOffset) * sceneWidth, matBoundingRegion.bottom()));
 
             if (lengthDimension) {
                 lengthDimension->setBounds(QRectF(topLengthExtender.p2(), bottomLengthExtender.p1()));
                 lengthDimension->setLabel(("Length: " + to_str(length)).c_str());
             } else {
                 lengthDimension = new DimensionLine(QRectF(topLengthExtender.p2(), bottomLengthExtender.p1()),
-                    DimensionLine::VERTICAL, ("Length: " + to_str(length)).c_str());
+                                                    DimensionLine::VERTICAL, ("Length: " + to_str(length)).c_str());
                 graphicsScene->addItem(lengthDimension);
             }
 
@@ -354,7 +480,7 @@ void DrawingView::redrawScene() {
                 leftLapHint->setLap(leftLap);
             } else {
                 leftLapHint = new AddLapWidget(graphicsScene, leftLapRegion, DimensionLine::VERTICAL, leftLap, unused,
-                    unusedHighlight, used);
+                                               unusedHighlight, used);
                 leftLapHint->setActivationCallback([this](bool active) { lapActivationCallback(active, 0); });
                 leftLapHint->setLapChangedCallback([this](const Drawing::Lap &lap) { lapChangedCallback(lap, 0); });
                 graphicsScene->addItem(leftLapHint);
@@ -373,8 +499,9 @@ void DrawingView::redrawScene() {
                 rightLapHint->setBounds(rightLapRegion);
                 rightLapHint->setLap(rightLap);
             } else {
-                rightLapHint = new AddLapWidget(graphicsScene, rightLapRegion, DimensionLine::VERTICAL, rightLap, unused,
-                    unusedHighlight, used);
+                rightLapHint = new AddLapWidget(graphicsScene, rightLapRegion, DimensionLine::VERTICAL, rightLap,
+                                                unused,
+                                                unusedHighlight, used);
                 rightLapHint->setActivationCallback([this](bool active) { lapActivationCallback(active, 1); });
                 rightLapHint->setLapChangedCallback([this](const Drawing::Lap &lap) { lapChangedCallback(lap, 1); });
                 graphicsScene->addItem(rightLapHint);
@@ -385,7 +512,7 @@ void DrawingView::redrawScene() {
             topLapRegion.setBottomLeft(matBoundingRegion.topLeft());
             topLapRegion.setBottomRight(matBoundingRegion.topRight());
             if (topLap.has_value()) {
-                topLapRegion.setTop((0.5 * (1.0 - pLength)) *sceneHeight);
+                topLapRegion.setTop((0.5 * (1.0 - pLength)) * sceneHeight);
             } else {
                 topLapRegion.setTop(topLapRegion.bottom() - sceneWidth * lapHintWidth);
             }
@@ -394,7 +521,7 @@ void DrawingView::redrawScene() {
                 topLapHint->setLap(topLap);
             } else {
                 topLapHint = new AddLapWidget(graphicsScene, topLapRegion, DimensionLine::HORIZONTAL, topLap, unused,
-                    unusedHighlight, used);
+                                              unusedHighlight, used);
                 topLapHint->setActivationCallback([this](bool active) { lapActivationCallback(active, 2); });
                 topLapHint->setLapChangedCallback([this](const Drawing::Lap &lap) { lapChangedCallback(lap, 2); });
                 graphicsScene->addItem(topLapHint);
@@ -413,8 +540,9 @@ void DrawingView::redrawScene() {
                 bottomLapHint->setBounds(bottomLapRegion);
                 bottomLapHint->setLap(bottomLap);
             } else {
-                bottomLapHint = new AddLapWidget(graphicsScene, bottomLapRegion, DimensionLine::HORIZONTAL, bottomLap, unused,
-                    unusedHighlight, used);
+                bottomLapHint = new AddLapWidget(graphicsScene, bottomLapRegion, DimensionLine::HORIZONTAL, bottomLap,
+                                                 unused,
+                                                 unusedHighlight, used);
                 bottomLapHint->setActivationCallback([this](bool active) { lapActivationCallback(active, 3); });
                 bottomLapHint->setLapChangedCallback([this](const Drawing::Lap &lap) { lapChangedCallback(lap, 3); });
                 graphicsScene->addItem(bottomLapHint);
@@ -446,12 +574,14 @@ void DrawingView::redrawScene() {
 
                 QRectF region;
                 region.setTopLeft(QPointF(
-                    (start / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                    matSectionInset * matBoundingRegion.height() + matBoundingRegion.top()
+                        (start / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                        (defaultHorizontalBarSize / lengthDim.rCentre) * matBoundingRegion.height() +
+                        matBoundingRegion.top()
                 ));
                 region.setBottomRight(QPointF(
-                    (end / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                    (1 - matSectionInset) * matBoundingRegion.height() + matBoundingRegion.top()
+                        (end / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                        (1 - (defaultHorizontalBarSize / lengthDim.rCentre)) * matBoundingRegion.height() +
+                        matBoundingRegion.top()
                 ));
 
                 matSectionRects[apertureRegion]->setRect(region);
@@ -460,23 +590,29 @@ void DrawingView::redrawScene() {
             double spacingPosition = 0;
 
             for (unsigned spacingDimension = 0; spacingDimension <= numberOfBars; spacingDimension++) {
-                double nextSpacingPosition = spacingPosition + 
-                    ((barSpacings[spacingDimension] == 0) ? defaultSpacing : barSpacings[spacingDimension]);
+                double nextSpacingPosition = spacingPosition +
+                                             ((barSpacings[spacingDimension] == 0) ? defaultSpacing
+                                                                                   : barSpacings[spacingDimension]);
 
                 spacingDimensions[spacingDimension]->setBounds(QRectF(
-                    QPointF(
-                        (spacingPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                        matBoundingRegion.height() * (barSpacingDimensionHeight - barDimensionHeight / 2) + matBoundingRegion.top()),
-                    QPointF(
-                        (nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                        matBoundingRegion.height() *(barSpacingDimensionHeight + barDimensionHeight / 2) + matBoundingRegion.top())
+                        QPointF(
+                                (spacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
+                                matBoundingRegion.left(),
+                                matBoundingRegion.height() * (barSpacingDimensionHeight - barDimensionHeight / 2) +
+                                matBoundingRegion.top()),
+                        QPointF(
+                                (nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
+                                matBoundingRegion.left(),
+                                matBoundingRegion.height() * (barSpacingDimensionHeight + barDimensionHeight / 2) +
+                                matBoundingRegion.top())
                 ));
 
                 spacingPosition = nextSpacingPosition;
             }
 
             std::stringstream widthSumText;
-            widthSumText << "Spacings currently add to: " << std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) << "mm";
+            widthSumText << "Spacings currently add to: "
+                         << std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) << "mm";
             if (widthSumTextItem) {
                 widthSumTextItem->setPlainText(widthSumText.str().c_str());
             } else {
@@ -489,23 +625,33 @@ void DrawingView::redrawScene() {
 
             for (unsigned bar = 0; bar < numberOfBars + 2; bar++) {
                 barDimensions[bar]->setBounds(QRectF(
-                    QPointF(
-                        (barEndpoints[2 * bar] / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(), 
-                        matBoundingRegion.height() *(barWidthDimensionHeight - barDimensionHeight / 2) + matBoundingRegion.top()),
-                    QPointF((barEndpoints[2 * bar + 1] / widthDim.rCentre) *matBoundingRegion.width() + matBoundingRegion.left(),
-                        matBoundingRegion.height() *(barWidthDimensionHeight + barDimensionHeight / 2) + matBoundingRegion.top())
+                        QPointF(
+                                (barEndpoints[2 * bar] / widthDim.rCentre) * matBoundingRegion.width() +
+                                matBoundingRegion.left(),
+                                matBoundingRegion.height() * (barWidthDimensionHeight - barDimensionHeight / 2) +
+                                matBoundingRegion.top()),
+                        QPointF((barEndpoints[2 * bar + 1] / widthDim.rCentre) * matBoundingRegion.width() +
+                                matBoundingRegion.left(),
+                                matBoundingRegion.height() * (barWidthDimensionHeight + barDimensionHeight / 2) +
+                                matBoundingRegion.top())
                 ));
             }
 
             if (impactPadRegions.size() != drawing->impactPads().size()) {
                 for (ImpactPadGraphicsItem *region : impactPadRegions) {
                     graphicsScene->removeItem(region);
+                    delete region;
                 }
                 impactPadRegions.clear();
 
                 for (unsigned i = 0; i < drawing->impactPads().size(); i++) {
-                    ImpactPadGraphicsItem *impactPad = new ImpactPadGraphicsItem(graphicsScene, QRectF(), drawing->impactPad(i), inspector);
-                    impactPad->setUpdateCallback([this]() { setRedrawRequired(); });
+                    ImpactPadGraphicsItem *impactPad = new ImpactPadGraphicsItem(QRectF(), drawing->impactPad(i),
+                                                                                 inspector);
+                    impactPad->setRemoveFunction([this, i, impactPad, graphicsScene]() {
+                        drawing->removeImpactPad(drawing->impactPad(i));
+                        graphicsScene->removeItem(impactPad);
+                        impactPadRegions.erase(std::find(impactPadRegions.begin(), impactPadRegions.end(), impactPad));
+                    });
                     graphicsScene->addItem(impactPad);
                     impactPadRegions.push_back(impactPad);
                 }
@@ -514,14 +660,64 @@ void DrawingView::redrawScene() {
             for (unsigned i = 0; i < impactPadRegions.size(); i++) {
                 Drawing::ImpactPad &impactPad = drawing->impactPad(i);
                 impactPadRegions[i]->setBounds(QRectF(
-                    QPointF(matBoundingRegion.left() + (impactPad.pos.x / width) * matBoundingRegion.width(),
-                            matBoundingRegion.top() + (impactPad.pos.y / length) * matBoundingRegion.height()),
-                    QSizeF((impactPad.width / width) * matBoundingRegion.width(),
-                           (impactPad.length / length) * matBoundingRegion.height())
+                        QPointF(matBoundingRegion.left() + (impactPad.pos.x / width) * matBoundingRegion.width(),
+                                matBoundingRegion.top() + (impactPad.pos.y / length) * matBoundingRegion.height()),
+                        QSizeF((impactPad.width / width) * matBoundingRegion.width(),
+                               (impactPad.length / length) * matBoundingRegion.height())
                 ));
             }
+
+            if (centreHoleSet) {
+                centreHoleSet->setBounds(matBoundingRegion, width, length);
+            } else {
+                centreHoleSet = new CentreHoleSetGraphicsItem(matBoundingRegion, width, length, inspector);
+                centreHoleSet->setRemoveFunction([this](const Drawing::CentreHole &hole) {
+                    drawing->removeCentreHole(hole);
+                    centreHoleSet->clearCentreHoles();
+                    for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
+                        centreHoleSet->addCentreHole(drawing->centreHole(i));
+                    }
+                });
+                for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
+                    centreHoleSet->addCentreHole(drawing->centreHole(i));
+                }
+                graphicsScene->addItem(centreHoleSet);
+            }
+
+            if (deflectorSet) {
+                deflectorSet->setBounds(matBoundingRegion, width, length);
+            } else {
+                deflectorSet = new DeflectorSetGraphicsItem(matBoundingRegion, width, length, inspector);
+                deflectorSet->setRemoveFunction([this](const Drawing::Deflector &deflector) {
+                    drawing->removeDeflector(deflector);
+                    deflectorSet->clearDeflectors();
+                    for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
+                        deflectorSet->addDeflector(drawing->deflector(i));
+                    }
+                });
+                for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
+                    deflectorSet->addDeflector(drawing->deflector(i));
+                }
+                graphicsScene->addItem(deflectorSet);
+            }
+
+            if (divertorSet) {
+                divertorSet->setBounds(matBoundingRegion, width, length);
+            } else {
+                divertorSet = new DivertorSetGraphicsItem(matBoundingRegion, width, length, inspector);
+                divertorSet->setRemoveFunction([this](const Drawing::Divertor &divertor) {
+                    drawing->removeDivertor(divertor);
+                    divertorSet->clearDivertors();
+                    for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
+                        divertorSet->addDivertor(drawing->divertor(i));
+                    }
+                });
+                for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
+                    divertorSet->addDivertor(drawing->divertor(i));
+                }
+                graphicsScene->addItem(divertorSet);
+            }
         }
-        // update();
     }
 }
 
@@ -541,7 +737,8 @@ void DrawingView::updateProxies() {
             });
             connect(spacingInput, &QDoubleSpinBox::editingFinished, [this, spacing]() {
                 if (barSpacings[numberOfBars - spacing] == 0) {
-                    qobject_cast<QDoubleSpinBox *>(spacingProxies[numberOfBars - spacing]->widget())->setValue(barSpacings[spacing]);
+                    qobject_cast<QDoubleSpinBox *>(spacingProxies[numberOfBars - spacing]->widget())->setValue(
+                            barSpacings[spacing]);
                 }
                 drawing->setBars(barSpacings, barWidths);
             });
@@ -552,7 +749,7 @@ void DrawingView::updateProxies() {
             spacingProxies.push_back(spacingProxy);
 
             WidgetDimensionLine *dimensionLine = new WidgetDimensionLine(QRectF(), DimensionLine::HORIZONTAL,
-                spacingProxy);
+                                                                         spacingProxy);
             spacingDimensions.push_back(dimensionLine);
 
             graphicsScene->addItem(dimensionLine);
@@ -580,7 +777,7 @@ void DrawingView::updateProxies() {
             barInput->setValue(barWidths[bar]);
 
             connect(barInput, qOverload<double>(&QDoubleSpinBox::valueChanged), [this, bar](double d) {
-                barWidths[bar] = (float)d;
+                barWidths[bar] = (float) d;
             });
             connect(barInput, &QDoubleSpinBox::editingFinished, [this, bar]() {
                 if (bar == 0 && barWidths.back() == 0) {
@@ -601,7 +798,7 @@ void DrawingView::updateProxies() {
             barProxies.push_back(barProxy);
 
             WidgetDimensionLine *dimensionLine = new WidgetDimensionLine(QRectF(), DimensionLine::HORIZONTAL,
-                barProxy);
+                                                                         barProxy);
             barDimensions.push_back(dimensionLine);
 
             graphicsScene->addItem(dimensionLine);
@@ -715,6 +912,14 @@ void DrawingView::updateSnapLines() {
     }
 }
 
+void DrawingView::updateCentreSnapLines() {
+    centreVSnapLines.clear();
+
+    for (unsigned i = 0; i < matSectionRects.size() - 1; i++) {
+        centreVSnapLines.push_back((matSectionRects[i]->rect().right() + matSectionRects[i + 1]->rect().left()) / 2.0);
+    }
+}
+
 QPoint DrawingView::snapPoint(const QPoint &point) const {
     const int snapThreshold = 10;
 
@@ -759,4 +964,17 @@ QPointF DrawingView::snapPointF(const QPointF &point) const {
     return snapped;
 }
 
-#pragma clang diagnostic pop
+QPointF DrawingView::snapPointToCentreF(const QPointF &point) const {
+    const double snapThreshold = 10;
+
+    QPointF snapped = point;
+
+    for (double line : centreVSnapLines) {
+        if (abs(line - point.x()) <= snapThreshold) {
+            snapped.setX(line);
+            break;
+        }
+    }
+
+    return snapped;
+}

@@ -18,14 +18,6 @@ void DynamicComboBox::setDataSource(ComboboxDataSource &dataSource) {
     updateSourceList();
 }
 
-//void DynamicComboBox::setFilter(const std::function<bool(const ComboboxDataElement &)> &filter) {
-//    sourceFilter = filter;
-//}
-//
-//void DynamicComboBox::removeFilter() {
-//    sourceFilter = nullptr;
-//}
-
 void DynamicComboBox::showPopup() {
     updateSourceList();
 

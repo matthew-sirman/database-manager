@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 06/07/2020.
 //
@@ -12,6 +10,8 @@ DatabaseManager::DatabaseManager(const std::string &database, const std::string 
 	this->username = user;
 	this->password = password;
 	this->database = database;
+
+	isConnected = true;
 }
 
 // Method to generate details for the DrawingSummaryCompressionSchema used in compression with summaries for a search
@@ -43,7 +43,8 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 		// If there was an error, print it to the console and exit the program.
 		// This error is fatal - if we are unable to create a compression schema, the database cannot
 		// be used.
-		SQL_ERROR(e, *errStream)
+		SQL_ERROR(e, *errStream);
+		closeConnection();
 	}
 }
 
@@ -62,6 +63,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// This is not considered a fatal error; if there was an error simply return an empty set.
 		// The client will receive no data, but there is no reason to exit the entire system.
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return {};
 	}
 }
@@ -468,6 +470,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return a nullptr
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return nullptr;
 	}
 }
@@ -480,6 +483,7 @@ mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, con
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return an empty row set
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return mysqlx::RowResult();
 	}
 }
@@ -604,6 +608,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		// This is not considered a fatal error; if there was an error we just return that insertion failed
 		SQL_ERROR_SAFE(e, *errStream);
 		sess.rollback();
+		closeConnection();
 		return false;
 	}
 }
@@ -623,6 +628,7 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the test failed
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return DrawingExistsResponse::R_ERROR;
 	}
 }
@@ -648,6 +654,7 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the insertion failed
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return false;
 	}
 }
@@ -742,6 +749,7 @@ std::string DatabaseManager::nextAutomaticDrawingNumber() {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return std::string();
 	}
 }
@@ -793,6 +801,7 @@ std::string DatabaseManager::nextManualDrawingNumber() {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
 		SQL_ERROR_SAFE(e, *errStream);
+		closeConnection();
 		return std::string();
 	}
 }
@@ -802,17 +811,20 @@ void DatabaseManager::closeConnection() {
 	try {
 		// Close the session
 		sess.close();
+		isConnected = false;
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error, though this function will generally only
 		// be called during shutdown, so it is likely that no further operations will be
 		// performed afterwards anyway.
-		SQL_ERROR_SAFE(e, *errStream)
+		SQL_ERROR_SAFE(e, *errStream);
 	}
+}
+
+bool DatabaseManager::connected() const {
+	return isConnected;
 }
 
 void DatabaseManager::setErrorStream(std::ostream &stream) {
 	errStream = &stream;
 }
-
-#pragma clang diagnostic pop

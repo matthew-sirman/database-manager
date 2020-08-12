@@ -312,6 +312,10 @@ void Client::requestRepeatToken(unsigned responseCode) {
     addMessageToSendQueue(&responseCode, sizeof(unsigned));
 }
 
+void Client::requestEmailAddress(unsigned responseCode) {
+    addMessageToSendQueue(&responseCode, sizeof(unsigned));
+}
+
 void Client::setResponseHandler(ClientResponseHandler &handler) {
     responseHandler = &handler;
 }

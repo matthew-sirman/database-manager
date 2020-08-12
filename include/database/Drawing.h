@@ -180,6 +180,10 @@ public:
 
     struct Coordinate {
         float x, y;
+
+        inline bool operator==(const Coordinate &other) {
+            return x == other.x && y == other.y;
+        }
     };
 
     struct ImpactPad {
@@ -187,6 +191,15 @@ public:
 
         Coordinate pos;
         float width, length;
+
+        inline bool operator==(const ImpactPad &other) {
+            return pos == other.pos && width == other.width && length == other.length &&
+                   materialHandle == other.materialHandle && apertureHandle == other.apertureHandle;
+        }
+
+        inline bool operator!=(const ImpactPad &other) {
+            return !(*this == other);
+        }
 
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
@@ -254,12 +267,28 @@ public:
     struct CentreHole {
         friend struct Drawing;
 
-        struct {
+        struct Shape {
             float width, length;
             bool rounded;
+
+            inline bool operator==(const Shape &other) {
+                return width == other.width && length == other.length && rounded == other.rounded;
+            }
+
+            inline bool operator!=(const Shape &other) {
+                return !(*this == other);
+            }
         } centreHoleShape;
 
         Coordinate pos;
+
+        inline bool operator==(const CentreHole &other) {
+            return centreHoleShape == other.centreHoleShape && pos == other.pos;
+        }
+
+        inline bool operator!=(const CentreHole &other) {
+            return !(*this == other);
+        }
 
         inline unsigned serialisedSize() const {
             return sizeof(float) * 4 + sizeof(bool);
@@ -303,6 +332,14 @@ public:
 
         Coordinate pos;
         float size;
+
+        inline bool operator==(const Deflector &other) {
+            return pos == other.pos && size == other.size && materialHandle == other.materialHandle;
+        }
+
+        inline bool operator!=(const Deflector &other) {
+            return !(*this == other);
+        }
 
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
@@ -356,6 +393,15 @@ public:
         Side side;
         float verticalPosition;
         float width, length;
+
+        inline bool operator==(const Divertor &other) {
+            return side == other.side && verticalPosition == other.verticalPosition && width == other.width &&
+                   length == other.length && materialHandle == other.materialHandle;
+        }
+
+        inline bool operator!=(const Divertor &other) {
+            return !(*this == other);
+        }
 
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
@@ -525,17 +571,39 @@ public:
 
     ImpactPad &impactPad(unsigned index);
 
+    void removeImpactPad(const ImpactPad &pad);
+
+    unsigned numberOfImpactPads() const;
+
     void addCentreHole(const CentreHole &centreHole);
 
     std::vector<CentreHole> centreHoles() const;
+
+    CentreHole &centreHole(unsigned index);
+
+    void removeCentreHole(const CentreHole &hole);
+
+    unsigned numberOfCentreHoles() const;
 
     void addDeflector(const Deflector &deflector);
 
     std::vector<Deflector> deflectors() const;
 
+    Deflector &deflector(unsigned index);
+
+    void removeDeflector(const Deflector &deflector);
+
+    unsigned numberOfDeflectors() const;
+
     void addDivertor(const Divertor &divertor);
 
     std::vector<Divertor> divertors() const;
+
+    Divertor &divertor(unsigned index);
+
+    void removeDivertor(const Divertor &divertor);
+
+    unsigned numberOfDivertors() const;
 
     BuildWarning checkDrawingValidity(unsigned exclusions = 0) const;
 

@@ -46,6 +46,11 @@ public:
 
     void setMode(AddDrawingMode mode);
 
+    void setUserEmail(const std::string &email);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     Ui::AddDrawingPageWidget *ui = nullptr;
 
@@ -67,6 +72,8 @@ private:
 
     DrawingPDFWriter pdfWriter;
 
+    std::string userEmail;
+
     unsigned leftSICache = 0, rightSICache = 0;
     bool leftSIInverted = false, rightSIInverted = false;
 
@@ -75,6 +82,8 @@ private:
     std::function<void(const Drawing &, bool)> confirmationCallback;
 
     AddDrawingMode addMode = ADD_NEW_DRAWING;
+
+    bool drawingAdded = false;
     
     void setupComboboxSources();
 

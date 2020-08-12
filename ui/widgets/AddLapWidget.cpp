@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 18/07/2020.
 //
@@ -221,5 +219,3 @@ void AddLapWidget::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
     }
     QGraphicsItem::contextMenuEvent(event);
 }
-
-#pragma clang diagnostic pop

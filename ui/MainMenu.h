@@ -47,6 +47,8 @@ private:
     Client *client = nullptr;
     DatabaseResponseHandler *handler = nullptr;
 
+    std::string clientEmailAddress;
+
     void closeEvent(QCloseEvent *event) override;
 
     void keyPressEvent(QKeyEvent *event) override;

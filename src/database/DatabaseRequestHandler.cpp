@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 09/07/2020.
 //
@@ -18,6 +16,9 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 		case RequestType::REPEAT_TOKEN_REQUEST:
 			caller.sendRepeatToken(clientHandle, (unsigned)RequestType::REPEAT_TOKEN_REQUEST);
 			break;
+	    case RequestType::USER_EMAIL_REQUEST:
+	        caller.sendEmailAddress(clientHandle, (unsigned)RequestType::USER_EMAIL_REQUEST);
+	        break;
 		case RequestType::DRAWING_SEARCH_QUERY: {
 			std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(
 				DatabaseSearchQuery::deserialise(message));
@@ -689,5 +690,3 @@ template<>
 RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::MachineDeckData>() const {
 	return RequestType::SOURCE_MACHINE_DECK_TABLE;
 }
-
-#pragma clang diagnostic pop

@@ -13,7 +13,10 @@
 #include "Inspector.h"
 #include "DimensionLine.h"
 #include "AddLapWidget.h"
-#include "ImpactPadGraphicsItem.h"
+#include "addons/ImpactPadGraphicsItem.h"
+#include "addons/CentreHoleSetGraphicsItem.h"
+#include "addons/DivertorSetGraphicsItem.h"
+#include "addons/DeflectorSetGraphicsItem.h"
 #include "../../include/database/Drawing.h"
 
 class DrawingView : public QGraphicsView {
@@ -59,7 +62,7 @@ private:
 
     // const double sceneSize = 2000;
     const double maxMatDimensionPercentage = 0.8;
-    const double matSectionInset = 0.03;
+    const double defaultHorizontalBarSize = 45;
     const double dimensionLineOffset = 0.03;
     const double barSpacingDimensionHeight = 0.7;
     const double barWidthDimensionHeight = 0.8;
@@ -80,9 +83,13 @@ private:
 
     void updateSnapLines();
 
+    void updateCentreSnapLines();
+
     QPoint snapPoint(const QPoint &point) const;
 
     QPointF snapPointF(const QPointF &point) const;
+
+    QPointF snapPointToCentreF(const QPointF &point) const;
 
     QGraphicsRectItem *drawingBorderRect = nullptr;
     AddLapWidget *leftLapHint = nullptr, *rightLapHint = nullptr, *topLapHint = nullptr, *bottomLapHint = nullptr;
@@ -92,10 +99,23 @@ private:
     std::vector<WidgetDimensionLine *> spacingDimensions, barDimensions;
     std::vector<QGraphicsRectItem *> matSectionRects;
     std::vector<ImpactPadGraphicsItem *> impactPadRegions;
+    CentreHoleSetGraphicsItem *centreHoleSet = nullptr;
+    DivertorSetGraphicsItem *divertorSet = nullptr;
+    DeflectorSetGraphicsItem *deflectorSet = nullptr;
 
-    std::vector<double> hSnapLines, vSnapLines;
+    std::vector<double> hSnapLines, vSnapLines, centreVSnapLines;
+
+    enum class AddPartState {
+        NONE,
+        ADD_IMPACT_PAD,
+        ADD_CENTRE_HOLES,
+        ADD_DEFLECTORS,
+        ADD_DIVERTORS
+    };
 
     QRubberBand *impactPadRegionSelector = nullptr;
+    QPoint impactPadAnchorPoint;
+    AddPartState addPartState = AddPartState::NONE;
 
     bool lapsDisabled = false;
 

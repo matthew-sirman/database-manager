@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 02/07/2020.
 //
@@ -167,6 +165,9 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     }
 
     client->startClientLoop();
+
+    handler->setEmailReceivedCallback([this](const std::string &email) { clientEmailAddress = email; });
+    client->requestEmailAddress((unsigned)RequestType::USER_EMAIL_REQUEST);
 
     sendSourceTableRequests();
 
@@ -752,7 +753,9 @@ void MainMenu::openDrawingView(unsigned matID) {
 }
 
 void MainMenu::closeTab(int index) {
-    ui->mainTabs->removeTab(index);
+    if (ui->mainTabs->widget(index)->close()) {
+        ui->mainTabs->removeTab(index);
+    }
 }
 
 void MainMenu::openAddDrawingTab(NextDrawing::DrawingType type) {
@@ -760,9 +763,11 @@ void MainMenu::openAddDrawingTab(NextDrawing::DrawingType type) {
     switch (type) {
         case NextDrawing::DrawingType::AUTOMATIC:
             addDrawingPage = new AddDrawingPageWidget(nextAutomaticDrawingNumber, ui->mainTabs);
+            addDrawingPage->setUserEmail(clientEmailAddress);
             break;
         case NextDrawing::DrawingType::MANUAL:
             addDrawingPage = new AddDrawingPageWidget(nextManualDrawingNumber, ui->mainTabs);
+            addDrawingPage->setUserEmail(clientEmailAddress);
             break;
         default:
             return;
@@ -803,6 +808,7 @@ void MainMenu::processDrawings() {
 
                     drawingView->setChangeDrawingCallback([this, drawing](AddDrawingPageWidget::AddDrawingMode mode) {
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, mode, ui->mainTabs);
+                        addDrawingPage->setUserEmail(clientEmailAddress);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
                             DrawingInsert insert;
                             insert.drawingData = drawing;
@@ -899,5 +905,3 @@ void MainMenu::backupResponse(unsigned responseCode) {
             break;
     }
 }
-
-#pragma clang diagnostic pop

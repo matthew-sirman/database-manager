@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 12/05/2020.
 //
@@ -256,14 +254,30 @@ void Server::sendRepeatToken(const ClientHandle &clientHandle, unsigned response
     addMessageToSendQueue(clientHandle, buffer, sizeof(unsigned) + sizeof(uint256));
 }
 
+void Server::sendEmailAddress(const ClientHandle &clientHandle, unsigned int responseCode) {
+    std::string email = handleMap[clientHandle.clientID]->clientEmail;
+    void *buffer = (uint8 *)alloca(sizeof(unsigned) + sizeof(unsigned char) + email.size());
+    unsigned char *buff = (unsigned char *)buffer;
+    *((unsigned *) buff) = responseCode;
+    buff += sizeof(unsigned);
+    *buff++ = email.size();
+    memcpy(buff, email.c_str(), email.size());
+
+    addMessageToSendQueue(clientHandle, buffer, sizeof(unsigned) + sizeof(unsigned char) + email.size());
+}
+
 void Server::connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                      const std::string &host) {
     try {
         dbManager = new DatabaseManager(database, user, password, host);
     } catch (mysqlx::Error &e) {
-        SQL_ERROR(e, *errorStream)
+        SQL_ERROR(e, *errorStream);
     }
     dbManager->setErrorStream(*errorStream);
+    databaseSchema = database;
+    databaseUsername = user;
+    databasePassword = password;
+    databaseHost = host;
 
     *logStream << timestamp() << "Connected to database" << std::endl;
 }
@@ -309,6 +323,19 @@ void Server::setHeartBeatCycles(int cycles) {
 DatabaseManager &Server::databaseManager() {
     if (!dbManager) {
         ERROR_TO("Database manager not set up. No connection to database.", *errorStream)
+    }
+
+    if (!dbManager->connected()) {
+        delete dbManager;
+
+        try {
+            dbManager = new DatabaseManager(databaseSchema, databaseUsername, databasePassword, databaseHost);
+        } catch (mysqlx::Error &e) {
+            SQL_ERROR(e, *errorStream);
+        }
+        dbManager->setErrorStream(*errorStream);
+
+        *logStream << timestamp() << "Re-connected to database" << std::endl;
     }
 
     return *dbManager;
@@ -609,4 +636,3 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
 //    else:
 // 5.   S -> C: {{NC}_SIG, K, T}_KC
 // Both communicate with the session AES key K from here.
-#pragma clang diagnostic pop

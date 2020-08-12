@@ -21,6 +21,8 @@ public:
 
     void setRepeatTokenResponseCallback(const std::function<void(const uint256 &token)> &callback);
 
+    void setEmailReceivedCallback(const std::function<void(const std::string &)> &callback);
+
     void setAddComponentResponseCallback(const std::function<void(ComponentInsert::ComponentInsertResponse)> &callback);
 
     void setBackupResponseCallback(const std::function<void(DatabaseBackup::BackupResponse)> &callback);
@@ -36,6 +38,8 @@ private:
     std::function<void(DrawingInsert::InsertResponseCode, unsigned)> drawingInsertCallback = nullptr;
 
     std::function<void(const uint256 &token)> repeatTokenCallback = nullptr;
+
+    std::function<void(const std::string &)> emailReceivedCallback = nullptr;
 
     std::function<void(ComponentInsert::ComponentInsertResponse)> addComponentCallback = nullptr;
 

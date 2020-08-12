@@ -21,7 +21,7 @@ class DrawingPDFWriter {
 public:
 	DrawingPDFWriter();
 
-	bool createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing) const;
+	bool createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing, const std::string &drawnByInitials = std::string()) const;
 
 private:
 	void drawStandardTemplate(QPainter &painter, QSvgRenderer &svgTemplateRenderer) const;
@@ -29,7 +29,7 @@ private:
 	void drawLabelAndField(QPainter &painter, double left, double &top, const QString &label, double labelWidth, const QString &field, 
 						   double fieldWidth, double hOffset = 0, double vOffset = 0) const;
 
-	void drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing) const;
+	void drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing, const std::string &drawnByInitials) const;
 
 	void drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const;
 

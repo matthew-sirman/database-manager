@@ -4,8 +4,8 @@
 
 #include "ExpandingWidget.h"
 
-ExpandingWidget::ExpandingWidget(const QString &title, unsigned expandTime, QWidget *parent)
-	: QWidget(parent), expandTime(expandTime) {
+ExpandingWidget::ExpandingWidget(const QString &title, QWidget *parent)
+	: QWidget(parent) {
 	expandButton = new QToolButton(this);
 	expandButton->setStyleSheet("QToolButton { border: none; }");
 	expandButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -66,9 +66,10 @@ void ExpandingWidget::setContent(QLayout *layout) {
 }
 
 void ExpandingWidget::expand() {
-	if (!expandButton->isChecked()) {
+	if (expandButton->isChecked()) {
 		expandButton->click();
 	}
+	expandButton->click();
 }
 
 void ExpandingWidget::collapse() {

@@ -9,14 +9,18 @@ else()
 set(CMAKE_CXX_FLAGS -pthread)
 endif()
 
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Pdf PdfWidgets Svg)
+message(STATUS ${Qt5_DIR})
+
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Svg)
+find_package(Qt5Pdf)
+find_package(Qt5PdfWidgets)
 
 if (WIN32)
 
 include_directories(
     ${CURL_INCLUDE_DIRS}
     ${JSON_INCLUDE_DIRS}
-    ${MYSQL_INCLUDE_DIRS}
+    $ENV{MYSQL_INCLUDE_DIRS}
     ${BOOST_INCLUDE_DIRS}
 )
 
@@ -24,7 +28,7 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/ui)
 
-add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN -DCURL_STATICLIB)
+add_definitions(-DQT_NO_VERSION_TAGGING -DWIN32_LEAN_AND_MEAN -DCURL_STATICLIB -DNOMINMAX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -32,7 +36,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(PROJECT_UI ui/MainMenu.ui ui/MainMenu.cpp ui/MainMenu.h)
-set(WIDGETS ui/widgets/DynamicComboBox.cpp ui/widgets/DynamicComboBox.h ui/widgets/ActivatorLabel.cpp ui/widgets/ActivatorLabel.h ui/widgets/AddDrawingPageWidget.ui ui/widgets/AddDrawingPageWidget.cpp ui/widgets/AddDrawingPageWidget.h ui/widgets/DrawingViewWidget.ui ui/widgets/DrawingViewWidget.cpp ui/widgets/DrawingViewWidget.h ui/widgets/DrawingView.cpp ui/widgets/DrawingView.h ui/widgets/DimensionLine.cpp ui/widgets/DimensionLine.h ui/widgets/AddLapWidget.cpp ui/widgets/AddLapWidget.h "ui/widgets/ImpactPadGraphicsItem.h" "ui/widgets/ImpactPadGraphicsItem.cpp" "ui/widgets/ExpandingWidget.h" "ui/widgets/ExpandingWidget.cpp" "ui/widgets/Inspector.h" "ui/widgets/Inspector.cpp")
+set(WIDGETS ui/widgets/DynamicComboBox.cpp ui/widgets/DynamicComboBox.h ui/widgets/ActivatorLabel.cpp ui/widgets/ActivatorLabel.h ui/widgets/AddDrawingPageWidget.ui ui/widgets/AddDrawingPageWidget.cpp ui/widgets/AddDrawingPageWidget.h ui/widgets/DrawingViewWidget.ui ui/widgets/DrawingViewWidget.cpp ui/widgets/DrawingViewWidget.h ui/widgets/DrawingView.cpp ui/widgets/DrawingView.h ui/widgets/DimensionLine.cpp ui/widgets/DimensionLine.h ui/widgets/AddLapWidget.cpp ui/widgets/AddLapWidget.h "ui/widgets/addons/ImpactPadGraphicsItem.h" "ui/widgets/addons/ImpactPadGraphicsItem.cpp" "ui/widgets/ExpandingWidget.h" "ui/widgets/ExpandingWidget.cpp" "ui/widgets/Inspector.h" "ui/widgets/Inspector.cpp" "ui/widgets/addons/CentreHoleSetGraphicsItem.h" "ui/widgets/addons/CentreHoleSetGraphicsItem.cpp" "ui/widgets/addons/DeflectorSetGraphicsItem.h" "ui/widgets/addons/DeflectorSetGraphicsItem.cpp" "ui/widgets/addons/DivertorSetGraphicsItem.h" "ui/widgets/addons/DivertorSetGraphicsItem.cpp")
 set(COMPONENT_WINDOWS ui/AddApertureWindow.ui ui/AddApertureWindow.cpp ui/AddApertureWindow.h ui/AddSideIronWindow.ui ui/AddSideIronWindow.cpp ui/AddSideIronWindow.h ui/AddMaterialWindow.ui ui/AddMaterialWindow.cpp ui/AddMaterialWindow.h ui/AddMachineWindow.ui ui/AddMachineWindow.cpp ui/AddMachineWindow.h)
 set(QT_RESOURCES res/qtresources.qrc)
 
@@ -51,7 +55,7 @@ add_compile_options(
     "/std:c++17"
     "/wd4068"
 )
-target_link_libraries(${PROJECT_NAME} encrypt Dnsapi ${MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets Qt5::Svg)
+target_link_libraries(${PROJECT_NAME} encrypt Dnsapi $ENV{MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets Qt5::Svg)
 
 else()
 

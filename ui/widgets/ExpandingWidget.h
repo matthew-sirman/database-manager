@@ -16,7 +16,7 @@
 class ExpandingWidget : public QWidget {
 	Q_OBJECT
 public:
-	explicit ExpandingWidget(const QString &title = "", unsigned expandTime = 200, QWidget *parent = nullptr);
+	explicit ExpandingWidget(const QString &title = "", QWidget *parent = nullptr);
 
 	~ExpandingWidget() override;
 
@@ -31,7 +31,6 @@ private:
 	QToolButton *expandButton = nullptr;
 	QFrame *headerFrame = nullptr;
 	QScrollArea *contentArea = nullptr;
-	unsigned expandTime = 200;
 };
 
 #endif //DATABASE_MANAGER_EXPANDINGWIDGET_H

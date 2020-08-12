@@ -59,12 +59,12 @@
 }*/
 
 #define SQL_ERROR(error, stream) { \
-    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ << ": " << "SQL Error " << error.what() << std::endl; \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ << ": " << "SQL Error " << error << std::endl; \
     exit(1); \
 }
 
 #define SQL_ERROR_SAFE(error, stream) { \
-    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << "SQL Error " << error.what() << std::endl; \
+    stream << "ERROR::" << __FILENAME__ << ":" << __LINE__ <<  ": " << "SQL Error " << error << std::endl; \
 }
 
 #endif //DATABASE_SERVER_GUARD_H
