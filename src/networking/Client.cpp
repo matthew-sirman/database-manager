@@ -246,10 +246,8 @@ Client::ConnectionStatus Client::connectWithToken(const std::string &ipAddress, 
             switch (response) {
             case ConnectionResponse::SUCCESS:
                 return ConnectionStatus::SUCCESS;
-                break;
             case ConnectionResponse::FAILED:
                 return ConnectionStatus::INVALID_REPEAT_TOKEN;
-                break;
             }
         }
     }

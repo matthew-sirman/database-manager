@@ -38,6 +38,7 @@ public:
 
     /// <summary>
     /// Constructor for DatabaseManager
+    /// Note: the values called with are cached for possible reconnection to the database.
     /// </summary>
     /// <param name="database">The name of the database to connect to.</param>
     /// <param name="user">The username for the connection.</param>
@@ -55,6 +56,8 @@ public:
     /// <param name="maxWidth">A reference to a variable to store the maximum width.</param>
     /// <param name="maxLength">A reference to a variable to store the maximum length.</param>
     /// <param name="maxLapSize">A reference to a variable to store the maxmimum lap size</param>
+    /// <param name="maxBarSpacingCount">A reference to a variable to store the maximum number of bar spacings on any mat</param>
+    /// <param name="maxBarSpacing">A reference to a variable to store the maximum bar spacing</param>
     /// <param name="maxDrawingLength">A refernce to a variable to store the maximum drawing number length.
     /// Note: drawing numbers longer than 255 are disallowed by the database, so this value is used as a single byte.</param>
     void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, 
@@ -116,8 +119,18 @@ public:
     /// <returns>A boolean indicating whether the backup creation was successful.</returns>
     bool createBackup(const std::filesystem::path &backupLocation);
 
+    /// <summary>
+    /// Retrieves the current "newest" automatic drawing number from the database and calculates the proceeding
+    /// drawing number.
+    /// </summary>
+    /// <returns>The calculated next automatic drawing number based on the current database state</returns>
     std::string nextAutomaticDrawingNumber();
 
+    /// <summary>
+    /// Retrieves the current "newest" manual drawing number from the database and calculates the proceeding
+    /// drawing number.
+    /// </summary>
+    /// <returns>The calculated next manual drawing number based on the current database state</returns>
     std::string nextManualDrawingNumber();
 
     /// <summary>
@@ -125,19 +138,30 @@ public:
     /// </summary>
     void closeConnection();
 
+    /// <summary>
+    /// A getter for the current connection status
+    /// </summary>
+    /// <returns>Whether or not the server is currently connected to the database</returns>
     bool connected() const;
 
+    /// <summary>
+    /// Sets the output error stream to an arbitrary ostream
+    /// </summary>
+    /// <param name="stream">The ostream to write to. Defaults to stdcerr</param>
     void setErrorStream(std::ostream &stream = std::cerr);
 
 private:
     // A session object for use during the lifetime of the DatabaseManager object.
     // This allows the manager to interact with the database.
     mysqlx::Session sess;
+    // The cached username, password and database name for reconnecting if necessary.
     std::string username, password;
     std::string database;
 
+    // A pointer to the output error stream to write to. Defaults to stdcerr
     std::ostream *errStream = &std::cerr;
 
+    // Flag indicating whether or not the database is currently connected.
     bool isConnected;
 };
 

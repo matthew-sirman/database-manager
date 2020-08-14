@@ -7,14 +7,14 @@
 // Default constructor for the DatabaseQuery object
 DatabaseQuery::DatabaseQuery() = default;
 
-// Helper function to create a buffer and serialse to it
+// Helper function to create a buffer and serialise to it
 void *DatabaseQuery::createBuffer(unsigned &size) const {
     // Get the size this object will occupy when serialised and write
     // to the reference variable
     size = serialisedSize();
     // Create a suitably sized buffer (on the heap for persistence)
     void *buffer = malloc(size);
-    // Serialse this object into the buffer. Note that this will call the overriden
+    // Serialise this object into the buffer. Note that this will call the overridden
     // serialise function, as the base function in DatabaseQuery is pure virtual.
     serialise(buffer);
     // Return the created and filled buffer
@@ -39,7 +39,7 @@ void DatabaseSearchQuery::serialise(void *target) const {
 
     if (drawingNumber.has_value()) {
         // If the drawingNumber parameter is specified,
-        // we write the drawing number string preceeded by its size to the 
+        // we write the drawing number string preceded by its size to the
         // buffer.
         unsigned char sendDNumSize = MIN(255, drawingNumber->size());
         *buffer++ = sendDNumSize;
@@ -917,12 +917,12 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             // and whether it is a sidelap or overlap. Note that a boolean equivalence will return 1 if equal and
             // 0 if inequal, so if lap[2] == "Right", then the index will be 1 to start with, otherwise 0.
             // This means we can easily calculate the index associated with this lap value.
-            unsigned index = (lap[2] == "Right");
+            unsigned index = (lap[2].get<std::string>() == "Right");
             if (row[7].get<std::string>() == "Side") {
-                index += 2 * (lap[0] == "O");
+                index += 2 * (lap[0].get<std::string>() == "O");
             }
             else {
-                index += 2 * (lap[0] == "S");
+                index += 2 * (lap[0].get<std::string>() == "S");
             }
             // Finally, after computing the index, we simply write the size to the summary in the correct slot.
             summary.setLapSize(index, lap[1].get<double>());

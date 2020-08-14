@@ -564,12 +564,15 @@ bool Server::tryAuthenticateClient(ClientData &clientData) {
             return true;
         }
         case RECEIVED_ERRONEOUS_TOKEN:
+            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT (Erroneous Token). Terminating connection." << std::endl;
         case NO_MATCHING_KEY:
+            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT (No matching key). Terminating connection." << std::endl;
         case INVALID_TOKEN:
+            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT (Invalid token). Terminating connection." << std::endl;
         case INVALID_SIGNATURE:
             // If the authentication failed for any reason, the client did not authenticate themselves, so terminate
             // their connection. If they wish to retry, they must reconnect to the server.
-            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT. Terminating connection." << std::endl;
+            *logStream << timestamp() << "Client failed to authenticate themselves: Bad JWT (Invalid signature). Terminating connection." << std::endl;
             ConnectionResponse failResponse = ConnectionResponse::FAILED;
             NetworkMessage failedMessage(&failResponse, sizeof(ConnectionResponse), MessageProtocol::CONNECTION_RESPONSE_MESSAGE);
             clientData.clientSocket.sendMessage(failedMessage);

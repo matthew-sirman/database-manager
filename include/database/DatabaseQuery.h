@@ -448,12 +448,40 @@ public:
     /// <returns>An SQL query string or an empty string if there are no punch programs to insert.</returns>
     std::string punchProgramsInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL query for inserting the impact pads specified in the drawingData 
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string or an empty string if there are no impact pads to insert.</returns>
     std::string impactPadsInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL query for inserting the centre holes specified in the drawingData 
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string or an empty string if there are no centre holes to insert.</returns>
     std::string centreHolesInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL query for inserting the deflectors specified in the drawingData 
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string or an empty string if there are no deflectors to insert.</returns>
     std::string deflectorsInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL query for inserting the divertors specified in the drawingData 
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string or an empty string if there are no divertors to insert.</returns>
     std::string divertorsInsertQuery(unsigned matID) const;
 
     // The optional drawingData object. If this object is set, this is a
@@ -482,6 +510,11 @@ private:
 /// </summary>
 class ComponentInsert : public DatabaseQuery {
 public:
+    /// <summary>
+    /// ApertureData
+    /// Object representation of the aperture data needed to insert a new aperture. This is done
+    /// to avoid creating a "true" Aperture object before one officially exists.
+    /// </summary>
     struct ApertureData {
         float width, length;
         unsigned baseWidth, baseLength;
@@ -493,6 +526,11 @@ public:
         }
     };
 
+    /// <summary>
+    /// MachineData
+    /// Object representation of the aperture data needed to insert a new machine. This is done
+    /// to avoid creating a "true" Machine object before one officially exists.
+    /// </summary>
     struct MachineData {
         std::string manufacturer, model;
 
@@ -501,6 +539,11 @@ public:
         }
     };
 
+    /// <summary>
+    /// SideIronData
+    /// Object representation of the aperture data needed to insert a new side iron. This is done
+    /// to avoid creating a "true" SideIron object before one officially exists.
+    /// </summary>
     struct SideIronData {
         SideIronType type;
         unsigned length;
@@ -513,6 +556,11 @@ public:
         }
     };
 
+    /// <summary>
+    /// MaterialData
+    /// Object representation of the aperture data needed to insert a new material. This is done
+    /// to avoid creating a "true" Material object before one officially exists.
+    /// </summary>
     struct MaterialData {
         std::string materialName;
         unsigned hardness, thickness;
@@ -522,6 +570,11 @@ public:
         }
     };
 
+    /// <summary>
+    /// ComponentInsertResponse
+    /// Represents a response code from the server which depends on whether the component was successfully
+    /// added to the database or not. The code "None" is used in the request.
+    /// </summary>
     enum class ComponentInsertResponse {
         NONE,
         SUCCESS,
@@ -563,15 +616,33 @@ public:
     template<typename T>
     void setComponentData(const T &data);
 
+    /// <summary>
+    /// Clears the component data for this object
+    /// </summary>
     void clearComponentData();
 
+    /// <summary>
+    /// Creates an SQL query string for inserting this object into the database. This will depend
+    /// on the type of object specified to add.
+    /// </summary>
+    /// <returns>The SQL query string used to add the new component to the database.</returns>
     std::string toSQLQueryString() const;
 
+    /// <summary>
+    /// Getter for the appropriate request code
+    /// </summary>
+    /// <returns>The appropriate request type code depending on what sort of component this object
+    /// inserted.</returns>
     RequestType getSourceTableCode() const;
 
+    // The response code for the object so the client can determine whether the request was successful.
     ComponentInsertResponse responseCode = ComponentInsertResponse::NONE;
 
 private:
+    /// <summary>
+    /// InsertType
+    /// Flag variable to simply determine which type of component the query intended to add.
+    /// </summary>
     enum class InsertType {
         NONE,
         APERTURE,
@@ -580,8 +651,11 @@ private:
         MATERIAL
     };
 
+    // The realisation of the insert type variable. Defaults to None
     InsertType insertType = InsertType::NONE;
 
+    // Holds 4 different optionals for each different potential type. At any point, only one of these
+    // should contain a value, and if multiple do, then the insertType variable dictates which is correct
     std::optional<ApertureData> apertureData;
     std::optional<MachineData> machineData;
     std::optional<SideIronData> sideIronData;
@@ -589,14 +663,27 @@ private:
 
 };
 
+/// <summary>
+/// DatabaseBackup
+/// An object representing a user request to create a backup of the database in the form of a MySQL dump.
+/// The server's DatabaseManager is responsible for creating this backup, and the location to write to is determined
+/// in the server's meta file.
+/// </summary>
 class DatabaseBackup : DatabaseQuery {
 public:
+    /// <summary>
+    /// BackupResponse
+    /// Response code for whether the backup request was successful.
+    /// </summary>
     enum class BackupResponse {
         NONE,
         SUCCESS,
         FAILED
     };
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     DatabaseBackup() = default;
 
     /// <summary>
@@ -620,20 +707,36 @@ public:
     /// created with.</returns>
     static DatabaseBackup &deserialise(void *data);
 
+    // The response code for this object. Defaults to None indicating that the object 
+    // represents a reques.
     BackupResponse responseCode = BackupResponse::NONE;
 
+    // The string name to save the backup under
     std::string backupName;
 
 private:
 };
 
+/// <summary>
+/// NextDrawing
+/// A request object to obtain the name of the next drawing that should be added. This can either be
+/// the next automatic drawing or the next manual drawing based on the current database state.
+/// </summary>
 class NextDrawing : DatabaseQuery {
 public:
+    /// <summary>
+    /// DrawingType
+    /// Simply determines whether the concerned drawing number query should return the next
+    /// automatic or manual drawing number.
+    /// </summary>
     enum class DrawingType {
         AUTOMATIC,
         MANUAL
     };
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     NextDrawing() = default;
 
     /// <summary>
@@ -656,9 +759,12 @@ public:
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
     static NextDrawing &deserialise(void *data);
-
+    
+    // Realisation of the DrawingType. Defaults to automatic, but should probably be set explictitly.
     DrawingType drawingType = DrawingType::AUTOMATIC;
 
+    // The string variable containing the drawing number. This is used only in the response
+    // part of the query.
     std::optional<std::string> drawingNumber = std::nullopt;
 
 private:

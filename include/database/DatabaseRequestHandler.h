@@ -36,6 +36,7 @@ public:
 	/// <param name="messageSize">The length (in bytes) of the message data received.</param>
 	void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message, unsigned int messageSize) override;
 
+	// The filepath to create backups under. Should be set in the server's meta file.
 	std::filesystem::path backupPath;
 
 private:

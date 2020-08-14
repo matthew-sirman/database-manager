@@ -1204,11 +1204,25 @@ color: rgb(70, 70, 70);
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="authorLabel">
-      <property name="text">
-       <string>Matthew Sirman 2020</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="baseInfoHorizontalLayout">
+      <item>
+       <widget class="QLabel" name="authorLabel">
+        <property name="text">
+         <string>Created By Matthew Sirman 2020</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="loggedInAsLabel">
+        <property name="text">
+         <string>Logged in as: </string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

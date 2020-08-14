@@ -166,7 +166,10 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
 
     client->startClientLoop();
 
-    handler->setEmailReceivedCallback([this](const std::string &email) { clientEmailAddress = email; });
+    handler->setEmailReceivedCallback([this](const std::string &email) {
+        clientEmailAddress = email;
+        ui->loggedInAsLabel->setText(("Logged in as: " + email).c_str());
+    });
     client->requestEmailAddress((unsigned)RequestType::USER_EMAIL_REQUEST);
 
     sendSourceTableRequests();
@@ -605,22 +608,26 @@ unsigned MainMenu::getValidInsertCode() const {
 void MainMenu::connectToServerWithJWT(const std::string &serverIP, unsigned serverPort) {
     switch (client->connectToServer(serverIP, serverPort,
         [](const std::string &url) { QDesktopServices::openUrl(QUrl(url.c_str())); })) {
-    case Client::ConnectionStatus::NO_CONNECTION:
-        QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
-            "The application cannot be used without a connection to the server. Is the server running?");
+        case Client::ConnectionStatus::NO_CONNECTION:
+            QMessageBox::about(this, "Connection to Server Failed", "Failed to connect to the server. "
+                                                                    "The application cannot be used without a connection to the server. Is the server running?");
 
-        exit(0);
-    case Client::ConnectionStatus::CREDS_EXCHANGE_FAILED:
-        QMessageBox::about(this, "Connection to Server Failed", "Credentials exchange failed. "
-            "Failed to connect to the server due to bad credentials.");
+            exit(0);
+        case Client::ConnectionStatus::CREDS_EXCHANGE_FAILED:
+            QMessageBox::about(this, "Connection to Server Failed", "Credentials exchange failed. "
+                                                                    "Failed to connect to the server due to bad credentials.");
 
-        exit(0);
-    case Client::ConnectionStatus::INVALID_JWT:
-        QMessageBox::about(this, "Invalid Login", "Your login was denied by the server.");
+            exit(0);
+        case Client::ConnectionStatus::INVALID_JWT:
+            QMessageBox::about(this, "Invalid Login", "Your login was denied by the server.");
 
-        exit(0);
-    case Client::ConnectionStatus::SUCCESS:
-        break;
+            exit(0);
+        case Client::ConnectionStatus::INVALID_REPEAT_TOKEN:
+            QMessageBox::about(this, "Invalid Repeat Token", "Your Repeat Token was denied by the server.");
+
+            exit(0);
+        case Client::ConnectionStatus::SUCCESS:
+            break;
     }
 }
 

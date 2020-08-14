@@ -11,47 +11,119 @@
 #include <regex>
 
 #include "drawingComponents.h"
+#include "../util/DataSerialiser.h"
 #include "../../packer.h"
 
+// Macro to find the minimum number of bytes required to cover a given number of bits (e.g. 15 bits -> 2 bytes, 17 bits -> 3 bytes)
 #define MIN_COVERING_BYTES(x) (((x) / 8) + ((x) % 8 != 0))
+// Macro to find the minimum number of bites required to represent a given value (e.g. 513 = 512 + 1 = 2^9 + 2^0 -> 9 bits required)
 #define MIN_COVERING_BITS(x) (32u - __builtin_clz(x))
 
+// Typedef a byte type representing a single byte of data
 typedef unsigned char byte;
 
+/// <summary>
+/// Writes a value at an arbitrary bit offset, rather than a standard byte offset for compression
+/// </summary>
+/// <param name="value">The value data to write.</param>
+/// <param name="valueByteLength">The size of the value data (in bytes).</param>
+/// <param name="target">The target buffer to write the value to.</param>
+/// <param name="bitOffset">The offset (in bits) to write at.</param>
 void writeAtBitOffset(void *value, size_t valueByteLength, void *target, size_t bitOffset);
 
+/// <summary>
+/// Reads a value from an arbitrary bit offset, rather than a standard byte offset
+/// </summary>
+/// <param name="data">The source data stream to read from.</param>
+/// <param name="bitOffset">The offset (in bits) to read from.</param>
+/// <param name="target">The target buffer to write the read value to.</param>
+/// <param name="bitReadSize">The number of bits to read from the buffer.</param>
 void readFromBitOffset(void *data, size_t bitOffset, void *target, size_t bitReadSize);
 
+/// <summary>
+/// Simple function to turn an arbitrary data type to a string through the use of a stringstream
+/// </summary>
+/// <typeparam name="T">The type to convert (this will generally be implicitly inferred).</typeparam>
+/// <param name="t">The value to convert to a string.</param>
+/// <returns>The string representation of the passed in value.</returns>
 template<typename T>
 std::string to_str(const T &t) {
+    // Create a string stream
     std::stringstream ss;
+    // Write the value to the stream
     ss << t;
+    // Return the string data from the stream
     return ss.str();
 }
 
 PACK_START
+/// <summary>
+/// Date
+/// A simple structure to hold a date value, divided into year month and day.
+/// Designed to fit in the space of 4 bytes.
+/// </summary>
 struct Date {
+    // The year of the date
     unsigned short year;
+    // The month and day of the date
     unsigned char month, day;
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     Date() = default;
 
+    /// <summary>
+    /// Constructor for date
+    /// </summary>
+    /// <param name="year">The year to set the date to.</param>
+    /// <param name="month">The month to set the date to.</param>
+    /// <param name="day">The day to set the date to.</param>
     Date(unsigned year, unsigned month, unsigned day);
 
+    /// <summary>
+    /// Converts the date to a MySQL date formatted string for use in a database. Note that the time is
+    /// always set to 00:00:00.
+    /// </summary>
+    /// <returns>A MySQL string representation of the date.</returns>
     std::string toMySQLDateString() const;
 
+    /// <summary>
+    /// Parses a raw std::time_t object into its year month and day components, based on the localtime
+    /// </summary>
+    /// <param name="rawDate">The raw date information to parse.</param>
+    /// <returns>A Date object with the components separated.</returns>
     static Date parse(std::time_t rawDate);
 
+    /// <summary>
+    /// Static function to get the current date.
+    /// </summary>
+    /// <returns>A separated Date object containing the year month and day when the function was called.</returns>
     static Date today();
 }
 PACK_END
 
+// Forward declaration of the DrawingSerialiser struct (for friending)
 struct DrawingSerialiser;
+// Forward declaration of the DrawingSummary struct
 struct DrawingSummary;
 
+/// <summary>
+/// Drawing
+/// The Drawing object contains the entire record data for a particular drawing, as stored in the database.
+/// This is the C++ representation of a particular drawing. The drawing can be edited and read from through
+/// the provided interface. Through the various provided query objects, drawings can be read from and written
+/// to the database.
+/// </summary>
 struct Drawing {
+    // Friend the DrawingSerialiser class so that it can read the private data stored in a Drawing object.
     friend struct DrawingSerialiser;
 public:
+    /// <summary>
+    /// LoadWarning enum
+    /// Represents a flag based warning system for different warnings when loading the drawing from the database
+    /// so the receiver can determine if there were any broken components.
+    /// </summary>
     enum LoadWarning {
         LOAD_FAILED = 0x01,
         INVALID_LAPS_DETECTED = 0x02,
@@ -61,6 +133,12 @@ public:
         INVALID_IMPACT_PAD_DETECTED = 0x20
     };
 
+    /// <summary>
+    /// BuildWarning enum
+    /// Represents a flag based warning system for different warnings when constructing a drawing object
+    /// which indicate any issues the drawing has. As long as a drawing has such issues, it will be declined
+    /// from being added to the database in order to preserve integrity.
+    /// </summary>
     enum BuildWarning {
         SUCCESS = 0x0000,
         INVALID_DRAWING_NUMBER = 0x0001,
@@ -79,95 +157,188 @@ public:
         INVALID_HYPERLINK = 0x2000
     };
 
+    /// <summary>
+    /// Side enum
+    /// Represents whether an entity resides on the "Left" or "Right" side of the drawing. Note that sometimes
+    /// "Left" and "Right" actually represent the top and bottom of a mat.
+    /// </summary>
     enum Side {
         LEFT,
         RIGHT
     };
 
+    /// <summary>
+    /// MaterialLayer enum
+    /// Represents whether an entity represents the top or bottom layer of a material. Note that if a mat has
+    /// only a single layer, this is considered to be the "Top" layer.
+    /// </summary>
     enum MaterialLayer {
         TOP,
         BOTTOM
     };
 
+    /// <summary>
+    /// TensionType enum
+    /// Represents whether a mat is Side or End tensioned.
+    /// </summary>
     enum TensionType {
         SIDE,
         END
     };
 
+    /// <summary>
+    /// MachineTemplate
+    /// This is a datatype for storing the information about a mat's machine template. This is stored
+    /// in a particular table in the database. This C++ object represents all the necessary properties
+    /// of the machine and is used internally by the Drawing struct.
+    /// </summary>
     struct MachineTemplate {
+        // Friend the Drawing struct
         friend struct Drawing;
 
+        // The quantity on deck property of the template
         unsigned quantityOnDeck;
+        // The position property of the template
         std::string position;
-
+        
+        /// <summary>
+        /// Default constructor which initialises the two component fields to specific default values
+        /// </summary>
         inline MachineTemplate() {
+            // Set the machine handle to the handle of the default machine
             machineHandle = DrawingComponentManager<Machine>::findComponentByID(1).handle();
+            // Default the quantity on deck to 0
             quantityOnDeck = 0;
+            // Default the position string to an empty string
             position = std::string();
+            // Set the machine deck handle to the handle of the default deck
             deckHandle = DrawingComponentManager<MachineDeck>::findComponentByID(1).handle();
         }
 
+        /// <summary>
+        /// Copy constructor for machine template
+        /// </summary>
+        /// <param name="machineTemplate">The machine template to copy from</param>
         inline MachineTemplate(const MachineTemplate &machineTemplate) {
+            // Copy each of the properties from the source to this object
             this->machineHandle = machineTemplate.machineHandle;
             this->quantityOnDeck = machineTemplate.quantityOnDeck;
             this->position = machineTemplate.position;
             this->deckHandle = machineTemplate.deckHandle;
         }
 
+        /// <summary>
+        /// Getter for the machine in the form of a reference variable
+        /// </summary>
+        /// <returns>The machine corresponding to the stored machine handle variable.</returns>
         inline Machine &machine() const {
+            // Gets the machine from the drawing component manager
             return DrawingComponentManager<Machine>::getComponentByHandle(machineHandle);
         }
 
+        /// <summary>
+        /// Getter for the machine deck in the form of a reference variable
+        /// </summary>
+        /// <returns>The machine deck corresponding to the stored machine deck handle variable.</returns>
         inline MachineDeck &deck() const {
+            // Gets the machine deck from the drawing component manager
             return DrawingComponentManager<MachineDeck>::getComponentByHandle(deckHandle);
         }
 
     private:
+        // Private handles for the machine and deck - these are not directly exposed
         unsigned machineHandle, deckHandle;
     };
 
+    /// <summary>
+    /// Lap
+    /// This is a simple structure for storing the information about an overlap or sidelap on a particular drawing.
+    /// </summary>
     struct Lap {
+        // Friend the drawing structure
         friend struct Drawing;
 
+        // The width of the lap
         float width;
+        // Whether the lap is integral to the mat or it is bonded on
         LapAttachment attachmentType;
 
+        /// <summary>
+        /// Default constructor initialising the properties of the lap
+        /// </summary>
         inline Lap() {
+            // Default the width to 0
             width = 0;
+            // Default the attachment type to be integral
             attachmentType = LapAttachment::INTEGRAL;
+            // Default to the material handle of 0 which does not represent an actual material
             materialHandle = 0;
         }
 
+        /// <summary>
+        /// Constructor based on the lap properties
+        /// </summary>
+        /// <param name="width">The width of the lap.</param>
+        /// <param name="attachmentType">The attachment type of the lap.</param>
+        /// <param name="material">The material the lap is made from.</param>
         inline Lap(float width, LapAttachment attachmentType, const Material &material) {
+            // Set the width and attachment type directly
             this->width = width;
             this->attachmentType = attachmentType;
+            // Set the material based on the setter method
             setMaterial(material);
         }
 
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        /// <param name="lap">The source lap to copy from</param>
         inline Lap(const Lap &lap) {
+            // Set the width and attachment type directly from the lap source
             this->width = lap.width;
             this->attachmentType = lap.attachmentType;
+            // Set the material from the lap source's material handle
             setMaterial(lap.materialHandle);
         }
 
+        /// <summary>
+        /// Getter for the material
+        /// </summary>
+        /// <returns>A reference to the material this lap is made from.</returns>
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
 
+        /// <summary>
+        /// Direct setter for the material
+        /// </summary>
+        /// <param name="handle">The handle of the target material.</param>
         inline void setMaterial(unsigned handle) {
             materialHandle = handle;
         }
 
+        /// <summary>
+        /// Indirect setter for the material through a material reference
+        /// </summary>
+        /// <param name="material">The material reference to set the material to.</param>
         inline void setMaterial(const Material &material) {
             setMaterial(material.handle());
         }
 
+        /// <summary>
+        /// Creates a string representation of this lap for data display as a sidelap
+        /// </summary>
+        /// <returns>A string contianing the details about the lap.</returns>
         inline std::string strAsSidelap() const {
             std::stringstream ss;
             ss << width << "mm " << (attachmentType == LapAttachment::INTEGRAL ? "integral" : "bonded") << " sidelap (" << material().material() << ")";
             return ss.str();
         }
 
+        /// <summary>
+        /// Creates a string representation of this lap for data display as an overlap
+        /// </summary>
+        /// <returns>A string contianing the details about the lap.</returns>
         inline std::string strAsOverlap() const {
             std::stringstream ss;
             ss << width << "mm " << (attachmentType == LapAttachment::INTEGRAL ? "integral" : "bonded") << " overlap (" << material().material() << ")";
@@ -175,55 +346,121 @@ public:
         }
 
     private:
+        // The internal material handle representation
         unsigned materialHandle;
     };
 
+    /// <summary>
+    /// Coordinate
+    /// Very primitive storage structure for a single floating point precision 2 dimensional coordinate
+    /// </summary>
     struct Coordinate {
+        // The x and y positions of this coordinate
         float x, y;
 
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to the coordinate to compare to.</param>
+        /// <returns>A boolean stating whether the coordinates are equal or not.</returns>
         inline bool operator==(const Coordinate &other) {
+            // We consider coordinates equal if both their x and y positions are equal.
             return x == other.x && y == other.y;
         }
     };
 
+    /// <summary>
+    /// ImpactPad
+    /// A data structure containing the information needed to represent an impact pad component of a drawing.
+    /// </summary>
     struct ImpactPad {
+        // Friend the drawing structure
         friend struct Drawing;
 
+        // The coordinate position of the top left corner of this impact pad (in mat coordinates)
         Coordinate pos;
+        // The width and length of this impact pad (in mat coordinates)
         float width, length;
 
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered equal.</returns>
         inline bool operator==(const ImpactPad &other) {
+            // Two impact pads are considered equal if and only if their top left corners, width, length, material and
+            // aperture are all equal.
             return pos == other.pos && width == other.width && length == other.length &&
                    materialHandle == other.materialHandle && apertureHandle == other.apertureHandle;
         }
 
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered inequal.</returns>
         inline bool operator!=(const ImpactPad &other) {
+            // Return the boolean NOT of whether the mats are considered equal
             return !(*this == other);
         }
 
+        /// <summary>
+        /// Getter for the material of the impact pad
+        /// </summary>
+        /// <returns>A material reference for the material present on the impact pad.</returns>
         inline Material &material() const {
+            // Get the material from the drawing component manager and return it directly
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
 
+        /// <summary>
+        /// Setter for the material
+        /// </summary>
+        /// <param name="material">The material reference to set the material from.</param>
         inline void setMaterial(const Material &material) {
+            // Set the material handle to the handle property on the passed in material.
             materialHandle = material.handle();
         }
 
+        /// <summary>
+        /// Getter for the aperture punched on the impact pad
+        /// </summary>
+        /// <returns>An aperture reference to the aperture present on the impact pad.</returns>
         inline Aperture &aperture() const {
+            // Get the material handle from the drawing component manager and return it directly
             return DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle);
         }
 
+        /// <summary>
+        /// Setter for the aperture
+        /// </summary>
+        /// <param name="aperture">An aperture reference to set the aperture from.</param>
         inline void setAperture(const Aperture &aperture) {
+            // Set the aperture handle to the handle property on the passed in aperture.
             apertureHandle = aperture.handle();
         }
 
+        /// <summary>
+        /// Getter for the serialised size of this impact pad in bytes 
+        /// when serialised to a data buffer
+        /// </summary>
+        /// <returns>The number of bytes needed to represent an impact pad for data transfer.</returns>
         inline unsigned serialisedSize() const {
+            // An impact pad is specified by 4 float values for the X, Y, W, H of the rectangle, and 
+            // two unsigned integer handles representing the material and aperture handles.
             return sizeof(float) * 4 + sizeof(unsigned) * 2;
         }
 
+        /// <summary>
+        /// Serialises the impact pad data into (the start of) a target data buffer
+        /// </summary>
+        /// <param name="target">The data buffer to write to.</param>
         inline void serialise(void *target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char *buff = (unsigned char *) target;
 
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
             *((float *) buff) = pos.x;
             buff += sizeof(float);
             *((float *) buff) = pos.y;
@@ -238,11 +475,20 @@ public:
             buff += sizeof(unsigned);
         }
 
+        /// <summary>
+        /// Deserialises an impact pad from (the start of) a data buffer
+        /// </summary>
+        /// <param name="buffer">The data buffer to interpret as an impact pad.</param>
+        /// <returns>A newly constructed impact pad object specified by the data from the buffer.</returns>
         inline static ImpactPad &deserialise(void *buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char *buff = (unsigned char *) buffer;
 
+            // Construct a new ImpactPad object for returning (hence on the heap)
             ImpactPad *pad = new ImpactPad();
 
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
             pad->pos.x = *((float *) buff);
             buff += sizeof(float);
             pad->pos.y = *((float *) buff);
@@ -256,45 +502,97 @@ public:
             pad->apertureHandle = *((unsigned *) buff);
             buff += sizeof(unsigned);
 
+            // Return the impact pad object we constructed
             return *pad;
         }
 
     private:
+        // The material and aperture handles for this impact pad which are accessed through the 
+        // interface specified above
         unsigned materialHandle;
         unsigned apertureHandle;
     };
 
+    /// <summary>
+    /// CentreHole
+    /// A data structure containing the information needed to represent a single centre hole on a drawing.
+    /// </summary>
     struct CentreHole {
+        // Friend the drawing structure
         friend struct Drawing;
 
+        /// <summary>
+        /// Shape
+        /// Internal Shape grouping structure for the shape of a centre hole
+        /// </summary>
         struct Shape {
+            // The width and length of the shape which is cut out of the mat
             float width, length;
+            // Whether or not the shape is cut from a rounded tool
             bool rounded;
 
+            /// <summary>
+            /// Equality operator
+            /// </summary>
+            /// <param name="other">A reference to another shape object to compare to.</param>
+            /// <returns>Whether or not the two shapes are considered to be equal.</returns>
             inline bool operator==(const Shape &other) {
+                // We consider two shapes to be equal if and only if they have the same width, lenght and roundedness.
                 return width == other.width && length == other.length && rounded == other.rounded;
             }
 
+            /// <summary>
+            /// Inequality operator
+            /// </summary>
+            /// <param name="other">A reference to another shape object to compare to.</param>
+            /// <returns>Whether or not the two shapes are considered to be inequal.</returns>
             inline bool operator!=(const Shape &other) {
+                // Return the boolean NOT of whether the two shapes are considered equal.
                 return !(*this == other);
             }
-        } centreHoleShape;
+        } centreHoleShape; // The shame of this particular centre hole
 
+        // The position of the centre of the where the centre hole is punched
         Coordinate pos;
 
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another centre hole object to compare to.</param>
+        /// <returns>Whether or not the two centre holes are considered to be equal.</returns>
         inline bool operator==(const CentreHole &other) {
+            // We consider two centre holes to be equal if and only if their shapes are equal and their positions are
+            // equal.
             return centreHoleShape == other.centreHoleShape && pos == other.pos;
         }
 
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another centre hole object to compare to.</param>
+        /// <returns>Whether or not the two center holes are considered to be inequal.</returns>
         inline bool operator!=(const CentreHole &other) {
+            // Return the boolean NOT of whether the centre holes are considered equal
             return !(*this == other);
         }
 
+        /// <summary>
+        /// Getter for the serialised size of this centre hole when written to a data
+        /// buffer
+        /// </summary>
+        /// <returns>The number of bytes this object will occupy in a data buffer.</returns>
         inline unsigned serialisedSize() const {
+            // A centre hole is defined by its X, Y, W, H and roundedness, and so is fully specified by 4 floats
+            // and a single boolean.
             return sizeof(float) * 4 + sizeof(bool);
         }
 
+        /// <summary>
+        /// Serialises the centre hole into (the start of) a target data buffer
+        /// </summary>
+        /// <param name="target">The data buffer to write to.</param>
         inline void serialise(void *target) const {
+            // Cast the 
             unsigned char *buff = (unsigned char *) target;
 
             *((float *) buff) = pos.x;
@@ -308,6 +606,10 @@ public:
             *buff++ = centreHoleShape.rounded;
         }
 
+        /// <summary>
+        /// Deserialises the centre hole from (the start of) a data buffer
+        /// </summary>
+        /// <param name="target">The data buffer to read from.</param>
         inline static CentreHole &deserialise(void *buffer) {
             unsigned char *buff = (unsigned char *) buffer;
 
@@ -328,6 +630,7 @@ public:
     };
 
     struct Deflector {
+        // Friend the drawing structure
         friend struct Drawing;
 
         Coordinate pos;
@@ -388,6 +691,7 @@ public:
     };
 
     struct Divertor {
+        // Friend the drawing structure
         friend struct Drawing;
 
         Side side;
