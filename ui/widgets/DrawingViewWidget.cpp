@@ -17,6 +17,7 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
     this->drawing = &drawing;
 
     this->pdfDocument = new QPdfDocument();
+    this->pdfViewer = new QPdfView(this);
 
     updateFields();
 
@@ -130,8 +131,8 @@ void DrawingViewWidget::updateFields() {
     ui->drawingPDFSelectorInput->clear();
     ui->drawingPDFSelectorInput->addItem((drawing->drawingNumber() + " PDF").c_str(), drawing->hyperlink().c_str());
 
-    for (const std::string &pdf : drawing->pressDrawingHyperlinks()) {
-        ui->drawingPDFSelectorInput->addItem(pdf.c_str(), pdf.c_str());
+    for (const std::filesystem::path &pdf : drawing->pressDrawingHyperlinks()) {
+        ui->drawingPDFSelectorInput->addItem(pdf.generic_string().c_str(), pdf.generic_string().c_str());
     }
 
     std::filesystem::path pressDrawingLocation = punchProgramPathForDrawing(drawing->drawingNumber());
@@ -147,7 +148,6 @@ void DrawingViewWidget::updateFields() {
         ui->drawingPDFSelectorInput->addItem(("Right Side Iron: " + rightSideIron.drawingNumber).c_str(), rightSideIron.hyperlink.c_str());
     }
 
-    pdfViewer = new QPdfView(this);
     QPdfDocumentRenderOptions renderOptions;
     renderOptions.setRenderFlags(QPdf::RenderAnnotations);
     pdfViewer->setDocumentRenderOptions(renderOptions);
@@ -159,7 +159,7 @@ void DrawingViewWidget::updateFields() {
     });
 
     ui->drawingPDFsTabFormLayout->setWidget(1, QFormLayout::FieldRole, pdfViewer);
-    pdfDocument->load(drawing->hyperlink().c_str());
+    pdfDocument->load(drawing->hyperlink().generic_string().c_str());
     pdfViewer->setDocument(pdfDocument);
 }
 

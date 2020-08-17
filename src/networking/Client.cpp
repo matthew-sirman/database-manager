@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 12/05/2020.
 //
@@ -370,5 +368,3 @@ void Client::clientLoop() {
         }
     }
 }
-
-#pragma clang diagnostic pop

@@ -191,7 +191,7 @@ private:
 	/// <typeparam name="T">The type for which to create the source data.</typeparam>
 	/// <param name="sourceRows">The row sources from the correct MySQL table.</param>
 	template<typename T>
-	void createSourceData(mysqlx::RowResult &sourceRows) const;
+	void createSourceData(mysqlx::RowResult sourceRows) const;
 
 	/// <summary>
 	/// Constructs one or more data elements of a given type from a single MySQL row.
@@ -234,7 +234,7 @@ private:
 
 // Creates all the source data for a given set of rows
 template<typename T>
-void DatabaseRequestHandler::createSourceData(mysqlx::RowResult &sourceRows) const {
+void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) const {
 	// We statically assert that this is being used on a valid type. If there is an attempt to call this function on a type which does not derive
 	// from TableSourceData, there will be a compiler error.
 	static_assert(std::is_base_of<TableSourceData, T>::value, "Create Source Data can only be called with templates deriving TableSourceData.");
@@ -288,7 +288,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult &sourceRows) con
 
 	// Finally, once the buffer has been constructed, we send the buffer to the DrawingComponentManager of the correct type.
 	// This is where we use the T::ComponentType which will be the "true" type for each data type above. (e.g. ProductData -> Product)
-	DrawingComponentManager<T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize);
+	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize);
 }
 
 

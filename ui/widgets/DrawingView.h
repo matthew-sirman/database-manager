@@ -100,8 +100,8 @@ private:
     std::vector<QGraphicsRectItem *> matSectionRects;
     std::vector<ImpactPadGraphicsItem *> impactPadRegions;
     CentreHoleSetGraphicsItem *centreHoleSet = nullptr;
-    DivertorSetGraphicsItem *divertorSet = nullptr;
     DeflectorSetGraphicsItem *deflectorSet = nullptr;
+    DivertorSetGraphicsItem *divertorSet = nullptr;
 
     std::vector<double> hSnapLines, vSnapLines, centreVSnapLines;
 

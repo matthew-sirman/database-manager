@@ -25,6 +25,8 @@ public:
     explicit AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionLine::Orientation orientation, const std::optional<Drawing::Lap> &currentLap = std::nullopt,
             const QColor &unusedColour = Qt::gray, const QColor &unusedHighlightColour = Qt::lightGray, const QColor &usedColour = Qt::green);
 
+    ~AddLapWidget() override;
+
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
     [[nodiscard]] QRectF boundingRect() const override;

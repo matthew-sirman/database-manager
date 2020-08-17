@@ -1136,8 +1136,8 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
 
     // Finally we add the rest of the details
     insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", " <<
-        drawingData->rebated() << ", " << drawingData->hasBackingStrips() << ", '" << drawingData->hyperlink() << "', '" <<
-        drawingData->notes() << "')" << std::endl;
+        drawingData->rebated() << ", " << drawingData->hasBackingStrips() << ", '" << drawingData->hyperlink().generic_string() <<
+        "', '" << drawingData->notes() << "')" << std::endl;
 
     // Returns the constructed query string
     return insert.str();
@@ -1253,9 +1253,9 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
     insert << "VALUES" << std::endl;
 
     // Then add the data to insert for both of the side iron side. We specify which is which by the final index parameter.
-    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftBar() << ", " <<
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftMargin() << ", " <<
            drawingData->sideIronInverted(Drawing::LEFT) << ", 0), " << std::endl;
-    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightBar() << ", " <<
+    insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightMargin() << ", " <<
            drawingData->sideIronInverted(Drawing::RIGHT) << ", 1)" << std::endl;
 
     // Return the constructed MySQL string
@@ -1410,7 +1410,7 @@ std::string DrawingInsert::sidelapsInsertQuery(unsigned matID) const {
 
 // Creates a MySQL query string for inserting the punch program PDF hyperlinks into the punch_program_pdfs table
 std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
-    std::vector<std::string> punchPDFs = drawingData->pressDrawingHyperlinks();
+    std::vector<std::filesystem::path> punchPDFs = drawingData->pressDrawingHyperlinks();
 
     // First we check if there are no PDFs. If there are none, we have nothing to enter
     // so we just return an empty string.
@@ -1426,8 +1426,8 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
     insert << "VALUES" << std::endl;
 
     // Next we loop over each PDF and append it to the values we add in the query.
-    for (std::vector<std::string>::const_iterator it = punchPDFs.begin(); it != punchPDFs.end(); it++) {
-        insert << "(" << matID << ", '" << *it << "')";
+    for (std::vector<std::filesystem::path>::const_iterator it = punchPDFs.begin(); it != punchPDFs.end(); it++) {
+        insert << "(" << matID << ", '" << it->generic_string() << "')";
         // If this is not the last PDF, we also add a comma to delimit.
         if (it != punchPDFs.end() - 1) {
             insert << ", ";
@@ -1632,12 +1632,12 @@ void ComponentInsert::serialise(void *target) const {
             *((unsigned *)buff) = sideIronData->length;
             buff += sizeof(unsigned);
             unsigned char drawingNumberSize = sideIronData->drawingNumber.size(),
-                hyperlinkSize = sideIronData->hyperlink.size();
+                hyperlinkSize = sideIronData->hyperlink.generic_string().size();
             *buff++ = drawingNumberSize;
             memcpy(buff, sideIronData->drawingNumber.c_str(), drawingNumberSize);
             buff += drawingNumberSize;
             *buff++ = hyperlinkSize;
-            memcpy(buff, sideIronData->hyperlink.c_str(), hyperlinkSize);
+            memcpy(buff, sideIronData->hyperlink.generic_string().c_str(), hyperlinkSize);
             buff += hyperlinkSize;
             break;
         }
@@ -1800,7 +1800,7 @@ std::string ComponentInsert::toSQLQueryString() const {
             insert << "INSERT INTO {0}.side_irons (type, length, drawing_number, hyperlink)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << (unsigned)sideIronData->type << ", " << sideIronData->length << ", '" << sideIronData->drawingNumber << "', '"
-                << sideIronData->hyperlink << "')" << std::endl;
+                << sideIronData->hyperlink.generic_string() << "')" << std::endl;
             break;
         case InsertType::MATERIAL:
             insert << "INSERT INTO {0}.materials (material, hardness, thickness)" << std::endl;

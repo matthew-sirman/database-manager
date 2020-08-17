@@ -15,7 +15,31 @@ DrawingView::DrawingView(QWidget *parent) : QGraphicsView(parent) {
 }
 
 DrawingView::~DrawingView() {
-
+    delete drawingBorderRect;
+    delete leftLapHint, rightLapHint, topLapHint, bottomLapHint;
+    delete widthDimension, lengthDimension;
+    delete widthSumTextItem;
+    for (QGraphicsProxyWidget *spacingProxy : spacingProxies) {
+        delete spacingProxy;
+    }
+    for (QGraphicsProxyWidget *barProxy : barProxies) {
+        delete barProxy;
+    }
+    for (WidgetDimensionLine *spacingDim : spacingDimensions) {
+        delete spacingDim;
+    }
+    for (WidgetDimensionLine *barDim : barDimensions) {
+        delete barDim;
+    }
+    for (QGraphicsRectItem *region : matSectionRects) {
+        delete region;
+    }
+    for (ImpactPadGraphicsItem *impactPad : impactPadRegions) {
+        delete impactPad;
+    }
+    delete centreHoleSet;
+    delete deflectorSet;
+    delete divertorSet;
 }
 
 void DrawingView::setDrawing(Drawing &d) {
@@ -216,6 +240,8 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                 });
 
                 menu->popup(event->globalPos());
+
+                QWidget::connect(menu, &QMenu::triggered, [menu](QAction *) { menu->deleteLater(); });
             }
         }
     }
@@ -552,7 +578,7 @@ void DrawingView::redrawScene() {
             updateProxies();
 
             std::vector<double> apertureRegionEndpoints;
-            apertureRegionEndpoints.push_back((barWidths.front() == 0) ? defaultBarSize : drawing->leftBar());
+            apertureRegionEndpoints.push_back((barWidths.front() == 0) ? defaultBarSize : drawing->leftMargin());
 
             double defaultSpacing = width / (numberOfBars + 1.0);
 

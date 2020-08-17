@@ -115,6 +115,8 @@ Drawing::Drawing(const Drawing &drawing) {
     this->loadWarnings = drawing.loadWarnings;
 }
 
+Drawing::~Drawing() = default;
+
 void Drawing::setAsDefault() {
     this->__drawingNumber = "";
     this->__date = { 2000, 1, 1 };
@@ -128,7 +130,7 @@ void Drawing::setAsDefault() {
     this->__tensionType = TensionType::SIDE;
     this->__rebated = false;
     this->__hasBackingStrips = false;
-    this->__pressDrawingHyperlinks = std::vector<std::string>();
+    this->__pressDrawingHyperlinks = std::vector<std::filesystem::path>();
     this->barSpacings = { 0 };
     this->barWidths = { 0, 0 };
     this->sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
@@ -184,11 +186,11 @@ void Drawing::setLength(float newLength) {
     invokeUpdateCallbacks();
 }
 
-std::string Drawing::hyperlink() const {
+std::filesystem::path Drawing::hyperlink() const {
     return __hyperlink;
 }
 
-void Drawing::setHyperlink(const std::string &newHyperlink) {
+void Drawing::setHyperlink(const std::filesystem::path &newHyperlink) {
     __hyperlink = newHyperlink;
     invokeUpdateCallbacks();
 }
@@ -327,11 +329,11 @@ float Drawing::barWidth(unsigned int index) const {
     return barWidths[index];
 }
 
-float Drawing::leftBar() const {
+float Drawing::leftMargin() const {
     return barWidths.front();
 }
 
-float Drawing::rightBar() const {
+float Drawing::rightMargin() const {
     return barWidths.back();
 }
 
@@ -469,11 +471,11 @@ void Drawing::removeOverlap(Drawing::Side side) {
     invokeUpdateCallbacks();
 }
 
-std::vector<std::string> Drawing::pressDrawingHyperlinks() const {
+std::vector<std::filesystem::path> Drawing::pressDrawingHyperlinks() const {
     return __pressDrawingHyperlinks;
 }
 
-void Drawing::setPressDrawingHyperlinks(const std::vector<std::string> &hyperlinks) {
+void Drawing::setPressDrawingHyperlinks(const std::vector<std::filesystem::path> &hyperlinks) {
     __pressDrawingHyperlinks = hyperlinks;
     invokeUpdateCallbacks();
 }
@@ -670,9 +672,9 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     buffer += sizeof(float);
 
     // Hyperlink
-    unsigned char hyperlinkSize = drawing.__hyperlink.size();
+    unsigned char hyperlinkSize = drawing.__hyperlink.generic_string().size();
     *buffer++ = hyperlinkSize;
-    memcpy(buffer, drawing.__hyperlink.c_str(), hyperlinkSize);
+    memcpy(buffer, drawing.__hyperlink.generic_string().c_str(), hyperlinkSize);
     buffer += hyperlinkSize;
 
     // Notes
@@ -712,10 +714,10 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
 
     // Press Drawing Links
     *buffer++ = drawing.__pressDrawingHyperlinks.size();
-    for (const std::string &pdl : drawing.__pressDrawingHyperlinks) {
-        unsigned char pdlSize = pdl.size();
+    for (const std::filesystem::path &pdl : drawing.__pressDrawingHyperlinks) {
+        unsigned char pdlSize = pdl.generic_string().size();
         *buffer++ = pdlSize;
-        memcpy(buffer, pdl.c_str(), pdlSize);
+        memcpy(buffer, pdl.generic_string().c_str(), pdlSize);
         buffer += pdlSize;
     }
 
@@ -858,7 +860,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Length
     size += sizeof(float);
     // Hyperlink
-    size += sizeof(unsigned char) + drawing.__hyperlink.size();
+    size += sizeof(unsigned char) + drawing.__hyperlink.generic_string().size();
     // Notes
     size += sizeof(unsigned char) + drawing.__notes.size();
     // Machine Template: Machine ID, Quantity on Deck, Position string (<256 chars), Deck ID
@@ -877,7 +879,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Press Drawing Links
     size += sizeof(unsigned char) +
             std::accumulate(drawing.__pressDrawingHyperlinks.begin(), drawing.__pressDrawingHyperlinks.end(),
-                            0, [](unsigned t, const std::string &s) { return sizeof(unsigned char) + s.size() + t; });
+                            0, [](unsigned t, const std::filesystem::path &s) { return sizeof(unsigned char) + s.generic_string().size() + t; });
     // Bar spacings
     size += sizeof(unsigned char) + drawing.barSpacings.size() * sizeof(float);
     // Bar widths

@@ -761,7 +761,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     }
 
     std::vector<double> apertureRegionEndpoints;
-    apertureRegionEndpoints.push_back(drawing.leftBar());
+    apertureRegionEndpoints.push_back(drawing.leftMargin());
 
     double currentMatPosition = 0;
 
@@ -788,7 +788,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         apertureRegionEndpoints.push_back(currentMatPosition + barWidth / 2);
     }
 
-    apertureRegionEndpoints.push_back(widthDim.rCentre - drawing.rightBar());
+    apertureRegionEndpoints.push_back(widthDim.rCentre - drawing.rightMargin());
 
     painter.setPen(Qt::black);
 

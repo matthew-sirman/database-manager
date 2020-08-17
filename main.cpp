@@ -70,7 +70,7 @@ std::string getPassword(const std::string &prompt) {
 #endif
 
 uint256 getPasswordHash(const std::string &prompt) {
-    std::string password = getPassword(prompt);
+    std::string password = "14dmcsb3";//getPassword(prompt);
 
     uint256 pwHash = sha256((const uint8 *) password.c_str(), password.size());
 

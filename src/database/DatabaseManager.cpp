@@ -344,7 +344,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			.where("mat_id=:matID").bind("matID", query.matID).execute().fetchAll();
 
 		// Declare a vector for the press hyperlinks and reserve the space for it
-		std::vector<std::string> pressHyperlinks;
+		std::vector<std::filesystem::path> pressHyperlinks;
 		pressHyperlinks.resize(pressHyperlinkRows.size());
 
 		// Map from the rows to the press hyperlinks list with a functional adapter

@@ -548,11 +548,11 @@ public:
         SideIronType type;
         unsigned length;
         std::string drawingNumber;
-        std::string hyperlink;
+        std::filesystem::path hyperlink;
 
         inline unsigned serialisedSize() const {
             return sizeof(SideIronType) + sizeof(unsigned) + sizeof(unsigned char) + 
-                drawingNumber.size() + sizeof(unsigned char) + hyperlink.size();
+                drawingNumber.size() + sizeof(unsigned char) + hyperlink.generic_string().size();
         }
     };
 

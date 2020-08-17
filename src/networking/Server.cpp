@@ -114,6 +114,7 @@ void Server::startServer() {
                 case ERR_SOCKET_DEAD:
                     *logStream << timestamp() << "Client " << connectedClient.clientEmail << " disconnected (timed out)." << std::endl;
                     connectedClient.clientSocket.closeSocket();
+                    delete &connectedClient;
                     connectedClients.erase(connectedClients.begin() + ic);
                     handleMap.erase(connectedClient.handle.clientID);
                     continue;
@@ -127,6 +128,7 @@ void Server::startServer() {
                             break;
                     }
                     connectedClient.clientSocket.closeSocket();
+                    delete &connectedClient;
                     connectedClients.erase(connectedClients.begin() + ic);
                     handleMap.erase(connectedClient.handle.clientID);
                     continue;
@@ -269,6 +271,7 @@ void Server::sendEmailAddress(const ClientHandle &clientHandle, unsigned int res
 void Server::connectToDatabaseServer(const std::string &database, const std::string &user, const std::string &password,
                                      const std::string &host) {
     try {
+        delete dbManager;
         dbManager = new DatabaseManager(database, user, password, host);
     } catch (mysqlx::Error &e) {
         SQL_ERROR(e, *errorStream);

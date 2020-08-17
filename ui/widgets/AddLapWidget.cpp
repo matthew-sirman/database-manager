@@ -70,6 +70,11 @@ AddLapWidget::AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionL
     setToolTip("Click to add overlap");
 }
 
+AddLapWidget::~AddLapWidget() {
+    delete widthInput;
+    delete widthDimension;
+}
+
 void AddLapWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
     painter->save();
 
@@ -216,6 +221,7 @@ void AddLapWidget::contextMenuEvent(QGraphicsSceneContextMenuEvent *event) {
         menu->addAction("Remove overlap",
                         [this]() { setUsed(false); }, Qt::Key_Delete);
         menu->popup(event->screenPos());
+        QWidget::connect(menu, &QMenu::triggered, [menu](QAction *) { menu->deleteLater(); });
     }
     QGraphicsItem::contextMenuEvent(event);
 }

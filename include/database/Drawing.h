@@ -228,6 +228,11 @@ public:
         }
 
         /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~MachineTemplate() = default;
+
+        /// <summary>
         /// Getter for the machine in the form of a reference variable
         /// </summary>
         /// <returns>The machine corresponding to the stored machine handle variable.</returns>
@@ -300,6 +305,11 @@ public:
             // Set the material from the lap source's material handle
             setMaterial(lap.materialHandle);
         }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~Lap() = default;
 
         /// <summary>
         /// Getter for the material
@@ -381,6 +391,28 @@ public:
         Coordinate pos;
         // The width and length of this impact pad (in mat coordinates)
         float width, length;
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline ImpactPad() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline ImpactPad(const ImpactPad &pad) {
+            this->pos.x = pad.pos.x;
+            this->pos.y = pad.pos.y;
+            this->width = pad.width;
+            this->length = pad.length;
+            this->materialHandle = pad.materialHandle;
+            this->apertureHandle = pad.apertureHandle;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~ImpactPad() = default;
 
         /// <summary>
         /// Equality operator
@@ -556,6 +588,27 @@ public:
         Coordinate pos;
 
         /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline CentreHole() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline CentreHole(const CentreHole &pad) {
+            this->pos.x = pad.pos.x;
+            this->pos.y = pad.pos.y;
+            this->centreHoleShape.width = pad.centreHoleShape.width;
+            this->centreHoleShape.length = pad.centreHoleShape.length;
+            this->centreHoleShape.rounded = pad.centreHoleShape.rounded;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~CentreHole() = default;
+
+        /// <summary>
         /// Equality operator
         /// </summary>
         /// <param name="other">A reference to another centre hole object to compare to.</param>
@@ -629,25 +682,71 @@ public:
         }
     };
 
+    /// <summary>
+    /// Deflector
+    /// A data structure representing the information required to represent a single deflector on a mat
+    /// </summary>
     struct Deflector {
         // Friend the drawing structure
         friend struct Drawing;
 
+        // The position of the centre of the deflector
         Coordinate pos;
+        // The side length of the square of material used as the deflector
         float size;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline Deflector() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline Deflector(const Deflector &pad) {
+            this->pos.x = pad.pos.x;
+            this->pos.y = pad.pos.y;
+            this->size = pad.size;
+            this->materialHandle = pad.materialHandle;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~Deflector() = default;
+
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another deflector object to compare to.</param>
+        /// <returns>Whether or not the two deflectors are considered to be equal.</returns>
         inline bool operator==(const Deflector &other) {
+            // We consider two deflectors to be equal if they have the same centre, size and material.
             return pos == other.pos && size == other.size && materialHandle == other.materialHandle;
         }
 
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another deflector object to compare to.</param>
+        /// <returns>Whether or not the two deflectors are considered to be inequal.</returns>
         inline bool operator!=(const Deflector &other) {
+            // Return the boolean NOT of whether the two defelctors are equal.
             return !(*this == other);
         }
 
+        /// <summary>
+        /// Getter for the material
+        /// </summary>
+        /// <returns>A reference to the material pointed to by the material handle.</returns>
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
 
+        /// <summary>
+        /// Setter for the material
+        /// </summary>
+        /// <param name="material">The material to set this deflector's material to.</param>
         void setMaterial(const Material &material) {
             materialHandle = material.handle();
         }
@@ -690,27 +789,78 @@ public:
         unsigned materialHandle;
     };
 
+    /// <summary>
+    /// Divertor
+    /// A data structure representing the information required to represent a single divertor on the mat.
+    /// </summary>
     struct Divertor {
         // Friend the drawing structure
         friend struct Drawing;
 
+        // The side of the mat this divertor is on
         Side side;
+        // The vertical position defined as the distance from the top of the mat to the centre of line where
+        // the divertor touches the side of the mat.
         float verticalPosition;
+        // The width of the divertor measured as the perpendicular distance between the two diagonal parallel lines
+        // and the length of the divertor measured as the length of each diagonal line
         float width, length;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline Divertor() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline Divertor(const Divertor &pad) {
+            this->side = pad.side;
+            this->verticalPosition = pad.verticalPosition;
+            this->width = pad.width;
+            this->length = pad.length;
+            this->materialHandle = pad.materialHandle;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~Divertor() = default;
+
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another divertor to compare to.</param>
+        /// <returns>Whether or not the two divertors are considered to be equal.</returns>
         inline bool operator==(const Divertor &other) {
+            // We consider two divertors equal if they are on the same side of the mat and have the same vertical position,
+            // width, length and material.
             return side == other.side && verticalPosition == other.verticalPosition && width == other.width &&
                    length == other.length && materialHandle == other.materialHandle;
         }
 
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another divertor to compare to.</param>
+        /// <returns>Whether or not the two divertors are considered to be inequal.</returns>
         inline bool operator!=(const Divertor &other) {
+            // Return the boolean NOT of whether they are considered to be equal
             return !(*this == other);
         }
 
+        /// <summary>
+        /// Getter for the material
+        /// </summary>
+        /// <returns>A reference to the material pointed to by the material handle.</returns>
         inline Material &material() const {
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
 
+        /// <summary>
+        /// Setter for the material
+        /// </summary>
+        /// <param name="material">The material to set this divertor to.</param>
         void setMaterial(const Material &material) {
             materialHandle = material.handle();
         }
@@ -752,181 +902,542 @@ public:
         }
 
     private:
+        // Handle for the material this divertor is made from
         unsigned materialHandle;
     };
 
+    /// <summary>
+    /// Default constructor for a Drawing object
+    /// </summary>
     Drawing();
 
+    /// <summary>
+    /// Copy constructor for a Drawing object
+    /// </summary>
+    /// <param name="drawing">The Drawing to copy the data from.</param>
     explicit Drawing(const Drawing &drawing);
 
+    /// <summary>
+    /// Destructor for a Drawing object
+    /// </summary>
+    ~Drawing();
+
+    /// <summary>
+    /// Sets each field in this drawing to its default value.
+    /// </summary>
     void setAsDefault();
 
+    /// <summary>
+    /// Getter for the drawing number
+    /// </summary>
+    /// <returns>The drawing number for this drawing as a string.</returns>
     std::string drawingNumber() const;
 
+    /// <summary>
+    /// Setter for the drawing number
+    /// </summary>
+    /// <param name="newDrawingNumber">The string of the drawing number to set this drawing to.</param>
     void setDrawingNumber(const std::string &newDrawingNumber);
 
+    /// <summary>
+    /// Getter for the date
+    /// </summary>
+    /// <returns>The date this drawing was created.</returns>
     Date date() const;
 
+    /// <summary>
+    /// Setter for the date
+    /// </summary>
+    /// <param name="newDate">Date to set this drawing to.</param>
     void setDate(Date newDate);
 
+    /// <summary>
+    /// Getter for the width
+    /// </summary>
+    /// <returns>The width of the drawing in millimetres.</returns>
     float width() const;
 
+    /// <summary>
+    /// Setter for the width
+    /// </summary>
+    /// <param name="newWidth">The width value to set this drawing to in millimetres.</param>
     void setWidth(float newWidth);
 
+    /// <summary>
+    /// Getter for the length
+    /// </summary>
+    /// <returns>The length of this drawing in millimetres.</returns>
     float length() const;
 
+    /// <summary>
+    /// Setter for the length
+    /// </summary>
+    /// <param name="newLength">The length value to set this drawing to in millimetres.</param>
     void setLength(float newLength);
 
-    std::string hyperlink() const;
+    /// <summary>
+    /// Getter for the drawing PDF hyperlink
+    /// </summary>
+    /// <returns>A file path the hyperlink for the drawing PDF.</returns>
+    std::filesystem::path hyperlink() const;
 
-    void setHyperlink(const std::string &newHyperlink);
+    /// <summary>
+    /// Setter for the drawing PDF hyperlink
+    /// </summary>
+    /// <param name="newHyperlink">The hyperlink path to set this drawing to.</param>
+    void setHyperlink(const std::filesystem::path &newHyperlink);
 
+    /// <summary>
+    /// Getter for the free-text drawing notes field
+    /// </summary>
+    /// <returns>A string of the notes associated with this drawing.</returns>
     std::string notes() const;
 
+    /// <summary>
+    /// Setter for the free-text drawing notes field
+    /// </summary>
+    /// <param name="newNotes">The string to set this drawing's notes to.</param>
     void setNotes(const std::string &newNotes);
 
+    /// <summary>
+    /// Getter for the machine template
+    /// </summary>
+    /// <returns>A copy of the machine template details assocaited with this drawing.</returns>
     MachineTemplate machineTemplate() const;
 
+    /// <summary>
+    /// Component-wise setter for the machine template of this drawing
+    /// </summary>
+    /// <param name="machine">The machine to update the template to use.</param>
+    /// <param name="quantityOnDeck">The quantity on deck to update this template to have.</param>
+    /// <param name="position">The position string to update this template to have.</param>
+    /// <param name="deck">The deck to update this template to use.</param>
     void setMachineTemplate(const Machine &machine, unsigned quantityOnDeck, const std::string &position, const MachineDeck &deck);
 
+    /// <summary>
+    /// Individual setter for the machine
+    /// </summary>
+    /// <param name="machine">The machine to update the template to use.</param>
     void setMachine(const Machine &machine);
 
+    /// <summary>
+    /// Individual setter for the quantity on deck
+    /// </summary>
+    /// <param name="quantityOnDeck">The quantity on deck to update this template to have.</param>
     void setQuantityOnDeck(unsigned quantityOnDeck);
 
+    /// <summary>
+    /// Individual setter for the position
+    /// </summary>
+    /// <param name="position">The position string to update this template to have.</param>
     void setMachinePosition(const std::string &position);
 
+    /// <summary>
+    /// Individual setter for the machine deck
+    /// </summary>
+    /// <param name="deck">The deck to update this template to use.</param>
     void setMachineDeck(const MachineDeck &deck);
 
+    /// <summary>
+    /// Getter for the product
+    /// </summary>
+    /// <returns>The Product object associated with this drawing.</returns>
     Product product() const;
 
+    /// <summary>
+    /// Setter for the product
+    /// </summary>
+    /// <param name="prod">The product to set this drawing to.</param>
     void setProduct(const Product &prod);
 
+    /// <summary>
+    /// Getter for the aperture
+    /// </summary>
+    /// <returns>The Aperture object associated with this drawing.</returns>
     Aperture aperture() const;
 
+    /// <summary>
+    /// Setter for the aperture
+    /// </summary>
+    /// <param name="ap">The Aperture to set this drawing to.</param>
     void setAperture(const Aperture &ap);
 
+    /// <summary>
+    /// Getter for the tension type
+    /// </summary>
+    /// <returns>The TensionType associated with this drawing.</returns>
     TensionType tensionType() const;
 
+    /// <summary>
+    /// Setter for the tension type
+    /// </summary>
+    /// <param name="newTensionType">The TensionType to set this drawing to.</param>
     void setTensionType(TensionType newTensionType);
 
+    /// <summary>
+    /// Getter for the rebated property
+    /// </summary>
+    /// <returns>Whether the drawing is rebated or not.</returns>
     bool rebated() const;
 
+    /// <summary>
+    /// Setter for the rebated property
+    /// </summary>
+    /// <param name="isRebated">Value to set the rebated property to.</param>
     void setRebated(bool isRebated);
 
+    /// <summary>
+    /// Getter for the has backing strips property
+    /// </summary>
+    /// <returns>Whether this drawing has backing strips or not.</returns>
     bool hasBackingStrips() const;
 
+    /// <summary>
+    /// Setter for the has backing strips property
+    /// </summary>
+    /// <param name="backingStrips">Value to set the has backing strips property to.</param>
     void setHasBackingStrips(bool backingStrips);
 
+    /// <summary>
+    /// Getter for the product
+    /// </summary>
+    /// <returns>The Product object associated with this drawing.</returns>
     std::optional<Material> material(MaterialLayer layer) const;
 
+    /// <summary>
+    /// Setter for the material
+    /// </summary>
+    /// <param name="layer">The layer this material is used on. Either TOP or BOTTOM.</param>
+    /// <param name="mat">The material to set the specified layer to use.</param>
     void setMaterial(MaterialLayer layer, const Material &mat);
 
+    /// <summary>
+    /// Removes the bottom layer of the mat, such that the mat now only has a single layer.
+    /// </summary>
     void removeBottomLayer();
 
+    /// <summary>
+    /// Getter for the number of bars on the mat
+    /// </summary>
+    /// <returns>The number of support bars used to support this mat.</returns>
     unsigned numberOfBars() const;
 
+    /// <summary>
+    /// Setter for the bar spacings and bar widths
+    /// </summary>
+    /// <param name="spacings">The set of bar spacings for this mat, namely the distance between each 
+    /// bar centre line.</param>
+    /// <param name="widths">The width of each bar itself on the mat.</param>
     void setBars(const std::vector<float>& spacings, const std::vector<float>& widths);
 
+    /// <summary>
+    /// Getter for an indexed bar spacing
+    /// </summary>
+    /// <param name="index">The index of the bar spacing to return.</param>
+    /// <returns>The spacing at the specified index.</returns>
     float barSpacing(unsigned index) const;
 
+    /// <summary>
+    /// Getter for an indexed bar width
+    /// </summary>
+    /// <param name="index">The index of the bar to retrieve. Note this function includes the left and right
+    /// margins, and so the left most true "bar" is indexed as 0.</param>
+    /// <returns></returns>
     float barWidth(unsigned index) const;
 
-    float leftBar() const;
+    /// <summary>
+    /// Getter for the left margin
+    /// </summary>
+    /// <returns>The width of the left margin.</returns>
+    float leftMargin() const;
 
-    float rightBar() const;
+    /// <summary>
+    /// Getter for the right margin
+    /// </summary>
+    /// <returns>The width of the right margin.</returns>
+    float rightMargin() const;
 
+    /// <summary>
+    /// Getter for the vector of all bar spacings.
+    /// </summary>
+    /// <returns>A vector of a copy of each bar spacing in this drawing.</returns>
     std::vector<float> allBarSpacings() const;
 
+    /// <summary>
+    /// Getter for the vector of all bar widths. Note: this returns the left and right
+    /// margins as well
+    /// </summary>
+    /// <returns>A vector of a copy of each bar width (and margin) in this drawing.</returns>
     std::vector<float> allBarWidths() const;
 
+    /// <summary>
+    /// Getter for each side iron
+    /// </summary>
+    /// <param name="side">The side to retrieve the side iron for.</param>
+    /// <returns>The side iron associated with the specified side.</returns>
     SideIron sideIron(Side side) const;
 
+    /// <summary>
+    /// Getter for whether each side iron is inverted or not.
+    /// </summary>
+    /// <param name="side">The side to retrieve the property from.</param>
+    /// <returns>Whether the specified side iron is inverted.</returns>
     bool sideIronInverted(Side side) const;
 
+    /// <summary>
+    /// Setter for a side iron
+    /// </summary>
+    /// <param name="side">The side to specify the side iron for.</param>
+    /// <param name="sideIron">The side iron to set the specified side to use.</param>
     void setSideIron(Side side, const SideIron &sideIron);
 
+    /// <summary>
+    /// Setter for the whether the side iron is inverted
+    /// </summary>
+    /// <param name="side">The side to are specifying for.</param>
+    /// <param name="inverted">The value to set the invertedness of the specified side to.</param>
     void setSideIronInverted(Side side, bool inverted);
 
+    /// <summary>
+    /// Remover for a side iron
+    /// </summary>
+    /// <param name="side">The side to remove the side iron from.</param>
     void removeSideIron(Side side);
 
+    /// <summary>
+    /// Getter for a sidelap
+    /// </summary>
+    /// <param name="side">The side to retrieve the sidelap for.</param>
+    /// <returns>The sidelap associated with the given side.</returns>
     std::optional<Lap> sidelap(Side side) const;
 
+    /// <summary>
+    /// Setter for a sidelap
+    /// </summary>
+    /// <param name="side">The side to specify the sidelap for.</param>
+    /// <param name="lap">The sidelap value to set the given side to.</param>
     void setSidelap(Side side, const Lap& lap);
 
+    /// <summary>
+    /// Remover for a sidelap
+    /// </summary>
+    /// <param name="side">The side to remove the sidelap from.</param>
     void removeSidelap(Side side);
 
+    /// <summary>
+    /// Getter for an overlap
+    /// </summary>
+    /// <param name="side">The side to retrieve the overlap for.</param>
+    /// <returns>The overlap associated with the given side.</returns>
     std::optional<Lap> overlap(Side side) const;
 
+    /// <summary>
+    /// Setter for an overlap
+    /// </summary>
+    /// <param name="side">The side to specify the overlap for.</param>
+    /// <param name="lap">The overlap value to set the given side to.</param>
     void setOverlap(Side side, const Lap& lap);
 
+    /// <summary>
+    /// Remover for an overlap
+    /// </summary>
+    /// <param name="side">The side to remove the overlap from.</param>
     void removeOverlap(Side side);
 
-    std::vector<std::string> pressDrawingHyperlinks() const;
+    /// <summary>
+    /// Getter for the press punch program PDF hyperlinks
+    /// </summary>
+    /// <returns>A vector of each file path for the additional press drawing hyperlinks.</returns>
+    std::vector<std::filesystem::path> pressDrawingHyperlinks() const;
 
-    void setPressDrawingHyperlinks(const std::vector<std::string> &hyperlinks);
+    /// <summary>
+    /// Setter for the press punch program PDF hyperlinks
+    /// </summary>
+    /// <param name="prod">A vector of each file path for the additional press drawing hyperlinks to set.</param>
+    void setPressDrawingHyperlinks(const std::vector<std::filesystem::path> &hyperlinks);
 
+    /// <summary>
+    /// Helper function to return if the drawing has any sidelaps
+    /// </summary>
+    /// <returns>Whether or not the drawing has sidelaps.</returns>
     bool hasSidelaps() const;
 
+    /// <summary>
+    /// Helper function to return if the drawing has any overlaps
+    /// </summary>
+    /// <returns>Whether or not the drawing has overlaps.</returns>
     bool hasOverlaps() const;
 
+    /// <summary>
+    /// Adds an impact pad to the drawing
+    /// </summary>
+    /// <param name="impactPad">The impact pad to add to the drawing.</param>
     void addImpactPad(const ImpactPad &impactPad);
 
+    /// <summary>
+    /// Getter for the impact pads
+    /// </summary>
+    /// <returns>A vector of impact pads on this drawing.</returns>
     std::vector<ImpactPad> impactPads() const;
 
+    /// <summary>
+    /// Getter for an individual impact pad
+    /// </summary>
+    /// <param name="index">The index to retrieve the impact pad from</param>
+    /// <returns>A reference to the impact pad at the given index.</returns>
     ImpactPad &impactPad(unsigned index);
 
+    /// <summary>
+    /// Remover for an impact pad from the drawing
+    /// </summary>
+    /// <param name="pad">The impact pad to remove.</param>
     void removeImpactPad(const ImpactPad &pad);
 
+    /// <summary>
+    /// Getter for the number of impact pads
+    /// </summary>
+    /// <returns>The size of the impact pads vector.</returns>
     unsigned numberOfImpactPads() const;
 
+    /// <summary>
+    /// Adds a centre hole to the drawing
+    /// </summary>
+    /// <param name="centreHole">The centre hole to add to the drawing.</param>
     void addCentreHole(const CentreHole &centreHole);
 
+    /// <summary>
+    /// Getter for the centre holes
+    /// </summary>
+    /// <returns>A vector of centre holes on this drawing.</returns>
     std::vector<CentreHole> centreHoles() const;
 
+    /// <summary>
+    /// Getter for an individual centre hole
+    /// </summary>
+    /// <param name="index">The index to retrieve the centre hole from</param>
+    /// <returns>A reference to the centre hole at the given index.</returns>
     CentreHole &centreHole(unsigned index);
 
+    /// <summary>
+    /// Remover for a centre hole from the drawing
+    /// </summary>
+    /// <param name="hole">The centre hole to remove.</param>
     void removeCentreHole(const CentreHole &hole);
 
+    /// <summary>
+    /// Getter for the number of centre holes
+    /// </summary>
+    /// <returns>The size of the center holes vector.</returns>
     unsigned numberOfCentreHoles() const;
 
+    /// <summary>
+    /// Adds a deflector to the drawing
+    /// </summary>
+    /// <param name="deflector">The deflector to add to the drawing.</param>
     void addDeflector(const Deflector &deflector);
 
+    /// <summary>
+    /// Getter for the deflectors
+    /// </summary>
+    /// <returns>A vector of deflectors on this drawing.</returns>
     std::vector<Deflector> deflectors() const;
 
+    /// <summary>
+    /// Getter for an individual deflector
+    /// </summary>
+    /// <param name="index">The index to retrieve the deflector from</param>
+    /// <returns>A reference to the deflector at the given index.</returns>
     Deflector &deflector(unsigned index);
 
+    /// <summary>
+    /// Remover for a deflector from the drawing
+    /// </summary>
+    /// <param name="deflector">The deflector to remove.</param>
     void removeDeflector(const Deflector &deflector);
 
+    /// <summary>
+    /// Getter for the number of deflectors
+    /// </summary>
+    /// <returns>The size of the deflectors vector.</returns>
     unsigned numberOfDeflectors() const;
 
+    /// <summary>
+    /// Adds a divertor to the drawing
+    /// </summary>
+    /// <param name="divertor">The divertor to add to the drawing.</param>
     void addDivertor(const Divertor &divertor);
 
+    /// <summary>
+    /// Getter for the divertors
+    /// </summary>
+    /// <returns>A vector of divertors on this drawing.</returns>
     std::vector<Divertor> divertors() const;
 
+    /// <summary>
+    /// Getter for an individual divertor
+    /// </summary>
+    /// <param name="index">The index to retrieve the divertor from</param>
+    /// <returns>A reference to the divertor at the given index.</returns>
     Divertor &divertor(unsigned index);
 
+    /// <summary>
+    /// Remover for a divertor from the drawing
+    /// </summary>
+    /// <param name="deflector">The divertor to remove.</param>
     void removeDivertor(const Divertor &divertor);
 
+    /// <summary>
+    /// Getter for the number of divertors
+    /// </summary>
+    /// <returns>The size of the divertors vector.</returns>
     unsigned numberOfDivertors() const;
 
+    /// <summary>
+    /// Method to check whether a drawing is valid
+    /// </summary>
+    /// <param name="exclusions">A set of flags specifying if any checks should be ignored.</param>
+    /// <returns>The first encountered build warning when checking the drawing for errors.</returns>
     BuildWarning checkDrawingValidity(unsigned exclusions = 0) const;
 
+    /// <summary>
+    /// Getter for a specific load warning
+    /// </summary>
+    /// <param name="warning">The warning to check for.</param>
+    /// <returns>Whether the drawing has the given load warning set or not.</returns>
     bool loadWarning(LoadWarning warning) const;
 
+    /// <summary>
+    /// Setter for a specific load warning
+    /// </summary>
+    /// <param name="warning">The load warning to set on the drawing.</param>
     void setLoadWarning(LoadWarning warning);
 
+    /// <summary>
+    /// Method to add an update callback. The set of update callbacks will be called each time a change is made to
+    /// the drawing.
+    /// </summary>
+    /// <param name="callback">The callback function to invoke whenever an update is made.</param>
     void addUpdateCallback(const std::function<void()> &callback);
 
 private:
+    // Helper function to call each update callback
     void invokeUpdateCallbacks() const;
 
+    // The regular expression pattern for checking a drawing number is valid.
+    // The expression checks that either a drawing is a valid automatic drawing number,
+    // namely one or two letters followed by exactly two numbers followed optionally by a revision letter.
+    // or a manual drawing number, namely the letter M followed by 3 or more numbers followed optionally by a revision letter.
     static constexpr char drawingNumberRegexPattern[] = "^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3,}[a-zA-Z]?)$";
+    // The regular expression pattern for the machine position. The expression checks that either the string is empty, or the
+    // word "all" or a single number or a pair of numbers separated by a dash (e.g. 1-5)
     static constexpr char positionRegexPattern[] = "(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)";
 
+    // The following fields are all parts of the drawing specified in the database. Each field is private
+    // and accessed through the public interfacing methods.
     std::string __drawingNumber;
     Date __date;
     float __width, __length;
-    std::string __hyperlink;
+    std::filesystem::path __hyperlink;
     std::string __notes;
     MachineTemplate __machineTemplate;
 
@@ -938,7 +1449,7 @@ private:
     bool __rebated;
     bool __hasBackingStrips;
 
-    std::vector<std::string> __pressDrawingHyperlinks;
+    std::vector<std::filesystem::path> __pressDrawingHyperlinks;
 
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
@@ -956,16 +1467,40 @@ private:
     std::vector<Deflector> __deflectors;
     std::vector<Divertor> __divertors;
 
+    // A flag based value containing any load warnings found. This is incorporated in the class
+    // so it is serialised when a drawing is sent. This allows the receiver to check for any
+    // exceptions when loading a drawing.
     unsigned loadWarnings = 0;
 
+    // A set of update callbacks. Each time a change is made, each callback is invoked
     std::vector<std::function<void()>> updateCallbacks;
 };
 
+/// <summary>
+/// DrawingSerialiser
+/// Assistant class for serialising drawings to data streams without the serialisation interface
+/// directly in the Drawing class.
+/// </summary>
 struct DrawingSerialiser {
+    /// <summary>
+    /// Serialises the given drawing to the given data buffer
+    /// </summary>
+    /// <param name="drawing">The drawing to write out to the buffer.</param>
+    /// <param name="target">The byte buffer to write the drawing to.</param>
     static void serialise(const Drawing &drawing, void *target);
 
+    /// <summary>
+    /// Getter for the size this drawing will occupy in a buffer
+    /// </summary>
+    /// <param name="drawing">The drawing to calculate the serialised size for.</param>
+    /// <returns></returns>
     static unsigned serialisedSize(const Drawing &drawing);
 
+    /// <summary>
+    /// Deserialises a drawing from the given data stream
+    /// </summary>
+    /// <param name="data">The data stream to deserialise the drawing from.</param>
+    /// <returns>A newly constructed drawing object created from the buffer.</returns>
     static Drawing &deserialise(void *data);
 };
 

@@ -183,6 +183,8 @@ void CentreHoleSetGraphicsItem::contextMenuEvent(QGraphicsSceneContextMenuEvent 
             }, Qt::Key_Delete);
 
             menu->popup(event->screenPos());
+
+            QWidget::connect(menu, &QMenu::triggered, [menu](QAction *) { menu->deleteLater(); });
             break;
         }
     }

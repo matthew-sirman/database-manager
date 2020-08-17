@@ -20,30 +20,31 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 	        caller.sendEmailAddress(clientHandle, (unsigned)RequestType::USER_EMAIL_REQUEST);
 	        break;
 		case RequestType::DRAWING_SEARCH_QUERY: {
-			std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(
-				DatabaseSearchQuery::deserialise(message));
+		    DatabaseSearchQuery &query = DatabaseSearchQuery::deserialise(message);
+			std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(query);
+			delete &query;
 
-			DrawingSummaryCompressionSchema schema = compressionSchema(&caller.databaseManager());
+			DrawingSummaryCompressionSchema summaryCompressionSchema = compressionSchema(&caller.databaseManager());
 
 			unsigned char *responseBuffer = (unsigned char *)alloca(sizeof(RequestType) +
 				sizeof(DrawingSummaryCompressionSchema) +
 				sizeof(unsigned) +
-				summaries.size() * schema.maxCompressedSize());
+				summaries.size() * summaryCompressionSchema.maxCompressedSize());
 
 			unsigned index = 0;
 
 			*((RequestType *)responseBuffer) = RequestType::DRAWING_SEARCH_QUERY;
 			index += sizeof(RequestType);
 
-			memcpy(responseBuffer + index, &schema, sizeof(DrawingSummaryCompressionSchema));
+			memcpy(responseBuffer + index, &summaryCompressionSchema, sizeof(DrawingSummaryCompressionSchema));
 			index += sizeof(DrawingSummaryCompressionSchema);
 
 			*((unsigned *)(responseBuffer + index)) = summaries.size();
 			index += sizeof(unsigned);
 
 			for (const DrawingSummary &summary : summaries) {
-				schema.compressSummary(summary, responseBuffer + index);
-				index += schema.compressedSize(summary);
+                summaryCompressionSchema.compressSummary(summary, responseBuffer + index);
+				index += summaryCompressionSchema.compressedSize(summary);
 			}
 
 			caller.addMessageToSendQueue(clientHandle, responseBuffer, index);
@@ -51,7 +52,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 			break;
 		}
 		case RequestType::DRAWING_INSERT: {
-			DrawingInsert drawingInsert = DrawingInsert::deserialise(message);
+			DrawingInsert &drawingInsert = DrawingInsert::deserialise(message);
 
 			if (drawingInsert.drawingData.has_value()) {
 				DrawingInsert response;
@@ -86,6 +87,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 					setCompressionSchemaDirty();
 					caller.changelogMessage(clientHandle, "Added drawing " + drawingInsert.drawingData->drawingNumber());
 				}
+
+				delete &drawingInsert;
 
 				unsigned responseSize = response.serialisedSize();
 				void *responseBuffer = alloca(responseSize);
@@ -220,10 +223,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
+            delete returnedDrawing;
+
 			break;
 		}
 		case RequestType::ADD_NEW_COMPONENT: {
-			ComponentInsert insert = ComponentInsert::deserialise(message);
+			ComponentInsert &insert = ComponentInsert::deserialise(message);
 
 			ComponentInsert response;
 			response.clearComponentData();
@@ -304,10 +309,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			caller.broadcastMessage(sourceData, sourceDataBufferSize);
 
+			delete &insert;
+
 			break;
 		}
 		case RequestType::GET_NEXT_DRAWING_NUMBER: {
-			NextDrawing next = NextDrawing::deserialise(message);
+			NextDrawing &next = NextDrawing::deserialise(message);
 
 			switch (next.drawingType) {
 				case NextDrawing::DrawingType::AUTOMATIC:
@@ -324,10 +331,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
 			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
+			delete &next;
+
 			break;
 		}
 		case RequestType::CREATE_DATABASE_BACKUP: {
-			DatabaseBackup backup = DatabaseBackup::deserialise(message);
+			DatabaseBackup &backup = DatabaseBackup::deserialise(message);
 
 			std::filesystem::path backupFile = backupPath / backup.backupName;
 			backupFile.replace_extension("sql");
@@ -347,6 +356,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 			response.serialise(responseBuffer);
 
 			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+
+			delete &backup;
 
 			break;
 		}

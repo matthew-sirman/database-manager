@@ -103,6 +103,8 @@ void ImpactPadGraphicsItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *eve
 		menu->addAction("Remove", removeFunction, Qt::Key_Delete);
 
 		menu->popup(event->screenPos());
+
+        QWidget::connect(menu, &QMenu::triggered, [menu](QAction *) { menu->deleteLater(); });
 	}
 
 	QGraphicsItem::contextMenuEvent(event);

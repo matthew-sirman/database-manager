@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "modernize-use-auto"
 //
 // Created by matthew on 12/06/2020.
 //
@@ -256,7 +254,7 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
     sockaddr_in clientAddress{};
     socklen_t clientAddressSize = sizeof(clientAddress);
 
-    TCPSocket *acceptedSocket = new TCPSocket();
+    TCPSocket acceptedSocket;
 
 
 #ifdef _WIN32
@@ -269,7 +267,7 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
         return S_NO_DATA;
     }
 
-    acceptedSocket->sock = clientSocket;
+    acceptedSocket.sock = clientSocket;
 
     // There is no way to determine if windows sockets are non blocking.
 
@@ -283,7 +281,7 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
         return S_NO_DATA;
     }
 
-    acceptedSocket->fd = clientSocketFd;
+    acceptedSocket.fd = clientSocketFd;
 
     unsigned int socketFlags;
 
@@ -293,18 +291,18 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
     }
 
     if (socketFlags & O_NONBLOCK) {
-        acceptedSocket->flags &= (unsigned char) (~SOCKET_BLOCKING);
+        acceptedSocket.flags &= (unsigned char) (~SOCKET_BLOCKING);
     }
 #endif
 
-    acceptedSocket->flags |= SOCKET_OPEN;
-    acceptedSocket->flags |= SOCKET_CONNECTED;
+    acceptedSocket.flags |= SOCKET_OPEN;
+    acceptedSocket.flags |= SOCKET_CONNECTED;
 
     if (acceptCallback) {
         if (callbackAsync) {
-            std::thread(acceptCallback, std::ref(*acceptedSocket)).detach();
+            std::thread(acceptCallback, acceptedSocket).detach();
         } else {
-            acceptCallback(*acceptedSocket);
+            acceptCallback(acceptedSocket);
         }
     }
 
@@ -453,6 +451,8 @@ TCPSocketCode TCPSocket::waitForMessage(NetworkMessage &message, MessageProtocol
         return receiveMessage(message, expectedProtocol);
     }
 
+    return ERR_RECEIVE_FAILED;
+
 #else
     TCPSocketCode code = S_NO_DATA;
 
@@ -508,7 +508,7 @@ void TCPSocket::setConnectionTimeout(float timeout) {
 WSADATA TCPSocket::wsaData;
 
 int TCPSocket::initialiseWSA() {
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+    if (WSAStartup(MAKEWORD(2u, 2u), &wsaData) != 0) {
         std::cerr << "Failed to intialise WSA." << std::endl;
         return 1;
     }
@@ -520,5 +520,3 @@ void TCPSocket::cleanupWSA() {
 }
 
 #endif
-
-#pragma clang diagnostic pop

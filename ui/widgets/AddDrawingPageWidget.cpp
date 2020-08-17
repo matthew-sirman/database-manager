@@ -111,7 +111,8 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
 }
 
 AddDrawingPageWidget::~AddDrawingPageWidget() {
-
+    delete inspector;
+    delete visualsScene;
 }
 
 void AddDrawingPageWidget::setupComboboxSources() {
@@ -613,12 +614,12 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         if (!hyperlinkFile.empty()) {
             ui->pressDrawingHyperlinkList->addItem(hyperlinkFile.generic_string().c_str());
 
-            std::vector<std::string> links;
+            std::vector<std::filesystem::path> links;
             links.reserve(ui->pressDrawingHyperlinkList->count());
 
             for (int i = 0; i < ui->pressDrawingHyperlinkList->count(); i++) {
                 std::filesystem::path p = ui->pressDrawingHyperlinkList->item(i)->text().toStdString();
-                links.push_back(p.generic_string());
+                links.push_back(p);
             }
 
             drawing.setPressDrawingHyperlinks(links);
@@ -627,11 +628,11 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->pressDrawingHyperlinksRemoveButton, &QPushButton::pressed, [this]() {
         qDeleteAll(ui->pressDrawingHyperlinkList->selectedItems());
 
-        std::vector<std::string> links;
+        std::vector<std::filesystem::path> links;
         links.reserve(ui->pressDrawingHyperlinkList->count());
 
         for (int i = 0; i < ui->pressDrawingHyperlinkList->count(); i++) {
-            links.push_back(ui->pressDrawingHyperlinkList->item(i)->text().toStdString());
+            links.emplace_back(ui->pressDrawingHyperlinkList->item(i)->text().toStdString());
         }
 
         drawing.setPressDrawingHyperlinks(links);
@@ -704,9 +705,9 @@ void AddDrawingPageWidget::loadDrawing() {
     ui->machinePositionInput->setText(machineTemplate.position.c_str());
     ui->machineDeckInput->setCurrentIndex(ui->machineDeckInput->findData(machineTemplate.deck().handle()));
 
-    ui->hyperlinkDisplay->setText(drawing.hyperlink().c_str());
-    for (const std::string &hyperlink : drawing.pressDrawingHyperlinks()) {
-        ui->pressDrawingHyperlinkList->addItem(hyperlink.c_str());
+    ui->hyperlinkDisplay->setText(drawing.hyperlink().generic_string().c_str());
+    for (const std::filesystem::path &hyperlink : drawing.pressDrawingHyperlinks()) {
+        ui->pressDrawingHyperlinkList->addItem(hyperlink.generic_string().c_str());
     }
 }
 

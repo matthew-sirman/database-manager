@@ -334,6 +334,11 @@ public:
     DataSource(IType begin, IType end);
 
     /// <summary>
+    /// Destructor for source
+    /// </summary>
+    ~DataSource();
+
+    /// <summary>
     /// Getter for the begin point. This is used in C++ range based for loops.
     /// </summary>.
     /// <returns>The iterator for the start of the set.</returns>
@@ -361,7 +366,7 @@ public:
     /// Setter for the filter. Based on a template type for an arbitrary filter.
     /// </summary>
     /// <typeparam name="Filter">The type of filter to install on the source. Must inherit from SourceFilter of type IType.</typeparam>
-    /// <returns></returns>
+    /// <returns>A newly constructed filter object of type Filter which has been installed on this data source.</returns>
     template<typename Filter>
     Filter *setFilter();
 
@@ -376,7 +381,7 @@ public:
     /// a user is able to determine whether they are accessing the correct version, or whether the source has since 
     /// changed.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The current state of the data source.</returns>
     unsigned state() const;
 
 protected:
@@ -400,6 +405,12 @@ DataSource<T, IType>::DataSource(IType begin, IType end) {
     // Sets the start and end points of the iterator
     this->__begin = __begin;
     this->__end = __end;
+}
+
+// Implementation of destructor
+template<typename T, typename IType>
+DataSource<T, IType>::~DataSource() {
+    delete __filter;
 }
 
 // Implementation of begin function
@@ -448,6 +459,8 @@ Filter *DataSource<T, IType>::setFilter() {
     // First we assert that this is a valid filter for the data source type. This can be done statically as the data source system
     // is based on template types.
     static_assert(std::is_base_of<SourceFilter<IType>, Filter>::value, "Filter must derive from SourceFilter<IType>");
+    // Delete the filter in case there was already one installed
+    delete __filter;
     // We then construct the filter object
     __filter = new Filter();
     // We then attach an update callback which simply updates the source
