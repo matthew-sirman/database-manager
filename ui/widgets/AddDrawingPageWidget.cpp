@@ -67,9 +67,9 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
     ui->visualAndInspectorVerticalLayout->addWidget(inspector->container());
 
     this->drawing = drawing;
-    if (mode == CLONE_DRAWING) {
-        this->drawing.setDrawingNumber("");
-    }
+    // if (mode == CLONE_DRAWING) {
+    //    this->drawing.setDrawingNumber("");
+    //}
 
     setupActivators();
     setupComboboxSources();

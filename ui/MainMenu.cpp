@@ -348,7 +348,7 @@ void MainMenu::setupComboboxSources() {
 }
 
 void MainMenu::setupValidators() {
-    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{2}[a-zA-Z]?|M[0-9]{3,}[a-zA-Z]?)$"));
+    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{0,2}[a-zA-Z]?|M[0-9]{0,}[a-zA-Z]?)$"));
 
     ui->drawingNumberSearchInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
@@ -813,7 +813,14 @@ void MainMenu::processDrawings() {
                     DrawingViewWidget *drawingView = new DrawingViewWidget(request->drawingData.value(), ui->mainTabs);
                     Drawing &drawing = request->drawingData.value();
 
-                    drawingView->setChangeDrawingCallback([this, drawing](AddDrawingPageWidget::AddDrawingMode mode) {
+                    drawingView->setChangeDrawingCallback([this, drawing](AddDrawingPageWidget::AddDrawingMode mode) mutable {
+                        if (mode == AddDrawingPageWidget::CLONE_DRAWING) {
+                            if (drawing.drawingNumber().front() != 'M') {
+                                drawing.setDrawingNumber(nextAutomaticDrawingNumber);
+                            } else {
+                                drawing.setDrawingNumber(nextManualDrawingNumber);
+                            }
+                        }
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, mode, ui->mainTabs);
                         addDrawingPage->setUserEmail(clientEmailAddress);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {

@@ -1506,60 +1506,185 @@ struct DrawingSerialiser {
 
 struct DrawingSummaryCompressionSchema;
 
+/// <summary>
+/// DrawingSummary
+/// Summary data representing an incomplete set of information about a drawing. The idea is to 
+/// have a small amount of information summarising the drawing transferred in a search query in 
+/// order to minimise the network transfer required. The user can then choose to open a drawing
+/// in full, which is essentially requesting the remaining information from the server.
+/// </summary>
 struct DrawingSummary {
+    // Friend the compression schema class so it can access private properties
     friend class DrawingSummaryCompressionSchema;
 
+    // The mat ID of the drawing as stored in the database
     unsigned matID;
+    // The array of one or two thickness handles for the bottom and top layers
     unsigned thicknessHandles[2];
+    // The handle for the aperture this drawing uses
     unsigned apertureHandle;
+    // The drawing number of this drawing
     std::string drawingNumber;
 
+    /// <summary>
+    /// Helper function to return whether or not the drawing has two materials
+    /// or just one
+    /// </summary>
+    /// <returns></returns>
     bool hasTwoLayers() const;
 
+    /// <summary>
+    /// Helper function to return the number of laps the mat has
+    /// </summary>
+    /// <returns></returns>
     unsigned numberOfLaps() const;
 
+    /// <summary>
+    /// Getter for a summarising string for this drawing
+    /// </summary>
+    /// <returns>A string summary for the basic properties of this drawing.</returns>
     std::string summaryString() const;
 
+    /// <summary>
+    /// Getter for the width of this drawing. This is used because the internal
+    /// representation stores the width as an unsigned.
+    /// </summary>
+    /// <returns>The corrected width for this drawing.</returns>
     float width() const;
 
+    /// <summary>
+    /// Getter for the length of this drawing. This is used because the internal
+    /// representation stores the length as an unsigned.
+    /// </summary>
+    /// <returns>The corrected length for this drawing.</returns>
     float length() const;
 
+    /// <summary>
+    /// Setter for the width of this drawing. This is used because the internal
+    /// representation stores the width as an unsigned.
+    /// </summary>
+    /// <param name="width">The true width for this drawing.</param>
     void setWidth(float width);
 
+    /// <summary>
+    /// Setter for the length of this drawing. This is used because the internal
+    /// representation stores the length as an unsigned.
+    /// </summary>
+    /// <param name="width">The true length for this drawing.</param>
     void setLength(float length);
 
+    /// <summary>
+    /// Getter for the indexed lap size. This is used because the internal representation
+    /// stores the lap sizes as unsigned values
+    /// </summary>
+    /// <param name="index">The index of the lap.</param>
+    /// <returns>The corrected lap size.</returns>
     float lapSize(unsigned index) const;
 
+    /// <summary>
+    /// Setter for the indexed lap size. This is used because the internal representation
+    /// stores the lap sizes as unsigned values
+    /// </summary>
+    /// <param name="index">The index of the lap.</param>
+    /// <param name="size">The true lap size.</returns>
     void setLapSize(unsigned index, float size);
 
+    /// <summary>
+    /// Getter for the bar spacings vector. This is used because the internal representation
+    /// stores the bar spacings as unsigned values
+    /// </summary>
+    /// <returns>The corrected bar spacings.</returns>
     std::vector<float> barSpacings() const;
 
+    /// <summary>
+    /// Method to add another bar spacing to the set of bar spacings. This is used because the
+    /// internal representation stores the bar spacings as unsigned values
+    /// </summary>
+    /// <param name="spacing">The true spacing value to add.</param>
     void addSpacing(float spacing);
 
+    /// <summary>
+    /// Clears the bar spacing set to an empty vector
+    /// </summary>
     void clearSpacings();
 
+    /// <summary>
+    /// Helper function to return the number of bar spacings stored
+    /// </summary>
+    /// <returns>The number of bar spacings for this drawing.</returns>
     unsigned barSpacingCount() const;
 
 private:
+    // The internal representation of theses fields all store TWICE the true value. This allows
+    // the "true" values to be either integers or integers plus a half (e.g. 1200.5). Unsigned values
+    // are essentially used as "fixed" point numbers, instead of "floating" point numbers. This allows
+    // the compression to function correctly on these values, as the method does not work for true
+    // floating point number compression (due to normalisation etc)
     unsigned __width, __length;
     unsigned __lapSizes[4];
     std::vector<unsigned> __barSpacings;
 };
 
 PACK_START
+/// <summary>
+/// DrawingSummaryCompressionSchema
+/// Represents compression metadata used to compress and uncompress a drawing or set of drawings based on
+/// the maximum values it would need to transmit to represent any given field. For example, the mat_id field
+/// will be represented by the minimum number of bits required to represent the largest mat_id in the database.
+/// Any more significant bits are guaranteed to be 0s, and so if we essentially communicate that all bits
+/// past a point of significance are 0s, we can omit those places in the compressed data.
+/// </summary>
 struct DrawingSummaryCompressionSchema {
+    /// <summary>
+    /// Constructor specifying the schema
+    /// </summary>
+    /// <param name="maxMatID">The largest mat_id from the database.</param>
+    /// <param name="maxWidth">The largest drawing width from the database.</param>
+    /// <param name="maxLength">The largest drawing length from the database.</param>
+    /// <param name="maxThicknessHandle">The largest thickness handle from the internal representaion of
+    /// the thickness components.</param>
+    /// <param name="maxLapSize">The largest overlap or sidelap width from the database.</param>
+    /// <param name="maxApertureHandle">The largest aperture handle from the internal representaion of
+    /// the aperture components.</param>
+    /// <param name="maxBarSpacingCount">The most bar spacings on any drawing.</param>
+    /// <param name="maxBarSpacing">The largest bar spacing on any drawing from the database.</param>
+    /// <param name="maxDrawingLength">The length of the longest drawing number in the databae.</param>
     DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessHandle,
         float maxLapSize, unsigned maxApertureHandle, unsigned char maxBarSpacingCount, float maxBarSpacing, unsigned char maxDrawingLength);
 
+    /// <summary>
+    /// Calculates the compressed size a given summary will occupy (in bits) when compressed
+    /// </summary>
+    /// <param name="summary">The summary to calculate the compressed size for.</param>
+    /// <returns>The compressed size (in bits) of the target summary.</returns>
     unsigned compressedSize(const DrawingSummary &summary) const;
 
+    /// <summary>
+    /// Compresses a given summary and writes the compressed data to the target buffer
+    /// </summary>
+    /// <param name="summary">The summary to compress.</param>
+    /// <param name="target">The target buffer to write the compressed data to.</param>
     void compressSummary(const DrawingSummary &summary, void *target) const;
 
+    /// <summary>
+    /// Uncompresses a given summary from the data buffer and increments the size reference
+    /// by the amount of bytes the summary occupied
+    /// </summary>
+    /// <param name="data">The data buffer to decompress the summary from.</param>
+    /// <param name="size">A reference to the size variable to write the number of bytes read.</param>
+    /// <returns>A decompressed DrawingSummary object reconstructed from the data buffer.</returns>
     DrawingSummary uncompressSummary(void *data, unsigned &size) const;
 
+    /// <summary>
+    /// Calculates the maximum possible size a compressed any summary could occupy, based on
+    /// the compression schema metadata.
+    /// </summary>
+    /// <returns>The maximum compressed size.</returns>
     unsigned maxCompressedSize() const;
 
 private:
+    // These values represent the number of bits required to
+    // cover each of the compressed fields
     unsigned char matIDSize;
     unsigned char widthSize;
     unsigned char lengthSize;
@@ -1570,8 +1695,13 @@ private:
     unsigned char barSpacingCountSize;
     unsigned char barSpacingSize;
 
+    // The maximum number of bar spacings from any drawing
     unsigned char maxBarSpacingCount;
 
+    // These values represent the minimum number of covering bytes for each
+    // of the above fields in bits. For example, 15 bits can be covered in 2 bytes
+    // but 17 bits needs at least 3 bytes. These values are simply stored to avoid
+    // recalculating them each time a drawing is compressed.
     unsigned char matIDBytes;
     unsigned char widthBytes;
     unsigned char lengthBytes;
