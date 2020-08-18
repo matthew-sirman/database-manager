@@ -341,6 +341,8 @@ void Client::clientLoop() {
                 if (responseHandler) {
                     responseHandler->onMessageReceived(decryptedMessage, rMessage.getMessageSize());
                 }
+
+                delete decryptedMessage;
             }
         }
 

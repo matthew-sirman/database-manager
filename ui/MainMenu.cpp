@@ -766,7 +766,7 @@ void MainMenu::closeTab(int index) {
 }
 
 void MainMenu::openAddDrawingTab(NextDrawing::DrawingType type) {
-    AddDrawingPageWidget *addDrawingPage = nullptr;
+    AddDrawingPageWidget *addDrawingPage;
     switch (type) {
         case NextDrawing::DrawingType::AUTOMATIC:
             addDrawingPage = new AddDrawingPageWidget(nextAutomaticDrawingNumber, ui->mainTabs);

@@ -13,355 +13,358 @@ DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0
 void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message,
 	unsigned int messageSize) {
 	switch (getDeserialiseType(message)) {
-		case RequestType::REPEAT_TOKEN_REQUEST:
-			caller.sendRepeatToken(clientHandle, (unsigned)RequestType::REPEAT_TOKEN_REQUEST);
-			break;
-	    case RequestType::USER_EMAIL_REQUEST:
-	        caller.sendEmailAddress(clientHandle, (unsigned)RequestType::USER_EMAIL_REQUEST);
-	        break;
-		case RequestType::DRAWING_SEARCH_QUERY: {
-		    DatabaseSearchQuery &query = DatabaseSearchQuery::deserialise(message);
-			std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(query);
-			delete &query;
+        case RequestType::REPEAT_TOKEN_REQUEST:
+            caller.sendRepeatToken(clientHandle, (unsigned) RequestType::REPEAT_TOKEN_REQUEST);
+            break;
+        case RequestType::USER_EMAIL_REQUEST:
+            caller.sendEmailAddress(clientHandle, (unsigned) RequestType::USER_EMAIL_REQUEST);
+            break;
+        case RequestType::DRAWING_SEARCH_QUERY: {
+            DatabaseSearchQuery &query = DatabaseSearchQuery::deserialise(message);
+            std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(query);
+            delete &query;
 
-			DrawingSummaryCompressionSchema summaryCompressionSchema = compressionSchema(&caller.databaseManager());
+            DrawingSummaryCompressionSchema summaryCompressionSchema = compressionSchema(&caller.databaseManager());
 
-			unsigned char *responseBuffer = (unsigned char *)alloca(sizeof(RequestType) +
-				sizeof(DrawingSummaryCompressionSchema) +
-				sizeof(unsigned) +
-				summaries.size() * summaryCompressionSchema.maxCompressedSize());
+            unsigned char *responseBuffer = (unsigned char *) alloca(sizeof(RequestType) +
+                                                                     sizeof(DrawingSummaryCompressionSchema) +
+                                                                     sizeof(unsigned) +
+                                                                     summaries.size() *
+                                                                     summaryCompressionSchema.maxCompressedSize());
 
-			unsigned index = 0;
+            unsigned index = 0;
 
-			*((RequestType *)responseBuffer) = RequestType::DRAWING_SEARCH_QUERY;
-			index += sizeof(RequestType);
+            *((RequestType *) responseBuffer) = RequestType::DRAWING_SEARCH_QUERY;
+            index += sizeof(RequestType);
 
-			memcpy(responseBuffer + index, &summaryCompressionSchema, sizeof(DrawingSummaryCompressionSchema));
-			index += sizeof(DrawingSummaryCompressionSchema);
+            memcpy(responseBuffer + index, &summaryCompressionSchema, sizeof(DrawingSummaryCompressionSchema));
+            index += sizeof(DrawingSummaryCompressionSchema);
 
-			*((unsigned *)(responseBuffer + index)) = summaries.size();
-			index += sizeof(unsigned);
+            *((unsigned *) (responseBuffer + index)) = summaries.size();
+            index += sizeof(unsigned);
 
-			for (const DrawingSummary &summary : summaries) {
+            for (const DrawingSummary &summary : summaries) {
                 summaryCompressionSchema.compressSummary(summary, responseBuffer + index);
-				index += summaryCompressionSchema.compressedSize(summary);
-			}
+                index += summaryCompressionSchema.compressedSize(summary);
+            }
 
-			caller.addMessageToSendQueue(clientHandle, responseBuffer, index);
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, index);
 
-			break;
-		}
-		case RequestType::DRAWING_INSERT: {
-			DrawingInsert &drawingInsert = DrawingInsert::deserialise(message);
+            break;
+        }
+        case RequestType::DRAWING_INSERT: {
+            DrawingInsert &drawingInsert = DrawingInsert::deserialise(message);
 
-			if (drawingInsert.drawingData.has_value()) {
-				DrawingInsert response;
+            if (drawingInsert.drawingData.has_value()) {
+                DrawingInsert response;
 
-				response.responseEchoCode = drawingInsert.responseEchoCode;
+                response.responseEchoCode = drawingInsert.responseEchoCode;
 
-				switch (caller.databaseManager().drawingExists(drawingInsert.drawingData->drawingNumber())) {
-					case DatabaseManager::DrawingExistsResponse::EXISTS:
-						if (drawingInsert.forcing()) {
-							if (caller.databaseManager().insertDrawing(drawingInsert)) {
-								response.insertResponseCode = DrawingInsert::SUCCESS;
-							} else {
-								response.insertResponseCode = DrawingInsert::FAILED;
-							}
-						} else {
-							response.insertResponseCode = DrawingInsert::DRAWING_EXISTS;
-						}
-						break;
-					case DatabaseManager::DrawingExistsResponse::NOT_EXISTS:
-						if (caller.databaseManager().insertDrawing(drawingInsert)) {
-							response.insertResponseCode = DrawingInsert::SUCCESS;
-						} else {
-							response.insertResponseCode = DrawingInsert::FAILED;
-						}
-						break;
-					case DatabaseManager::DrawingExistsResponse::R_ERROR:
-						response.insertResponseCode = DrawingInsert::FAILED;
-						break;
-				}
+                switch (caller.databaseManager().drawingExists(drawingInsert.drawingData->drawingNumber())) {
+                    case DatabaseManager::DrawingExistsResponse::EXISTS:
+                        if (drawingInsert.forcing()) {
+                            if (caller.databaseManager().insertDrawing(drawingInsert)) {
+                                response.insertResponseCode = DrawingInsert::SUCCESS;
+                            } else {
+                                response.insertResponseCode = DrawingInsert::FAILED;
+                            }
+                        } else {
+                            response.insertResponseCode = DrawingInsert::DRAWING_EXISTS;
+                        }
+                        break;
+                    case DatabaseManager::DrawingExistsResponse::NOT_EXISTS:
+                        if (caller.databaseManager().insertDrawing(drawingInsert)) {
+                            response.insertResponseCode = DrawingInsert::SUCCESS;
+                        } else {
+                            response.insertResponseCode = DrawingInsert::FAILED;
+                        }
+                        break;
+                    case DatabaseManager::DrawingExistsResponse::R_ERROR:
+                        response.insertResponseCode = DrawingInsert::FAILED;
+                        break;
+                }
 
-				if (response.insertResponseCode == DrawingInsert::SUCCESS) {
-					setCompressionSchemaDirty();
-					caller.changelogMessage(clientHandle, "Added drawing " + drawingInsert.drawingData->drawingNumber());
-				}
+                if (response.insertResponseCode == DrawingInsert::SUCCESS) {
+                    setCompressionSchemaDirty();
+                    caller.changelogMessage(clientHandle,
+                                            "Added drawing " + drawingInsert.drawingData->drawingNumber());
+                }
 
-				delete &drawingInsert;
+                delete &drawingInsert;
 
-				unsigned responseSize = response.serialisedSize();
-				void *responseBuffer = alloca(responseSize);
-				response.serialise(responseBuffer);
+                unsigned responseSize = response.serialisedSize();
+                void *responseBuffer = alloca(responseSize);
+                response.serialise(responseBuffer);
 
-				caller.addMessageToSendQueue(clientHandle, responseBuffer, responseSize);
+                caller.addMessageToSendQueue(clientHandle, responseBuffer, responseSize);
 
-				NextDrawing automatic, manual;
-				automatic.drawingType = NextDrawing::DrawingType::AUTOMATIC;
-				manual.drawingType = NextDrawing::DrawingType::MANUAL;
+                NextDrawing automatic, manual;
+                automatic.drawingType = NextDrawing::DrawingType::AUTOMATIC;
+                manual.drawingType = NextDrawing::DrawingType::MANUAL;
 
-				automatic.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
-				manual.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
+                automatic.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
+                manual.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
 
-				unsigned autoBufferSize = automatic.serialisedSize();
-				void *autoBuffer = alloca(autoBufferSize);
-				automatic.serialise(autoBuffer);
+                unsigned autoBufferSize = automatic.serialisedSize();
+                void *autoBuffer = alloca(autoBufferSize);
+                automatic.serialise(autoBuffer);
 
-				unsigned manualBufferSize = manual.serialisedSize();
-				void *manualBuffer = alloca(manualBufferSize);
-				manual.serialise(manualBuffer);
-				caller.broadcastMessage(autoBuffer, autoBufferSize);
-				caller.broadcastMessage(manualBuffer, manualBufferSize);
-			}
+                unsigned manualBufferSize = manual.serialisedSize();
+                void *manualBuffer = alloca(manualBufferSize);
+                manual.serialise(manualBuffer);
+                caller.broadcastMessage(autoBuffer, autoBufferSize);
+                caller.broadcastMessage(manualBuffer, manualBufferSize);
+            }
 
-			break;
-		}
-		case RequestType::SOURCE_PRODUCT_TABLE: {
-			if (DrawingComponentManager<Product>::dirty()) {
-				createSourceData<ProductData>(caller.databaseManager().sourceTable("products"));
-			}
+            break;
+        }
+        case RequestType::SOURCE_PRODUCT_TABLE: {
+            if (DrawingComponentManager<Product>::dirty()) {
+                createSourceData<ProductData>(caller.databaseManager().sourceTable("products"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Product>::rawSourceData(),
-				DrawingComponentManager<Product>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Product>::rawSourceData(),
+                                         DrawingComponentManager<Product>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_APERTURE_TABLE: {
-			if (DrawingComponentManager<Aperture>::dirty()) {
-				if (DrawingComponentManager<ApertureShape>::dirty()) {
-					createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
-				}
+            break;
+        }
+        case RequestType::SOURCE_APERTURE_TABLE: {
+            if (DrawingComponentManager<Aperture>::dirty()) {
+                if (DrawingComponentManager<ApertureShape>::dirty()) {
+                    createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
+                }
 
-				createSourceData<ApertureData>(caller.databaseManager().sourceTable("apertures"));
-			}
+                createSourceData<ApertureData>(caller.databaseManager().sourceTable("apertures"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Aperture>::rawSourceData(),
-				DrawingComponentManager<Aperture>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Aperture>::rawSourceData(),
+                                         DrawingComponentManager<Aperture>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_APERTURE_SHAPE_TABLE: {
-			if (DrawingComponentManager<ApertureShape>::dirty()) {
-				createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
-			}
+            break;
+        }
+        case RequestType::SOURCE_APERTURE_SHAPE_TABLE: {
+            if (DrawingComponentManager<ApertureShape>::dirty()) {
+                createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<ApertureShape>::rawSourceData(),
-				DrawingComponentManager<ApertureShape>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<ApertureShape>::rawSourceData(),
+                                         DrawingComponentManager<ApertureShape>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_MATERIAL_TABLE: {
-			if (DrawingComponentManager<Material>::dirty()) {
-				createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
-			}
+            break;
+        }
+        case RequestType::SOURCE_MATERIAL_TABLE: {
+            if (DrawingComponentManager<Material>::dirty()) {
+                createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Material>::rawSourceData(),
-				DrawingComponentManager<Material>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Material>::rawSourceData(),
+                                         DrawingComponentManager<Material>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_SIDE_IRON_TABLE: {
-			if (DrawingComponentManager<SideIron>::dirty()) {
-				std::stringstream orderBy;
-				orderBy << "CASE " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
-				orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
-				orderBy << "ELSE 10 " << std::endl;
-				orderBy << "END, length, drawing_number DESC" << std::endl;
+            break;
+        }
+        case RequestType::SOURCE_SIDE_IRON_TABLE: {
+            if (DrawingComponentManager<SideIron>::dirty()) {
+                std::stringstream orderBy;
+                orderBy << "CASE " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
+                orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
+                orderBy << "ELSE 10 " << std::endl;
+                orderBy << "END, length, drawing_number DESC" << std::endl;
 
-				createSourceData<SideIronData>(caller.databaseManager().sourceTable("side_irons", orderBy.str()));
-			}
+                createSourceData<SideIronData>(caller.databaseManager().sourceTable("side_irons", orderBy.str()));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIron>::rawSourceData(),
-				DrawingComponentManager<SideIron>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIron>::rawSourceData(),
+                                         DrawingComponentManager<SideIron>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_MACHINE_TABLE: {
-			if (DrawingComponentManager<Machine>::dirty()) {
-				createSourceData<MachineData>(caller.databaseManager().sourceTable("machines",
-					"manufacturer<>'None', manufacturer, model"));
-			}
+            break;
+        }
+        case RequestType::SOURCE_MACHINE_TABLE: {
+            if (DrawingComponentManager<Machine>::dirty()) {
+                createSourceData<MachineData>(caller.databaseManager().sourceTable("machines",
+                                                                                   "manufacturer<>'None', manufacturer, model"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Machine>::rawSourceData(),
-				DrawingComponentManager<Machine>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Machine>::rawSourceData(),
+                                         DrawingComponentManager<Machine>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::SOURCE_MACHINE_DECK_TABLE: {
-			if (DrawingComponentManager<MachineDeck>::dirty()) {
-				createSourceData<MachineDeckData>(caller.databaseManager().sourceTable("machine_decks"));
-			}
+            break;
+        }
+        case RequestType::SOURCE_MACHINE_DECK_TABLE: {
+            if (DrawingComponentManager<MachineDeck>::dirty()) {
+                createSourceData<MachineDeckData>(caller.databaseManager().sourceTable("machine_decks"));
+            }
 
-			caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<MachineDeck>::rawSourceData(),
-				DrawingComponentManager<MachineDeck>::rawSourceDataSize());
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<MachineDeck>::rawSourceData(),
+                                         DrawingComponentManager<MachineDeck>::rawSourceDataSize());
 
-			break;
-		}
-		case RequestType::DRAWING_DETAILS: {
-			DrawingRequest request = DrawingRequest::deserialise(message);
+            break;
+        }
+        case RequestType::DRAWING_DETAILS: {
+            DrawingRequest request = DrawingRequest::deserialise(message);
 
-			Drawing *returnedDrawing = caller.databaseManager().executeDrawingQuery(request);
-			if (returnedDrawing != nullptr) {
-				request.drawingData = *returnedDrawing;
-			} else {
-				request.drawingData = Drawing();
-				request.drawingData->setLoadWarning(Drawing::LOAD_FAILED);
-			}
+            Drawing *returnedDrawing = caller.databaseManager().executeDrawingQuery(request);
+            if (returnedDrawing != nullptr) {
+                request.drawingData = *returnedDrawing;
+            } else {
+                request.drawingData = Drawing();
+                request.drawingData->setLoadWarning(Drawing::LOAD_FAILED);
+            }
 
-			unsigned bufferSize = request.serialisedSize();
+            unsigned bufferSize = request.serialisedSize();
 
-			void *responseBuffer = alloca(bufferSize);
-			request.serialise(responseBuffer);
+            void *responseBuffer = alloca(bufferSize);
+            request.serialise(responseBuffer);
 
-			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
             delete returnedDrawing;
 
-			break;
-		}
-		case RequestType::ADD_NEW_COMPONENT: {
-			ComponentInsert &insert = ComponentInsert::deserialise(message);
+            break;
+        }
+        case RequestType::ADD_NEW_COMPONENT: {
+            ComponentInsert &insert = ComponentInsert::deserialise(message);
 
-			ComponentInsert response;
-			response.clearComponentData();
+            ComponentInsert response;
+            response.clearComponentData();
 
-			response.responseCode = caller.databaseManager().insertComponent(insert) ? ComponentInsert::ComponentInsertResponse::SUCCESS
-				: ComponentInsert::ComponentInsertResponse::FAILED;
+            response.responseCode = caller.databaseManager().insertComponent(insert)
+                                    ? ComponentInsert::ComponentInsertResponse::SUCCESS
+                                    : ComponentInsert::ComponentInsertResponse::FAILED;
 
-			unsigned bufferSize = response.serialisedSize();
-			void *responseBuffer = alloca(bufferSize);
-			response.serialise(responseBuffer);
+            unsigned bufferSize = response.serialisedSize();
+            void *responseBuffer = alloca(bufferSize);
+            response.serialise(responseBuffer);
 
-			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
-			if (response.responseCode != ComponentInsert::ComponentInsertResponse::SUCCESS) {
-				break;
-			}
+            if (response.responseCode != ComponentInsert::ComponentInsertResponse::SUCCESS) {
+                break;
+            }
 
-			void *sourceData;
-			unsigned sourceDataBufferSize;
+            void *sourceData;
+            unsigned sourceDataBufferSize;
 
-			switch (insert.getSourceTableCode()) {
-				case RequestType::SOURCE_APERTURE_TABLE: {
-					if (DrawingComponentManager<ApertureShape>::dirty()) {
-						createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
-					}
-					createSourceData<ApertureData>(caller.databaseManager().sourceTable("apertures"));
+            switch (insert.getSourceTableCode()) {
+                case RequestType::SOURCE_APERTURE_TABLE: {
+                    if (DrawingComponentManager<ApertureShape>::dirty()) {
+                        createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
+                    }
+                    createSourceData<ApertureData>(caller.databaseManager().sourceTable("apertures"));
 
-					sourceData = DrawingComponentManager<Aperture>::rawSourceData();
-					sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
+                    sourceData = DrawingComponentManager<Aperture>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
 
-					caller.changelogMessage(clientHandle, "Added a new aperture");
-					break;
-				}
-				case RequestType::SOURCE_MACHINE_TABLE: {
-					createSourceData<MachineData>(caller.databaseManager().sourceTable("machines",
-						"manufacturer<>'None', manufacturer, model"));
+                    caller.changelogMessage(clientHandle, "Added a new aperture");
+                    break;
+                }
+                case RequestType::SOURCE_MACHINE_TABLE: {
+                    createSourceData<MachineData>(caller.databaseManager().sourceTable("machines",
+                                                                                       "manufacturer<>'None', manufacturer, model"));
 
-					sourceData = DrawingComponentManager<Machine>::rawSourceData();
-					sourceDataBufferSize = DrawingComponentManager<Machine>::rawSourceDataSize();
+                    sourceData = DrawingComponentManager<Machine>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<Machine>::rawSourceDataSize();
 
-					caller.changelogMessage(clientHandle, "Added a new machine");
-					break;
-				}
-				case RequestType::SOURCE_SIDE_IRON_TABLE: {
-					std::stringstream orderBy;
-					orderBy << "CASE " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
-					orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
-					orderBy << "ELSE 10 " << std::endl;
-					orderBy << "END, length, drawing_number DESC" << std::endl;
+                    caller.changelogMessage(clientHandle, "Added a new machine");
+                    break;
+                }
+                case RequestType::SOURCE_SIDE_IRON_TABLE: {
+                    std::stringstream orderBy;
+                    orderBy << "CASE " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1565%' THEN 3 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1564%' THEN 4 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1567%' THEN 5 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1568%' THEN 6 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1334%' THEN 7 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1569%' THEN 8 " << std::endl;
+                    orderBy << "WHEN drawing_number LIKE 'SCS1335%' THEN 9 " << std::endl;
+                    orderBy << "ELSE 10 " << std::endl;
+                    orderBy << "END, length, drawing_number DESC" << std::endl;
 
-					createSourceData<SideIronData>(caller.databaseManager().sourceTable("side_irons", orderBy.str()));
+                    createSourceData<SideIronData>(caller.databaseManager().sourceTable("side_irons", orderBy.str()));
 
-					sourceData = DrawingComponentManager<SideIron>::rawSourceData();
-					sourceDataBufferSize = DrawingComponentManager<SideIron>::rawSourceDataSize();
+                    sourceData = DrawingComponentManager<SideIron>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<SideIron>::rawSourceDataSize();
 
-					caller.changelogMessage(clientHandle, "Added a new side iron");
-					break;
-				}
-				case RequestType::SOURCE_MATERIAL_TABLE: {
-					createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
-					sourceData = DrawingComponentManager<Material>::rawSourceData();
-					sourceDataBufferSize = DrawingComponentManager<Material>::rawSourceDataSize();
+                    caller.changelogMessage(clientHandle, "Added a new side iron");
+                    break;
+                }
+                case RequestType::SOURCE_MATERIAL_TABLE: {
+                    createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
+                    sourceData = DrawingComponentManager<Material>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<Material>::rawSourceDataSize();
 
-					caller.changelogMessage(clientHandle, "Added a new material");
-					break;
-				}
-				default:
-					return;
-			}
+                    caller.changelogMessage(clientHandle, "Added a new material");
+                    break;
+                }
+                default:
+                    return;
+            }
 
-			caller.broadcastMessage(sourceData, sourceDataBufferSize);
+            caller.broadcastMessage(sourceData, sourceDataBufferSize);
 
-			delete &insert;
+            delete &insert;
 
-			break;
-		}
-		case RequestType::GET_NEXT_DRAWING_NUMBER: {
-			NextDrawing &next = NextDrawing::deserialise(message);
+            break;
+        }
+        case RequestType::GET_NEXT_DRAWING_NUMBER: {
+            NextDrawing &next = NextDrawing::deserialise(message);
 
-			switch (next.drawingType) {
-				case NextDrawing::DrawingType::AUTOMATIC:
-					next.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
-					break;
-				case NextDrawing::DrawingType::MANUAL:
-					next.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
-					break;
-			}
+            switch (next.drawingType) {
+                case NextDrawing::DrawingType::AUTOMATIC:
+                    next.drawingNumber = caller.databaseManager().nextAutomaticDrawingNumber();
+                    break;
+                case NextDrawing::DrawingType::MANUAL:
+                    next.drawingNumber = caller.databaseManager().nextManualDrawingNumber();
+                    break;
+            }
 
-			unsigned bufferSize = next.serialisedSize();
-			void *responseBuffer = alloca(bufferSize);
-			next.serialise(responseBuffer);
+            unsigned bufferSize = next.serialisedSize();
+            void *responseBuffer = alloca(bufferSize);
+            next.serialise(responseBuffer);
 
-			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
-			delete &next;
+            delete &next;
 
-			break;
-		}
-		case RequestType::CREATE_DATABASE_BACKUP: {
-			DatabaseBackup &backup = DatabaseBackup::deserialise(message);
+            break;
+        }
+        case RequestType::CREATE_DATABASE_BACKUP: {
+            DatabaseBackup &backup = DatabaseBackup::deserialise(message);
 
-			std::filesystem::path backupFile = backupPath / backup.backupName;
-			backupFile.replace_extension("sql");
+            std::filesystem::path backupFile = backupPath / backup.backupName;
+            backupFile.replace_extension("sql");
 
-			DatabaseBackup response;
+            DatabaseBackup response;
 
-			if (caller.databaseManager().createBackup(backupFile)) {
-				response.responseCode = DatabaseBackup::BackupResponse::SUCCESS;
-			} else {
-				response.responseCode = DatabaseBackup::BackupResponse::FAILED;
-			}
+            if (caller.databaseManager().createBackup(backupFile)) {
+                response.responseCode = DatabaseBackup::BackupResponse::SUCCESS;
+            } else {
+                response.responseCode = DatabaseBackup::BackupResponse::FAILED;
+            }
 
-			response.backupName = std::string();
+            response.backupName = std::string();
 
-			unsigned bufferSize = response.serialisedSize();
-			void *responseBuffer = alloca(bufferSize);
-			response.serialise(responseBuffer);
+            unsigned bufferSize = response.serialisedSize();
+            void *responseBuffer = alloca(bufferSize);
+            response.serialise(responseBuffer);
 
-			caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
+            caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
-			delete &backup;
+            delete &backup;
 
-			break;
-		}
-	}
+            break;
+        }
+    }
 }
 
 RequestType DatabaseRequestHandler::getDeserialiseType(void *data) {

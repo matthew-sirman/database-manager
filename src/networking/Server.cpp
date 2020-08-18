@@ -151,6 +151,8 @@ void Server::startServer() {
                                                           message.getMessageSize() - sizeof(uint64));
                     }
                 }
+
+                delete decryptedMessage;
             }
         }
 
