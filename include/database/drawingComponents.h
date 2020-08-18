@@ -17,42 +17,120 @@
 
 #include "../../guard.h"
 
+/// <summary>
+/// DrawingComponent
+/// Base class for each type of drawing component that is associated with an entire
+/// drawing. The idea is that these components can be used on many drawings, and so
+/// can be synchronised independently and then referenced through internal handles.
+/// </summary>
 struct DrawingComponent {
+    /// <summary>
+    /// Serialises this component into the provided buffer. The default implementation
+    /// simply writes the handle into the buffer, as this should be synchronised with the
+    /// server's handle for the same object, and as such is the minimum amount of information
+    /// needed to transmit this component
+    /// </summary>
+    /// <param name="buffer">The buffer to serialise into.</param>
     virtual void serialise(void *buffer) const;
 
+    /// <summary>
+    /// Deserialises a component handle from the provided buffer. At this level,
+    /// it is not known what sort of component is being deserialised, as there is no
+    /// static method polymorphism. So, the method just returns the handle and the typing
+    /// is left to a higher level's responsibility
+    /// </summary>
+    /// <param name="buffer">The buffer to deserialise from.</param>
+    /// <returns>The handle for the deserialised component.</returns>
     static unsigned deserialise(void *buffer);
 
+    /// <summary>
+    /// Getter for the size this component will take in a buffer. This is the size
+    /// of an unsigned representing the handle by default
+    /// </summary>
+    /// <returns>The size this component will occupy in a data buffer.</returns>
     constexpr size_t serialisedSize() const { return sizeof(unsigned); };
 
+    /// <summary>
+    /// Virtual method for converting a component into a ComboboxDataElement used for displaying
+    /// these components in data sourced comboboxes
+    /// </summary>
+    /// <param name="mode">An optional mode parameter which can be used by the overriding
+    /// methods to particularise the mapping to a data element.</param>
+    /// <returns>A ComboboxDataElement object containing the desired information for representing
+    /// a component in a combobox.</returns>
     virtual ComboboxDataElement toDataElement(unsigned mode = 0) const = 0;
 
+    /// <summary>
+    /// Getter for the internal component ID as stored in the database. Note that this
+    /// is not necessarily unique
+    /// </summary>
+    /// <returns>The component ID associated with this entity in the database.</returns>
     unsigned componentID() const;
 
+    /// <summary>
+    /// Getter for the internal component handle used in the application. Note that this
+    /// IS necessarily unique and there is no necessary bijection from handles to components
+    /// </summary>
+    /// <returns>The handle assocaited with this entity in the internal representation.</returns>
     unsigned handle() const;
 
 protected:
+    /// <summary>
+    /// Internal constructor based on the component ID for this entity. This is hidden
+    /// as it should not be possible to create components which do not actually exist
+    /// </summary>
+    /// <param name="id">The component ID as in the database.</param>
     DrawingComponent(unsigned id);
 
+    // Hidden values for the component ID and handle for this component.
     unsigned __componentID, __handle;
 };
 
 template<typename T>
 class DrawingComponentManager;
 
+/// <summary>
+/// Product
+/// Represents a product type that a drawing may be of.
+/// </summary>
 struct Product : public DrawingComponent {
+    // Friend the DrawingComponentManager associated with this type such that it may access the internal
+    // values
     friend class DrawingComponentManager<Product>;
 
 public:
+    // A product has a product name, e.g. "Rubber Screen Cloth"
     std::string productName;
 
+    /// <summary>
+    /// Overridden method to adapt this Product into a ComboboxDataElement
+    /// </summary>
+    /// <param name="mode">Optional mode parameter to specify which adapter method to use.
+    /// For products, this value is unusued.</param>
+    /// <returns>A ComboboxDataElement summary for this Product.</returns>
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
 private:
+    /// <summary>
+    /// Private constructor based on the component ID
+    /// </summary>
+    /// <param name="id">The component ID for this product as in the database.</param>
     Product(unsigned id);
 
+    /// <summary>
+    /// Static deserialiser to convert a raw data buffer into a product element
+    /// </summary>
+    /// <param name="buffer">The buffer to deserialise from.</param>
+    /// <param name="elementSize">A reference to an element size variable which will be set to
+    /// the number of bytes used to represent the product in the buffer.</param>
+    /// <returns></returns>
     static Product * fromSource(void *buffer, unsigned &elementSize);
 };
 
+/// <summary>
+/// Aperture
+/// Represents an aperture tool
+/// </summary>
 struct Aperture : public DrawingComponent {
     friend class DrawingComponentManager<Aperture>;
 
