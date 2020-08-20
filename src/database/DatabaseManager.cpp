@@ -43,8 +43,7 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 		// If there was an error, print it to the console and exit the program.
 		// This error is fatal - if we are unable to create a compression schema, the database cannot
 		// be used.
-		SQL_ERROR(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__, false);
 	}
 }
 
@@ -52,7 +51,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
 		// First, get the SQL query string from the query object.
-		// Then, execute this query (returing a RowResult set).
+		// Then, execute this query (returning a RowResult set).
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
@@ -62,8 +61,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
 		// The client will receive no data, but there is no reason to exit the entire system.
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return {};
 	}
 }
@@ -71,7 +69,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
-		// Construct an empty drawing object on the heap, as we will be returing this
+		// Construct an empty drawing object on the heap, as we will be returning this
 		Drawing *drawing = new Drawing();
 		drawing->setAsDefault();
 
@@ -387,7 +385,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 						}
 					}
 				} else if (apertureDirectionString == "Transverse") {
-					// Otherwise look for which one was transvers.
+					// Otherwise look for which one was transverse.
 					for (const Aperture *ap : matchingApertures) {
 						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
 							pad.setAperture(*ap);
@@ -469,8 +467,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return a nullptr
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return nullptr;
 	}
 }
@@ -482,8 +479,7 @@ mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, con
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return an empty row set
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return mysqlx::RowResult();
 	}
 }
@@ -511,7 +507,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		mysqlx::Row existingDrawing = sess.getSchema(database).getTable("drawings").select("mat_id").where("drawing_number=:drawingNumber")
 			.bind("drawingNumber", insert.drawingData->drawingNumber()).execute().fetchOne();
 
-		// If the resulting row is not null, i.e. ther drawing exist,
+		// If the resulting row is not null, i.e. the drawing exist,
 		if (!existingDrawing.isNull()) {
 			// If we are not in forcing mode (which indicates we should remove and reinsert the drawing)
 			// then we return failure as the drawing exists
@@ -606,9 +602,8 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that insertion failed
-		SQL_ERROR_SAFE(e, *errStream);
+        logError(e, __LINE__);
 		sess.rollback();
-		closeConnection();
 		return false;
 	}
 }
@@ -627,8 +622,7 @@ DatabaseManager::DrawingExistsResponse DatabaseManager::drawingExists(const std:
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the test failed
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return DrawingExistsResponse::R_ERROR;
 	}
 }
@@ -653,8 +647,7 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that the insertion failed
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return false;
 	}
 }
@@ -749,8 +742,7 @@ std::string DatabaseManager::nextAutomaticDrawingNumber() {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return std::string();
 	}
 }
@@ -801,8 +793,7 @@ std::string DatabaseManager::nextManualDrawingNumber() {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error
-		SQL_ERROR_SAFE(e, *errStream);
-		closeConnection();
+        logError(e, __LINE__);
 		return std::string();
 	}
 }
@@ -818,8 +809,31 @@ void DatabaseManager::closeConnection() {
 		// This is not considered a fatal error, though this function will generally only
 		// be called during shutdown, so it is likely that no further operations will be
 		// performed afterwards anyway.
-		SQL_ERROR_SAFE(e, *errStream);
+        logError(e, __LINE__);
 	}
+}
+
+bool DatabaseManager::testConnection() {
+    // Wrapped in a try statement to catch any MySQL errors.
+    try {
+        // Get whether this simple SQL statement returns data or not
+        bool success = sess.sql("SELECT 1").execute().hasData();
+
+        // If we were unsuccessful, close th connection
+        if (!success) {
+            closeConnection();
+        }
+        // Return whether we were successful or not. If this query does not return data, the connection
+        // is broken.
+        return success;
+    } catch (mysqlx::Error &e) {
+        // If there was an error, this indicates that the connection was broken, as the simple SQL
+        // statement above should never fail. We print the error to the console
+        logError(e, __LINE__);
+        closeConnection();
+        return false;
+    }
+    return false;
 }
 
 bool DatabaseManager::connected() const {
@@ -828,4 +842,24 @@ bool DatabaseManager::connected() const {
 
 void DatabaseManager::setErrorStream(std::ostream &stream) {
 	errStream = &stream;
+}
+
+void DatabaseManager::logError(const mysqlx::Error &e, unsigned lineNumber, bool safe) {
+    *errStream << timestamp() << " ERROR::DatabaseManager.cpp:";
+    if (lineNumber != -1) {
+        *errStream << lineNumber << ":";
+    }
+    *errStream <<  " SQL Error " << e << std::endl;
+
+    if (!safe) {
+        exit(1);
+    }
+}
+
+std::string DatabaseManager::timestamp() const {
+    std::stringstream ss;
+    std::time_t now = time(nullptr);
+    std::tm *timePoint = std::localtime(&now);
+    ss << "[" << std::put_time(timePoint, "%d/%m/%Y %H:%M:%S") << "] ";
+    return ss.str();
 }

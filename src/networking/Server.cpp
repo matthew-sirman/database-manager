@@ -330,7 +330,7 @@ DatabaseManager &Server::databaseManager() {
         ERROR_TO("Database manager not set up. No connection to database.", *errorStream)
     }
 
-    if (!dbManager->connected()) {
+    if (!dbManager->testConnection()) {
         delete dbManager;
 
         try {

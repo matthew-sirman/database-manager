@@ -139,6 +139,12 @@ public:
     void closeConnection();
 
     /// <summary>
+    /// Tests if the connection is broken
+    /// <returns>Returns true if the connection is OK otherwise false</returns>
+    /// </summary>
+    bool testConnection();
+
+    /// <summary>
     /// A getter for the current connection status
     /// </summary>
     /// <returns>Whether or not the server is currently connected to the database</returns>
@@ -163,6 +169,12 @@ private:
 
     // Flag indicating whether or not the database is currently connected.
     bool isConnected;
+
+    // Logs an error, e, to the errStream. If safe is set to false, the error will terminate the program.
+    void logError(const mysqlx::Error &e, unsigned lineNumber = -1, bool safe = true);
+
+    // Returns a string representation of the current time
+    std::string timestamp() const;
 };
 
 
