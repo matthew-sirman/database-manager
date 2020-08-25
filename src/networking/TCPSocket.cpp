@@ -150,8 +150,26 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
 
 #ifdef _WIN32
 
-    serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
+    if (inet_pton(AF_INET, ip.c_str(), &serverAddress.sin_addr) == 0) {
+        addrinfo *result = nullptr;
+        addrinfo hints{};
 
+        ZeroMemory(&hints, sizeof(addrinfo));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+
+        if (getaddrinfo(ip.c_str(), std::to_string(port).c_str(), &hints, &result) != 0) {
+            return ERR_PARSE_IP;
+        }
+
+        serverAddress.sin_addr = ((sockaddr_in *) result->ai_addr)->sin_addr;
+    }
+
+    if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(sockaddr_in)) == SOCKET_ERROR) {
+        return ERR_CONNECT;
+    }
+
+    /*serverAddress.sin_addr.s_addr = inet_addr(ip.c_str());
 
     if (connect(sock, (SOCKADDR *) &serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
         if (sock_errno == WSAEADDRNOTAVAIL) {
@@ -166,7 +184,7 @@ TCPSocketCode TCPSocket::connectToServer(const std::string &ip, unsigned short p
         } else {
             return ERR_CONNECT;
         }
-    }
+    }*/
 
 #else
 
