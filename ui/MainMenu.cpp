@@ -820,6 +820,7 @@ void MainMenu::processDrawings() {
                             } else {
                                 drawing.setDrawingNumber(nextManualDrawingNumber);
                             }
+                            drawing.setDate(Date::today());
                         }
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, mode, ui->mainTabs);
                         addDrawingPage->setUserEmail(clientEmailAddress);

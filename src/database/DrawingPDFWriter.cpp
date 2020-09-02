@@ -91,6 +91,10 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     QTextOption centreAlignedText;
     centreAlignedText.setAlignment(Qt::AlignCenter);
 
+    QFont font = painter.font();
+    font.setPointSize(9);
+    painter.setFont(font);
+
     QRectF
             generalDetailsBox = svgTemplateRenderer.boundsOnElement("general_details_target_region"),
             manufacturingDetailsBox = svgTemplateRenderer.boundsOnElement("manufacturing_details_target_region");
@@ -532,7 +536,6 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     details << "ANY REPRODUCTION IN PART OR AS A WHOLE WITHOUT THE WRITTEN PERMISSION ";
     details << "OF SCS LTD. IS PROHIBITED.";
 
-    QFont font = painter.font();
     font.setPointSize(5);
     painter.setFont(font);
 
@@ -546,7 +549,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 }
 
 void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const {
-    const double maxDimensionPercentage = 0.8;
+    const double maxDimensionPercentage = 0.9;
     const double defaultHorizontalBarSize = 45;
     const double dimensionSpacingHeight = 0.7, dimensionBarHeight = 0.8, dimensionInnerSpacingHeight = 0.9;
     const double dimensionHorizontalLapOffset = 0.3, dimensionVerticalLapOffset = 0.3;
@@ -561,6 +564,10 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
 
     QPen smallDashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
     smallDashPen.setDashPattern({48, 24});
+
+    QFont font = painter.font();
+    font.setPointSize(10);
+    painter.setFont(font);
 
     double regionWidth = drawingRegion.width(), regionHeight = drawingRegion.height();
 

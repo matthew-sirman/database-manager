@@ -1427,7 +1427,13 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
 
     // Next we loop over each PDF and append it to the values we add in the query.
     for (std::vector<std::filesystem::path>::const_iterator it = punchPDFs.begin(); it != punchPDFs.end(); it++) {
-        insert << "(" << matID << ", '" << it->generic_string() << "')";
+        std::string fileString = it->generic_string();
+        size_t pos = 0;
+        while ((pos = fileString.find('\'', pos)) < fileString.size()) {
+            fileString.insert(fileString.begin() + pos, '\\');
+            pos += 2;
+        }
+        insert << "(" << matID << ", '" << fileString << "')";
         // If this is not the last PDF, we also add a comma to delimit.
         if (it != punchPDFs.end() - 1) {
             insert << ", ";
@@ -1485,7 +1491,7 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
 std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
 
-    if (centreHoles.size() == 0) {
+    if (centreHoles.empty()) {
         return std::string();
     }
 
@@ -1513,7 +1519,7 @@ std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
 std::string DrawingInsert::deflectorsInsertQuery(unsigned matID) const {
     std::vector<Drawing::Deflector> deflectors = drawingData->deflectors();
 
-    if (deflectors.size() == 0) {
+    if (deflectors.empty()) {
         return std::string();
     }
 
@@ -1541,7 +1547,7 @@ std::string DrawingInsert::deflectorsInsertQuery(unsigned matID) const {
 std::string DrawingInsert::divertorsInsertQuery(unsigned matID) const {
     std::vector<Drawing::Divertor> divertors = drawingData->divertors();
 
-    if (divertors.size() == 0) {
+    if (divertors.empty()) {
         return std::string();
     }
 
