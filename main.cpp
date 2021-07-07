@@ -130,7 +130,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
 
     // Hash the password to use as an AES key to secure the two keys
     uint256 pwHash = getPasswordHash("Enter a root password to secure the encryption keys under: ");
-
+    std::cout << keyPath << std::endl;
     std::filesystem::create_directory(keyPath / "server");
     std::filesystem::create_directory(keyPath / "signature");
 
@@ -364,7 +364,10 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
     std::string dbPassword;
     dbPasswordFile >> dbPassword;*/
 
-    s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
+    std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");;
+    // REMOVE THIS
+
+    s.connectToDatabaseServer("screen_mat_database_dev", "alistairsirman", databasePassword_dev, "scs.local");
 
     s.setRequestHandler(handler);
 

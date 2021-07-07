@@ -110,7 +110,8 @@ private:
         ADD_IMPACT_PAD,
         ADD_CENTRE_HOLES,
         ADD_DEFLECTORS,
-        ADD_DIVERTORS
+        ADD_DIVERTORS,
+        ADD_BLANK_SPACE
     };
 
     QRubberBand *impactPadRegionSelector = nullptr;

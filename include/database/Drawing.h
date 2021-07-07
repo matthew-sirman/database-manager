@@ -17,7 +17,8 @@
 // Macro to find the minimum number of bytes required to cover a given number of bits (e.g. 15 bits -> 2 bytes, 17 bits -> 3 bytes)
 #define MIN_COVERING_BYTES(x) (((x) / 8) + ((x) % 8 != 0))
 // Macro to find the minimum number of bites required to represent a given value (e.g. 513 = 512 + 1 = 2^9 + 2^0 -> 9 bits required)
-#define MIN_COVERING_BITS(x) (32u - __builtin_clz(x))
+#define MIN_COVERING_BITS(x) (32u - 0)//__builtin_clz(x)) 
+//TODO: fix this
 
 // Typedef a byte type representing a single byte of data
 typedef unsigned char byte;

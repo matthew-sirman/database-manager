@@ -238,6 +238,12 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_DIVERTORS;
                 });
+                menu->addAction("Add Blank Space", [this]() {
+                    updateSnapLines();
+                    impactPadRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_BLANK_SPACE;
+                    });
 
                 menu->popup(event->globalPos());
 
@@ -251,8 +257,8 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
 }
 
 void DrawingView::mousePressEvent(QMouseEvent *event) {
-    if (drawingBorderRect->rect().contains(event->pos()) && event->button() == Qt::LeftButton) {
-        switch (addPartState) {
+    if (drawingBorderRect && drawingBorderRect->rect().contains(event->pos()) && event->button() == Qt::LeftButton) {
+            switch (addPartState) {
             case AddPartState::ADD_IMPACT_PAD:
                 if (impactPadRegionSelector) {
                     impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
@@ -265,9 +271,9 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
 
                 QPointF holeCentre = snapPointToCentreF(event->pos());
                 hole.pos.x = ((holeCentre.x() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
-                             drawing->width();
+                    drawing->width();
                 hole.pos.y = ((holeCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
-                             drawing->length();
+                    drawing->length();
                 hole.centreHoleShape = centreHoleSet->currentShape();
 
                 drawing->addCentreHole(hole);
@@ -285,11 +291,11 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
 
                 QPointF deflectorCentre = snapPointToCentreF(event->pos());
                 deflector.pos.x =
-                        ((deflectorCentre.x() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
-                        drawing->width();
+                    ((deflectorCentre.x() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                    drawing->width();
                 deflector.pos.y =
-                        ((deflectorCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
-                        drawing->length();
+                    ((deflectorCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                    drawing->length();
                 deflector.size = deflectorSet->deflectorSize();
                 deflector.setMaterial(deflectorSet->deflectorMaterial());
 
@@ -307,12 +313,12 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                 Drawing::Divertor divertor;
 
                 divertor.verticalPosition =
-                        ((event->pos().y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
-                        drawing->length();
+                    ((event->pos().y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                    drawing->length();
                 divertor.length = divertorSet->divertorLength();
                 divertor.width = divertorSet->divertorWidth();
                 divertor.side =
-                        event->pos().x() < drawingBorderRect->rect().center().x() ? Drawing::LEFT : Drawing::RIGHT;
+                    event->pos().x() < drawingBorderRect->rect().center().x() ? Drawing::LEFT : Drawing::RIGHT;
                 divertor.setMaterial(divertorSet->divertorMaterial());
 
                 drawing->addDivertor(divertor);
@@ -325,21 +331,39 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
 
                 break;
             }
+            case AddPartState::ADD_BLANK_SPACE:
+                if (impactPadRegionSelector) {
+                    impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                    impactPadAnchorPoint = snapPoint(event->pos());
+                    impactPadRegionSelector->show();
+                }
+                break;
             default:
                 break;
+            }
         }
-    }
-    QGraphicsView::mousePressEvent(event);
+        QGraphicsView::mousePressEvent(event);
 }
 
 void DrawingView::mouseMoveEvent(QMouseEvent *event) {
     if (impactPadRegionSelector && addPartState == AddPartState::ADD_IMPACT_PAD &&
         drawingBorderRect->rect().contains(event->pos())) {
         QPoint startPoint = impactPadAnchorPoint;
+        std::cout << "here" << std::endl;
         QPoint endPoint = snapPoint(event->pos());
 
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
                 bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
+
+        impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
+    }
+    if (impactPadRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE &&
+        drawingBorderRect->rect().contains(event->pos())) {
+        QPoint startPoint = impactPadAnchorPoint;
+        QPoint endPoint = snapPoint(event->pos());
+
+        QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
+            bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
 
         impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
@@ -367,6 +391,33 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
             pad.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
 
             drawing->addImpactPad(pad);
+            addPartState = AddPartState::NONE;
+            QApplication::restoreOverrideCursor();
+        }
+        delete impactPadRegionSelector;
+        impactPadRegionSelector = nullptr;
+    }
+    if (impactPadRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
+        // need to look at database to finish
+        if (event->button() == Qt::LeftButton) {
+            QRectF impactPadRect = QRectF(impactPadRegionSelector->pos(), impactPadRegionSelector->size());
+            impactPadRect.setTopLeft(snapPointF(impactPadRect.topLeft()));
+            impactPadRect.setBottomRight(snapPointF(impactPadRect.bottomRight()));
+
+            /*Drawing::ImpactPad pad;
+
+            pad.pos.x =
+                ((impactPadRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                drawing->width();
+            pad.pos.y = ((impactPadRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                drawing->length();
+            pad.width = (impactPadRect.width() / drawingBorderRect->rect().width()) * drawing->width();
+            pad.length = (impactPadRect.height() / drawingBorderRect->rect().height()) * drawing->length();
+
+            pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(1));
+            pad.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
+
+            drawing->addImpactPad(pad);*/
             addPartState = AddPartState::NONE;
             QApplication::restoreOverrideCursor();
         }
