@@ -341,8 +341,9 @@ void Client::clientLoop() {
                 if (responseHandler) {
                     responseHandler->onMessageReceived(decryptedMessage, rMessage.getMessageSize());
                 }
-
-                delete decryptedMessage;
+                // TODO: update pointer
+                // Race condition - "data" within drawingComponents line 420ish gets deleted then accessed
+                // delete decryptedMessage;
             }
         }
 

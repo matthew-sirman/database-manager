@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>
-#include <typeinfo>
 
 #include "RequestType.h"
 #include "../networking/NetworkMessage.h"
@@ -391,7 +390,6 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
     componentLookup[0]->__handle = 0;
 
     unsigned char *buff = (unsigned char *) data;
-    std::cout << buff << std::endl;
 
     RequestType type = *((RequestType *) buff);
     buff += sizeof(RequestType);
@@ -413,14 +411,10 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
         buff += elementSize;
     }
 
-    // data corrupts
     free(sourceData);
-    if (data) {
-        sourceData = data;
-        sourceDataSize = dataSize;
-        sourceDirty = false;
-    }
-
+    sourceData = data;
+    sourceDataSize = dataSize;
+    sourceDirty = false;
 
     for (const std::function<void()> &callback : updateCallbacks) {
         callback();
