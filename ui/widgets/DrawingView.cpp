@@ -251,7 +251,7 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
 }
 
 void DrawingView::mousePressEvent(QMouseEvent *event) {
-    if (drawingBorderRect->rect().contains(event->pos()) && event->button() == Qt::LeftButton) {
+    if (drawingBorderRect && drawingBorderRect->rect().contains(event->pos()) && event->button() == Qt::LeftButton) {
         switch (addPartState) {
             case AddPartState::ADD_IMPACT_PAD:
                 if (impactPadRegionSelector) {

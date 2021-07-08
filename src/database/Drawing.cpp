@@ -4,6 +4,18 @@
 
 #include "../../include/database/Drawing.h"
 
+unsigned int min_covering_bits(unsigned int x) {
+    int n = 32;
+    unsigned y;
+
+    y = x >> 16; if (y != 0) { n = n - 16; x = y; }
+    y = x >> 8; if (y != 0) { n = n - 8; x = y; }
+    y = x >> 4; if (y != 0) { n = n - 4; x = y; }
+    y = x >> 2; if (y != 0) { n = n - 2; x = y; }
+    y = x >> 1; if (y != 0) return n - 2;
+    return 32u - (n - x);
+};
+
 void writeAtBitOffset(void *value, size_t valueByteLength, void *target, size_t bitOffset) {
     size_t startIndex = bitOffset / 8;
     byte offset = bitOffset % 8;
@@ -1246,14 +1258,14 @@ DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int ma
                                                                  unsigned int maxApertureHandle, 
                                                                  unsigned char maxBarSpacingCount, float maxBarSpacing,
                                                                  unsigned char maxDrawingLength) {
-    this->matIDSize = MIN_COVERING_BITS(maxMatID);
-    this->widthSize = MIN_COVERING_BITS((unsigned) (maxWidth * 2));
-    this->lengthSize = MIN_COVERING_BITS((unsigned) (maxLength * 2));
-    this->thicknessHandleSize = MIN_COVERING_BITS(maxThicknessHandle);
-    this->lapSize = MIN_COVERING_BITS((unsigned) (maxLapSize * 2));
-    this->apertureHandleSize = MIN_COVERING_BITS(maxApertureHandle);
-    this->barSpacingCountSize = MIN_COVERING_BITS(maxBarSpacingCount);
-    this->barSpacingSize = MIN_COVERING_BITS((unsigned) (maxBarSpacing * 2));
+    this->matIDSize = min_covering_bits(maxMatID);
+    this->widthSize = min_covering_bits((unsigned) (maxWidth * 2));
+    this->lengthSize = min_covering_bits((unsigned) (maxLength * 2));
+    this->thicknessHandleSize = min_covering_bits(maxThicknessHandle);
+    this->lapSize = min_covering_bits((unsigned) (maxLapSize * 2));
+    this->apertureHandleSize = min_covering_bits(maxApertureHandle);
+    this->barSpacingCountSize = min_covering_bits(maxBarSpacingCount);
+    this->barSpacingSize = min_covering_bits((unsigned) (maxBarSpacing * 2));
 
     this->maxDrawingLength = maxDrawingLength;
     this->maxBarSpacingCount = maxBarSpacingCount;
