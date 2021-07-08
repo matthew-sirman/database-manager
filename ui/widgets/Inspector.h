@@ -10,9 +10,11 @@
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QCheckBox>
+#include <QLineEdit>
 
 #include <functional>
 #include <limits>
+#include <regex>
 
 #include "ExpandingWidget.h"
 #include "DynamicComboBox.h"
@@ -76,11 +78,11 @@ private:
 };
 
 template<typename T>
-inline void Inspector::addComponentField(const QString &label, const std::function<void(const T &)> &fieldSetter, 
-										 ComboboxDataSource &source, unsigned defaultHandle) {
+inline void Inspector::addComponentField(const QString& label, const std::function<void(const T&)>& fieldSetter,
+	ComboboxDataSource& source, unsigned defaultHandle) {
 	static_assert(std::is_base_of<DrawingComponent, T>::value, "Component Field type must inherit DrawingComponent.");
 
-	DynamicComboBox *fieldInput = new DynamicComboBox();
+	DynamicComboBox* fieldInput = new DynamicComboBox();
 	fieldInput->setDataSource(source);
 	fieldInput->setEditable(true);
 	fieldInput->setInsertPolicy(QComboBox::NoInsert);
@@ -94,10 +96,22 @@ inline void Inspector::addComponentField(const QString &label, const std::functi
 			return;
 		}
 		fieldSetter(DrawingComponentManager<T>::getComponentByHandle(fieldInput->itemData(index).toInt()));
-		std::for_each(updateTriggers.begin(), updateTriggers.end(), [](const std::function<void()> &trigger) { trigger(); });
-	});
+		std::for_each(updateTriggers.begin(), updateTriggers.end(), [](const std::function<void()>& trigger) { trigger(); });
+		});
 
 	contents->addRow(label, fieldInput);
-}
+};
+
+// Could make this a template class and make it generalisable, but no point as its a one time use
+// Also here because it didnt link in its own class
+class DrawingNumberInput : public QObject {
+	Q_OBJECT
+public:
+	explicit DrawingNumberInput(QWidget* parent = nullptr);
+	QLineEdit* watched = nullptr;
+
+protected:
+	bool eventFilter(QObject* obj, QEvent* event);
+};
 
 #endif //DATABASE_MANAGER_INSPECTOR_H

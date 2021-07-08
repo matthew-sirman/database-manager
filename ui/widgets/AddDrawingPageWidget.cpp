@@ -53,6 +53,13 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
 
     setMode(ADD_NEW_DRAWING);
+
+    // setting focus out event for DrawingNumberInput
+    // 
+    DrawingNumberInput* filter = new DrawingNumberInput(this);
+    filter->watched = ui->drawingNumberInput;
+    ui->drawingNumberInput->installEventFilter(filter);
+    ui->drawingNumberInput->setText("");
 }
 
 AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode,
