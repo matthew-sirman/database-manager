@@ -253,13 +253,14 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
 
     handler->setNextDrawingNumberCallback([this](const NextDrawing &nextDrawing) {
         switch (nextDrawing.drawingType) {
-            case NextDrawing::DrawingType::AUTOMATIC:
-                nextAutomaticDrawingNumber = nextDrawing.drawingNumber.value();
-                std::basic_regex rx("^[a-zA-Z]{2}[0-9]$");
-                if (std::regex_match(nextAutomaticDrawingNumber, rx)) {
-                    nextAutomaticDrawingNumber = nextAutomaticDrawingNumber.insert(2, "0");
-                }
-                break;
+        case NextDrawing::DrawingType::AUTOMATIC: {
+            nextAutomaticDrawingNumber = nextDrawing.drawingNumber.value();
+            std::basic_regex rx("^[a-zA-Z]{2}[0-9]$");
+            if (std::regex_match(nextAutomaticDrawingNumber, rx)) {
+                nextAutomaticDrawingNumber = nextAutomaticDrawingNumber.insert(2, "0");
+            }
+            break;
+        }
             case NextDrawing::DrawingType::MANUAL:
                 nextManualDrawingNumber = nextDrawing.drawingNumber.value();
                 break;
