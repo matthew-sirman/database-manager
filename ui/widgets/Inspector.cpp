@@ -11,8 +11,8 @@ Inspector::Inspector(const QString &title) {
 }
 
 Inspector::~Inspector() {
-	delete expandingContainer;
 	delete contents;
+	delete expandingContainer;
 }
 
 QFormLayout *Inspector::layout() const {
