@@ -371,14 +371,15 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         positions.erase(last, positions.end());
 
         float lastY = 0;
+        float total = 0;
         for (float y : positions) {
             centreHolesFieldText << (y - lastY);
+            total += (y - lastY);
             lastY = y;
-            if (y != positions.back()) {
-                centreHolesFieldText << "+";
-            }
+            centreHolesFieldText << "+";
         }
 
+        centreHolesFieldText << drawing.length() - total;
         labelText = "Centre Holes";
         fieldText = centreHolesFieldText.str().c_str();
         drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,

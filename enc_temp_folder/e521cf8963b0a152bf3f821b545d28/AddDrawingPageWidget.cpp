@@ -565,6 +565,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
         if (!QDesktopServices::openUrl(QUrl::fromLocalFile(hyperlinkFile.generic_string().c_str()))) {
             QMessageBox::about(this, "Open PDF", ("The PDF could not be found. (" + hyperlinkFile.generic_string() + ")").c_str());
+            std::cout << "other one" << std::endl;
         }
     });
     connect(ui->generatePDFButton, &QPushButton::pressed, [this]() {
