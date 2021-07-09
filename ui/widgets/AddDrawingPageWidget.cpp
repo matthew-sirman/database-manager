@@ -4,6 +4,7 @@
 
 #include "AddDrawingPageWidget.h"
 #include "../build/ui_AddDrawingPageWidget.h"
+#include "addons/EventTracker.h"
 
 AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWidget *parent)
         : QWidget(parent), ui(new Ui::AddDrawingPageWidget()) {
@@ -52,14 +53,10 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
     rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
 
-    setMode(ADD_NEW_DRAWING);
+    EventTracker* eventTracker = new EventTracker(ui->drawingNumberInput, this);
+    ui->drawingNumberInput->installEventFilter(eventTracker);
 
-    // setting focus out event for DrawingNumberInput
-    // 
-    DrawingNumberInput* filter = new DrawingNumberInput(this);
-    filter->watched = ui->drawingNumberInput;
-    ui->drawingNumberInput->installEventFilter(filter);
-    ui->drawingNumberInput->setText("");
+    setMode(ADD_NEW_DRAWING);
 }
 
 AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPageWidget::AddDrawingMode mode,

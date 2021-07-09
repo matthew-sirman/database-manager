@@ -12,6 +12,7 @@
 #include <QTableWidgetItem>
 #include <QInputDialog>
 #include <QKeyEvent>
+#include <regex>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
