@@ -546,6 +546,79 @@ public:
         unsigned apertureHandle;
     };
 
+    struct BlankSpace {
+
+        friend struct Drawing;
+#
+        Coordinate pos;
+
+        float width, length;
+
+        inline BlankSpace() = default;
+
+        inline BlankSpace(const BlankSpace &space) {
+            this->pos.x = space.pos.x;
+            this->pos.y = space.pos.y;
+            this->width = space.width;
+            this->length = space.length;
+        }
+
+        inline ~BlankSpace() = default;
+
+        inline bool operator==(const BlankSpace& other) {
+            // Two Blank Spaces are considered equal if and only if their top left corners, width, and length are the same
+            return pos == other.pos && width == other.width && length == other.length;
+        }
+
+        inline bool operator!=(const BlankSpace& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // An BlankSpace is specified by 4 float values for the X, Y, W, H of the rectangle.
+            return sizeof(float) * 4;
+        }
+
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+        }
+
+        inline static BlankSpace& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new BlankSpace object for returning (hence on the heap)
+            BlankSpace* pad = new BlankSpace();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
+            pad->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            pad->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            pad->width = *((float*)buff);
+            buff += sizeof(float);
+            pad->length = *((float*)buff);
+            buff += sizeof(float);
+
+            // Return the BlankSpace object we constructed
+            return *pad;
+        }
+    };
+
     /// <summary>
     /// CentreHole
     /// A data structure containing the information needed to represent a single centre hole on a drawing.
@@ -1300,6 +1373,16 @@ public:
     /// <returns>The size of the impact pads vector.</returns>
     unsigned numberOfImpactPads() const;
 
+    void addBlankSpace(const BlankSpace& blankSpace);
+
+    std::vector<BlankSpace> blankSpaces() const;
+
+    BlankSpace& blankSpace(unsigned index);
+
+    void removeBlankSpace(const BlankSpace& space);
+
+    unsigned numberOfBlankSpaces() const;
+
     /// <summary>
     /// Adds a centre hole to the drawing
     /// </summary>
@@ -1464,6 +1547,7 @@ private:
     std::optional<unsigned> bottomLayerThicknessHandle;
 
     std::vector<ImpactPad> __impactPads;
+    std::vector<BlankSpace> __blankSpaces;
     std::vector<CentreHole> __centreHoles;
     std::vector<Deflector> __deflectors;
     std::vector<Divertor> __divertors;

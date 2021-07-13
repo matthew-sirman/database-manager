@@ -1488,6 +1488,33 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
     return insert.str();
 }
 
+std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
+    std::vector<Drawing::BlankSpace> blankSpaces = drawingData->blankSpaces();
+
+    if (blankSpaces.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.blank_spaces" << std::endl;
+    insert << "(mat_id, width, length, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::BlankSpace>::const_iterator it = blankSpaces.begin(); it != blankSpaces.end(); it++) {
+        Drawing::BlankSpace space = *it;
+
+        insert << "', " << space.width << ", " << space.length << ", " << space.pos.x << ", " << space.pos.y << ")";
+
+        if (it != blankSpaces.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
 std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
 

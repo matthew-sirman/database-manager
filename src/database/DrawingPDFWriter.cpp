@@ -348,6 +348,26 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                           fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
 
+    if (drawing.numberOfBlankSpaces()) {
+        std::stringstream blankSpaceFieldText;
+        std::vector<Drawing::BlankSpace> spaces = drawing.blankSpaces();
+        for (unsigned i = 0; i < spaces.size(); i++) {
+            Drawing::BlankSpace space = spaces[i];
+
+            blankSpaceFieldText << space.width << "x" << space.length << " at " << "(" << space.pos.x << ", " << space.pos.y
+                << ") ";
+
+            if (i != spaces.size() - 1) {
+                blankSpaceFieldText << ", ";
+            }
+        }
+
+        labelText = "Blank Spaces(s)";
+        fieldText = blankSpaceFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
     if (drawing.numberOfCentreHoles()) {
         std::stringstream centreHolesFieldText;
         std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
@@ -886,6 +906,17 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
                        (pad.length / lengthDim.rCentre) * matBoundingRegion.height())
         );
         painter.setBrush(QColor(255, 255, 0, 127));
+        painter.drawRect(padRegion);
+    }
+
+    for (const Drawing::BlankSpace& space : drawing.blankSpaces()) {
+        QRectF padRegion(
+            QPointF((space.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (space.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((space.width / widthDim.rCentre) * matBoundingRegion.width(),
+                (space.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(200, 200,200, 127));
         painter.drawRect(padRegion);
     }
 

@@ -411,6 +411,22 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->addImpactPad(pad);
 		}
 
+		// Blank Spaces
+		mysqlx::RowResult blankSpaceResults = sess.getSchema(database).getTable("blank_spaces")
+		.select("width", "length", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : blankSpaceResults) {
+			Drawing::BlankSpace space;
+
+			space.width = row[3].get<float>();
+			space.length = row[4].get<float>();
+			space.pos.x = row[5].get<float>();
+			space.pos.y = row[6].get<float>();
+
+			drawing->addBlankSpace(space);
+		}
+
 		// Center Holes
 		mysqlx::RowResult centreHoleResults = sess.getSchema(database).getTable("centre_holes")
 			.select("x_coord", "y_coord", "shape_width", "shape_length", "rounded")
@@ -581,10 +597,13 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		}
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
-			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID);
+			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID), blankSpaceInsert = insert.blankSpaceInsertQuery(matID);
 
 		if (!impactPadsInsert.empty()) {
 			sess.sql(format(impactPadsInsert, database)).execute();
+		}
+		if (!blankSpaceInsert.empty()) {
+			sess.sql(format(blankSpaceInsert, database)).execute();
 		}
 		if (!centreHolesInsert.empty()) {
 			sess.sql(format(centreHolesInsert, database)).execute();

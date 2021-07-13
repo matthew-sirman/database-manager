@@ -109,6 +109,7 @@ Drawing::Drawing(const Drawing &drawing) {
     this->topLayerThicknessHandle = drawing.topLayerThicknessHandle;
     this->bottomLayerThicknessHandle = drawing.bottomLayerThicknessHandle;
     this->__impactPads = drawing.__impactPads;
+    this->__blankSpaces = drawing.__blankSpaces;
     this->__centreHoles = drawing.__centreHoles;
     this->__deflectors = drawing.__deflectors;
     this->__divertors = drawing.__divertors;
@@ -144,6 +145,7 @@ void Drawing::setAsDefault() {
     this->topLayerThicknessHandle = 0;
     this->bottomLayerThicknessHandle = std::nullopt;
     this->__impactPads = {};
+    this->__blankSpaces = {};
     this->__centreHoles = {};
     this->__deflectors = {};
     this->__divertors = {};
@@ -509,6 +511,27 @@ unsigned Drawing::numberOfImpactPads() const {
     return __impactPads.size();
 }
 
+void Drawing::addBlankSpace(const BlankSpace& blankSpace) {
+    __blankSpaces.push_back(blankSpace);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::BlankSpace> Drawing::blankSpaces() const {
+    return __blankSpaces;
+}
+
+Drawing::BlankSpace& Drawing::blankSpace(unsigned index) {
+    return __blankSpaces[index];
+}
+
+void Drawing::removeBlankSpace(const Drawing::BlankSpace& space) {
+    __blankSpaces.erase(std::find(__blankSpaces.begin(), __blankSpaces.end(), space));
+}
+
+unsigned Drawing::numberOfBlankSpaces() const {
+    return __blankSpaces.size();
+}
+
 void Drawing::addCentreHole(const CentreHole &centreHole) {
     __centreHoles.push_back(centreHole);
     invokeUpdateCallbacks();
@@ -823,6 +846,13 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         buffer += pad.serialisedSize();
     }
 
+    // Blank Spaces
+    *buffer++ = drawing.__blankSpaces.size();
+    for (const Drawing::BlankSpace& pad : drawing.__blankSpaces) {
+        pad.serialise(buffer);
+        buffer += pad.serialisedSize();
+    }
+
     // Centre Holes
     *buffer++ = drawing.__centreHoles.size();
     for (const Drawing::CentreHole &hole : drawing.__centreHoles) {
@@ -915,6 +945,10 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__impactPads.begin(), drawing.__impactPads.end(), 0,
                         [](unsigned size, const Drawing::ImpactPad &pad) { return size + pad.serialisedSize(); });
+    // Blank Spaces
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__blankSpaces.begin(), drawing.__blankSpaces.end(), 0,
+            [](unsigned size, const Drawing::BlankSpace& pad) { return size + pad.serialisedSize(); });
     // Centre Holes
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
@@ -1110,6 +1144,14 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         Drawing::ImpactPad &pad = Drawing::ImpactPad::deserialise(buffer);
         buffer += pad.serialisedSize();
         drawing->__impactPads.push_back(pad);
+    }
+
+    // Blank Spaces
+    unsigned char blankSpacesCount = *buffer++;
+    for (unsigned i = 0; i < blankSpacesCount; i++) {
+        Drawing::BlankSpace& pad = Drawing::BlankSpace::deserialise(buffer);
+        buffer += pad.serialisedSize();
+        drawing->__blankSpaces.push_back(pad);
     }
 
     // Centre Holes

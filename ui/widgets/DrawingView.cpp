@@ -37,6 +37,9 @@ DrawingView::~DrawingView() {
     for (ImpactPadGraphicsItem *impactPad : impactPadRegions) {
         delete impactPad;
     }
+    for (BlankSpaceGraphicsItem* blankSpace : blankSpaceReigons) {
+        delete blankSpace;
+    }
     delete centreHoleSet;
     delete deflectorSet;
     delete divertorSet;
@@ -200,6 +203,11 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                         goto base_event_handler;
                     }
                 }
+                for (BlankSpaceGraphicsItem* blankSpace : blankSpaceReigons) {
+                    if (blankSpace->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
                 if (centreHoleSet) {
                     if (centreHoleSet->contains(event->pos())) {
                         goto base_event_handler;
@@ -224,6 +232,12 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_IMPACT_PAD;
                 });
+                menu->addAction("Add Blank Space", [this]() {
+                    updateSnapLines();
+                    blankSpaceReigonSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_BLANK_SPACE;
+                });
                 menu->addAction("Add Centre Holes", [this]() {
                     updateCentreSnapLines();
                     QApplication::setOverrideCursor(Qt::CrossCursor);
@@ -238,12 +252,6 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_DIVERTORS;
                 });
-                menu->addAction("Add Blank Space", [this]() {
-                    updateSnapLines();
-                    impactPadRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
-                    QApplication::setOverrideCursor(Qt::CrossCursor);
-                    addPartState = AddPartState::ADD_BLANK_SPACE;
-                    });
 
                 menu->popup(event->globalPos());
 
@@ -264,6 +272,13 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                     impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
                     impactPadAnchorPoint = snapPoint(event->pos());
                     impactPadRegionSelector->show();
+                }
+                break;
+            case AddPartState::ADD_BLANK_SPACE:
+                if (blankSpaceReigonSelector) {
+                    blankSpaceReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                    blankSpaceAnchorPoint = snapPoint(event->pos());
+                    blankSpaceReigonSelector->show();
                 }
                 break;
             case AddPartState::ADD_CENTRE_HOLES: {
@@ -331,13 +346,6 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
 
                 break;
             }
-            case AddPartState::ADD_BLANK_SPACE:
-                if (impactPadRegionSelector) {
-                    impactPadRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
-                    impactPadAnchorPoint = snapPoint(event->pos());
-                    impactPadRegionSelector->show();
-                }
-                break;
             default:
                 break;
             }
@@ -349,7 +357,6 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
     if (impactPadRegionSelector && addPartState == AddPartState::ADD_IMPACT_PAD &&
         drawingBorderRect->rect().contains(event->pos())) {
         QPoint startPoint = impactPadAnchorPoint;
-        std::cout << "here" << std::endl;
         QPoint endPoint = snapPoint(event->pos());
 
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
@@ -357,15 +364,15 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
 
         impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
-    if (impactPadRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE &&
+    if (blankSpaceReigonSelector && addPartState == AddPartState::ADD_BLANK_SPACE &&
         drawingBorderRect->rect().contains(event->pos())) {
-        QPoint startPoint = impactPadAnchorPoint;
+        QPoint startPoint = blankSpaceAnchorPoint;
         QPoint endPoint = snapPoint(event->pos());
 
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
             bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
 
-        impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
+        blankSpaceReigonSelector->setGeometry(QRect(topLeft, bottomRight));
     }
     QGraphicsView::mouseMoveEvent(event);
 }
@@ -397,32 +404,30 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
         delete impactPadRegionSelector;
         impactPadRegionSelector = nullptr;
     }
-    if (impactPadRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
+    if (blankSpaceReigonSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
         // need to look at database to finish
         if (event->button() == Qt::LeftButton) {
-            QRectF impactPadRect = QRectF(impactPadRegionSelector->pos(), impactPadRegionSelector->size());
-            impactPadRect.setTopLeft(snapPointF(impactPadRect.topLeft()));
-            impactPadRect.setBottomRight(snapPointF(impactPadRect.bottomRight()));
+            QRectF blankSpaceRect = QRectF(blankSpaceReigonSelector->pos(), blankSpaceReigonSelector->size());
+            blankSpaceRect.setTopLeft(snapPointF(blankSpaceRect.topLeft()));
+            blankSpaceRect.setBottomRight(snapPointF(blankSpaceRect.bottomRight()));
 
-            /*Drawing::ImpactPad pad;
+            Drawing::BlankSpace space;
 
-            pad.pos.x =
-                ((impactPadRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+            space.pos.x =
+                ((blankSpaceRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
                 drawing->width();
-            pad.pos.y = ((impactPadRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+            space.pos.y = ((blankSpaceRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
                 drawing->length();
-            pad.width = (impactPadRect.width() / drawingBorderRect->rect().width()) * drawing->width();
-            pad.length = (impactPadRect.height() / drawingBorderRect->rect().height()) * drawing->length();
+            space.width = (blankSpaceRect.width() / drawingBorderRect->rect().width()) * drawing->width();
+            space.length = (blankSpaceRect.height() / drawingBorderRect->rect().height()) * drawing->length();
 
-            pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(1));
-            pad.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
 
-            drawing->addImpactPad(pad);*/
+            drawing->addBlankSpace(space);
             addPartState = AddPartState::NONE;
             QApplication::restoreOverrideCursor();
         }
-        delete impactPadRegionSelector;
-        impactPadRegionSelector = nullptr;
+        delete blankSpaceReigonSelector;
+        blankSpaceReigonSelector = nullptr;
     }
     QGraphicsView::mouseReleaseEvent(event);
 }
@@ -741,6 +746,35 @@ void DrawingView::redrawScene() {
                                 matBoundingRegion.top() + (impactPad.pos.y / length) * matBoundingRegion.height()),
                         QSizeF((impactPad.width / width) * matBoundingRegion.width(),
                                (impactPad.length / length) * matBoundingRegion.height())
+                ));
+            }
+            if (blankSpaceReigons.size() != drawing->blankSpaces().size()) {
+                for (BlankSpaceGraphicsItem* region : blankSpaceReigons) {
+                    graphicsScene->removeItem(region);
+                    delete region;
+                }
+                blankSpaceReigons.clear();
+
+                for (unsigned i = 0; i < drawing->blankSpaces().size(); i++) {
+                    BlankSpaceGraphicsItem* blankSpace = new BlankSpaceGraphicsItem(QRectF(), drawing->blankSpace(i),
+                        inspector);
+                    blankSpace->setRemoveFunction([this, i, blankSpace, graphicsScene]() {
+                        drawing->removeBlankSpace(drawing->blankSpace(i));
+                        graphicsScene->removeItem(blankSpace);
+                        blankSpaceReigons.erase(std::find(blankSpaceReigons.begin(), blankSpaceReigons.end(), blankSpace));
+                        });
+                    graphicsScene->addItem(blankSpace);
+                    blankSpaceReigons.push_back(blankSpace);
+                }
+            }
+
+            for (unsigned i = 0; i < blankSpaceReigons.size(); i++) {
+                Drawing::BlankSpace& blankSpace = drawing->blankSpace(i);
+                blankSpaceReigons[i]->setBounds(QRectF(
+                    QPointF(matBoundingRegion.left() + (blankSpace.pos.x / width) * matBoundingRegion.width(),
+                        matBoundingRegion.top() + (blankSpace.pos.y / length) * matBoundingRegion.height()),
+                    QSizeF((blankSpace.width / width) * matBoundingRegion.width(),
+                        (blankSpace.length / length) * matBoundingRegion.height())
                 ));
             }
 

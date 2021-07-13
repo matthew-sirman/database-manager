@@ -12,6 +12,7 @@ DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0
 
 void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message,
 	unsigned int messageSize) {
+    std::cout << "test" << std::endl;
 	switch (getDeserialiseType(message)) {
         case RequestType::REPEAT_TOKEN_REQUEST:
             caller.sendRepeatToken(clientHandle, (unsigned) RequestType::REPEAT_TOKEN_REQUEST);
@@ -129,6 +130,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::SOURCE_APERTURE_TABLE: {
+            std::cout << "here" << std::endl;
             if (DrawingComponentManager<Aperture>::dirty()) {
                 if (DrawingComponentManager<ApertureShape>::dirty()) {
                     createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
