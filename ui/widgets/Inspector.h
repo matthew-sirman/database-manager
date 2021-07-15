@@ -10,11 +10,9 @@
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QCheckBox>
-#include <QLineEdit>
 
 #include <functional>
 #include <limits>
-#include <regex>
 
 #include "ExpandingWidget.h"
 #include "DynamicComboBox.h"
@@ -100,18 +98,6 @@ inline void Inspector::addComponentField(const QString& label, const std::functi
 		});
 
 	contents->addRow(label, fieldInput);
-};
-
-// Could make this a template class and make it generalisable, but no point as its a one time use
-// Also here because it didnt link in its own class
-class DrawingNumberInput : public QObject {
-	Q_OBJECT
-public:
-	explicit DrawingNumberInput(QWidget* parent = nullptr);
-	QLineEdit* watched = nullptr;
-
-protected:
-	bool eventFilter(QObject* obj, QEvent* event);
 };
 
 #endif //DATABASE_MANAGER_INSPECTOR_H

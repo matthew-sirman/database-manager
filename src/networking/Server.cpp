@@ -274,7 +274,7 @@ void Server::connectToDatabaseServer(const std::string &database, const std::str
                                      const std::string &host) {
     try {
         delete dbManager;
-        dbManager = new DatabaseManager((std::string)(database), (std::string)(user), (std::string)(password), (std::string)(host));
+        dbManager = new DatabaseManager(database, user, password, host);
     } catch (mysqlx::Error &e) {
         SQL_ERROR(e, *errorStream);
     }

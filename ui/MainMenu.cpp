@@ -262,9 +262,6 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
                 break;
             case NextDrawing::DrawingType::MANUAL:
                 nextManualDrawingNumber = nextDrawing.drawingNumber.value();
-                if (std::regex_match(nextManualDrawingNumber, rx)) {
-                    nextManualDrawingNumber = nextManualDrawingNumber.insert(2, "0");
-                }
                 break;
         }
     });

@@ -130,7 +130,6 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
 
     // Hash the password to use as an AES key to secure the two keys
     uint256 pwHash = getPasswordHash("Enter a root password to secure the encryption keys under: ");
-    std::cout << keyPath << std::endl;
     std::filesystem::create_directory(keyPath / "server");
     std::filesystem::create_directory(keyPath / "signature");
 
