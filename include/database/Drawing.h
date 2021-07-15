@@ -619,6 +619,86 @@ public:
         }
     };
 
+    struct DamBar {
+
+        friend struct Drawing;
+#
+        Coordinate pos;
+
+        float width, length;
+
+        float thickness = 25.0;
+
+        inline DamBar() = default;
+
+        inline DamBar(const DamBar& bar) {
+            this->pos.x = bar.pos.x;
+            this->pos.y = bar.pos.y;
+            this->width = bar.width;
+            this->length = bar.length;
+            this->thickness = bar.thickness;
+        }
+
+        inline ~DamBar() = default;
+
+        inline bool operator==(const DamBar& other) {
+            // Two DamBar are considered equal if and only if their top left corners, width, and length are the same
+            return pos == other.pos && width == other.width && length == other.length && thickness == other.thickness;
+        }
+
+        inline bool operator!=(const DamBar& other) {
+            // Return the boolean NOT of whether the bars are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // An DamBar is specified by 4 float values for the X, Y, W, H, T of the rectangle.
+            return sizeof(float) * 5;
+        }
+
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+            *((float*)buff) = thickness;
+            buff += sizeof(float);
+        }
+
+        inline static DamBar& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new DamBar object for returning (hence on the heap)
+            DamBar* bar = new DamBar();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
+            bar->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            bar->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            bar->width = *((float*)buff);
+            buff += sizeof(float);
+            bar->length = *((float*)buff);
+            buff += sizeof(float);
+            bar->thickness = *((float*)buff);
+            buff += sizeof(float);
+
+            // Return the DamBar object we constructed
+            return *bar;
+        }
+    };
+
     /// <summary>
     /// CentreHole
     /// A data structure containing the information needed to represent a single centre hole on a drawing.
@@ -1383,6 +1463,16 @@ public:
 
     unsigned numberOfBlankSpaces() const;
 
+    void addDamBar(const DamBar& damBar);
+
+    std::vector<DamBar> damBars() const;
+
+    DamBar& damBar(unsigned index);
+
+    void removeDamBar(const DamBar& space);
+
+    unsigned numberOfDamBars() const;
+
     /// <summary>
     /// Adds a centre hole to the drawing
     /// </summary>
@@ -1548,6 +1638,7 @@ private:
 
     std::vector<ImpactPad> __impactPads;
     std::vector<BlankSpace> __blankSpaces;
+    std::vector<DamBar> __damBars;
     std::vector<CentreHole> __centreHoles;
     std::vector<Deflector> __deflectors;
     std::vector<Divertor> __divertors;

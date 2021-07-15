@@ -363,7 +363,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
     std::string dbPassword;
     dbPasswordFile >> dbPassword;*/
 
-    std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");;
+    std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");
     // REMOVE THIS
 
     s.connectToDatabaseServer("screen_mat_database_dev", "alistairsirman", databasePassword_dev, "scs.local");

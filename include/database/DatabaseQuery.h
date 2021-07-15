@@ -459,6 +459,8 @@ public:
 
     std::string blankSpaceInsertQuery(unsigned matID) const;
 
+    std::string damBarInsertQuery(unsigned matID) const;
+
     /// <summary>
     /// Constructs an SQL query for inserting the centre holes specified in the drawingData 
     /// object in this query object.

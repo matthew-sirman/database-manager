@@ -413,18 +413,35 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 
 		// Blank Spaces
 		mysqlx::RowResult blankSpaceResults = sess.getSchema(database).getTable("blank_spaces")
-		.select("width", "length", "x_coord", "y_coord")
+			.select("width", "length", "x_coord", "y_coord")
 			.where("mat_id=:matID").bind("matID", query.matID).execute();
 
 		for (const mysqlx::Row& row : blankSpaceResults) {
 			Drawing::BlankSpace space;
 
-			space.width = row[3].get<float>();
-			space.length = row[4].get<float>();
-			space.pos.x = row[5].get<float>();
-			space.pos.y = row[6].get<float>();
+			space.width = row[0].get<float>();
+			space.length = row[1].get<float>();
+			space.pos.x = row[2].get<float>();
+			space.pos.y = row[3].get<float>();
 
 			drawing->addBlankSpace(space);
+		}
+
+		// Dam Bars
+		mysqlx::RowResult damBarResults = sess.getSchema(database).getTable("dam_bars")
+			.select("width", "length", "thickness", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : damBarResults) {
+			Drawing::DamBar bar;
+
+			bar.width = row[0].get<float>();
+			bar.length = row[1].get<float>();
+			bar.thickness = row[2].get<float>();
+			bar.pos.x = row[3].get<float>();
+			bar.pos.y = row[4].get<float>();
+
+			drawing->addDamBar(bar);
 		}
 
 		// Center Holes
@@ -597,13 +614,17 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		}
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
-			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID), blankSpaceInsert = insert.blankSpaceInsertQuery(matID);
+			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID),
+			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), damBarInsert = insert.deflectorsInsertQuery(matID);
 
 		if (!impactPadsInsert.empty()) {
 			sess.sql(format(impactPadsInsert, database)).execute();
 		}
 		if (!blankSpaceInsert.empty()) {
 			sess.sql(format(blankSpaceInsert, database)).execute();
+		}
+		if (!damBarInsert.empty()) {
+			sess.sql(format(damBarInsert, database)).execute();
 		}
 		if (!centreHolesInsert.empty()) {
 			sess.sql(format(centreHolesInsert, database)).execute();

@@ -110,6 +110,7 @@ Drawing::Drawing(const Drawing &drawing) {
     this->bottomLayerThicknessHandle = drawing.bottomLayerThicknessHandle;
     this->__impactPads = drawing.__impactPads;
     this->__blankSpaces = drawing.__blankSpaces;
+    this->__damBars = drawing.__damBars;
     this->__centreHoles = drawing.__centreHoles;
     this->__deflectors = drawing.__deflectors;
     this->__divertors = drawing.__divertors;
@@ -146,6 +147,7 @@ void Drawing::setAsDefault() {
     this->bottomLayerThicknessHandle = std::nullopt;
     this->__impactPads = {};
     this->__blankSpaces = {};
+    this->__damBars = {};
     this->__centreHoles = {};
     this->__deflectors = {};
     this->__divertors = {};
@@ -532,6 +534,27 @@ unsigned Drawing::numberOfBlankSpaces() const {
     return __blankSpaces.size();
 }
 
+void Drawing::addDamBar(const DamBar& damBar) {
+    __damBars.push_back(damBar);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::DamBar> Drawing::damBars() const {
+    return __damBars;
+}
+
+Drawing::DamBar& Drawing::damBar(unsigned index) {
+    return __damBars[index];
+}
+
+void Drawing::removeDamBar(const Drawing::DamBar& space) {
+    __damBars.erase(std::find(__damBars.begin(), __damBars.end(), space));
+}
+
+unsigned Drawing::numberOfDamBars() const {
+    return __damBars.size();
+}
+
 void Drawing::addCentreHole(const CentreHole &centreHole) {
     __centreHoles.push_back(centreHole);
     invokeUpdateCallbacks();
@@ -853,6 +876,13 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         buffer += pad.serialisedSize();
     }
 
+    // Dam Bars
+    *buffer++ = drawing.__damBars.size();
+    for (const Drawing::DamBar& bar : drawing.__damBars) {
+        bar.serialise(buffer);
+        buffer += bar.serialisedSize();
+    }
+
     // Centre Holes
     *buffer++ = drawing.__centreHoles.size();
     for (const Drawing::CentreHole &hole : drawing.__centreHoles) {
@@ -949,6 +979,10 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__blankSpaces.begin(), drawing.__blankSpaces.end(), 0,
             [](unsigned size, const Drawing::BlankSpace& space) { return size + space.serialisedSize(); });
+    // Dam Bars
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__damBars.begin(), drawing.__damBars.end(), 0,
+            [](unsigned size, const Drawing::DamBar& bar) { return size + bar.serialisedSize(); });
     // Centre Holes
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
@@ -1147,11 +1181,19 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     }
 
     // Blank Spaces
-    unsigned char blankSpacesCount = *buffer++;
-    for (unsigned i = 0; i < blankSpacesCount; i++) {
+    unsigned char blankSpaceCount = *buffer++;
+    for (unsigned i = 0; i < blankSpaceCount; i++) {
         Drawing::BlankSpace& space = Drawing::BlankSpace::deserialise(buffer);
         buffer += space.serialisedSize();
         drawing->__blankSpaces.push_back(space);
+    }
+
+    // Dam Bars
+    unsigned char damBarCount = *buffer++;
+    for (unsigned i = 0; i < damBarCount; i++) {
+        Drawing::DamBar& bar = Drawing::DamBar::deserialise(buffer);
+        buffer += bar.serialisedSize();
+        drawing->__damBars.push_back(bar);
     }
 
     // Centre Holes

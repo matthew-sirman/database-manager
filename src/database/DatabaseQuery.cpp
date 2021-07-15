@@ -1515,6 +1515,33 @@ std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
     return insert.str();
 }
 
+std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
+    std::vector<Drawing::DamBar> damBars = drawingData->damBars();
+
+    if (damBars.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.blank_spaces" << std::endl;
+    insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
+        Drawing::DamBar bar = *it;
+
+        insert << "', " << bar.width << ", " << bar.length << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+
+        if (it != damBars.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
 std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
 

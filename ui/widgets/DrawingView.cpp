@@ -40,6 +40,9 @@ DrawingView::~DrawingView() {
     for (BlankSpaceGraphicsItem* blankSpace : blankSpaceReigons) {
         delete blankSpace;
     }
+    for (DamBarGraphicsItem* damBar : damBarReigons) {
+        delete damBar;
+    }
     delete centreHoleSet;
     delete deflectorSet;
     delete divertorSet;
@@ -208,6 +211,11 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                         goto base_event_handler;
                     }
                 }
+                for (DamBarGraphicsItem* damBar : damBarReigons) {
+                    if (damBar->contains(event->pos())) {
+                        goto base_event_handler;
+                    }
+                }
                 if (centreHoleSet) {
                     if (centreHoleSet->contains(event->pos())) {
                         goto base_event_handler;
@@ -238,6 +246,12 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_BLANK_SPACE;
                 });
+                menu->addAction("Add Dam Bar", [this]() {
+                    updateSnapLines();
+                    damBarReigonSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    QApplication::setOverrideCursor(Qt::CrossCursor);
+                    addPartState = AddPartState::ADD_DAM_BAR;
+                    });
                 menu->addAction("Add Centre Holes", [this]() {
                     updateCentreSnapLines();
                     QApplication::setOverrideCursor(Qt::CrossCursor);
@@ -279,6 +293,13 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                     blankSpaceReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
                     blankSpaceAnchorPoint = snapPoint(event->pos());
                     blankSpaceReigonSelector->show();
+                }
+                break;
+            case AddPartState::ADD_DAM_BAR:
+                if (damBarReigonSelector) {
+                    damBarReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                    damBarAnchorPoint = snapPoint(event->pos());
+                    damBarReigonSelector->show();
                 }
                 break;
             case AddPartState::ADD_CENTRE_HOLES: {
@@ -374,6 +395,16 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
 
         blankSpaceReigonSelector->setGeometry(QRect(topLeft, bottomRight));
     }
+    if (damBarReigonSelector && addPartState == AddPartState::ADD_DAM_BAR &&
+        drawingBorderRect->rect().contains(event->pos())) {
+        QPoint startPoint = damBarAnchorPoint;
+        QPoint endPoint = snapPoint(event->pos());
+
+        QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
+            bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
+
+        damBarReigonSelector->setGeometry(QRect(topLeft, bottomRight));
+    }
     QGraphicsView::mouseMoveEvent(event);
 }
 
@@ -405,7 +436,6 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
         impactPadRegionSelector = nullptr;
     }
     if (blankSpaceReigonSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
-        // need to look at database to finish
         if (event->button() == Qt::LeftButton) {
             QRectF blankSpaceRect = QRectF(blankSpaceReigonSelector->pos(), blankSpaceReigonSelector->size());
             blankSpaceRect.setTopLeft(snapPointF(blankSpaceRect.topLeft()));
@@ -428,6 +458,30 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
         }
         delete blankSpaceReigonSelector;
         blankSpaceReigonSelector = nullptr;
+    }
+    if (damBarReigonSelector && addPartState == AddPartState::ADD_DAM_BAR) {
+        if (event->button() == Qt::LeftButton) {
+            QRectF damBarRect = QRectF(damBarReigonSelector->pos(), damBarReigonSelector->size());
+            damBarRect.setTopLeft(snapPointF(damBarRect.topLeft()));
+            damBarRect.setBottomRight(snapPointF(damBarRect.bottomRight()));
+
+            Drawing::DamBar bar;
+
+            bar.pos.x =
+                ((damBarRect.left() - drawingBorderRect->rect().left()) / drawingBorderRect->rect().width()) *
+                drawing->width();
+            bar.pos.y = ((damBarRect.top() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
+                drawing->length();
+            bar.width = (damBarRect.width() / drawingBorderRect->rect().width()) * drawing->width();
+            bar.length = (damBarRect.height() / drawingBorderRect->rect().height()) * drawing->length();
+
+
+            drawing->addDamBar(bar);
+            addPartState = AddPartState::NONE;
+            QApplication::restoreOverrideCursor();
+        }
+        delete damBarReigonSelector;
+        damBarReigonSelector = nullptr;
     }
     QGraphicsView::mouseReleaseEvent(event);
 }
@@ -775,6 +829,36 @@ void DrawingView::redrawScene() {
                         matBoundingRegion.top() + (blankSpace.pos.y / length) * matBoundingRegion.height()),
                     QSizeF((blankSpace.width / width) * matBoundingRegion.width(),
                         (blankSpace.length / length) * matBoundingRegion.height())
+                ));
+            }
+
+            if (damBarReigons.size() != drawing->damBars().size()) {
+                for (DamBarGraphicsItem* region : damBarReigons) {
+                    graphicsScene->removeItem(region);
+                    delete region;
+                }
+                damBarReigons.clear();
+
+                for (unsigned i = 0; i < drawing->damBars().size(); i++) {
+                    DamBarGraphicsItem* damBar = new DamBarGraphicsItem(QRectF(), drawing->damBar(i),
+                        inspector);
+                    damBar->setRemoveFunction([this, i, damBar, graphicsScene]() {
+                        drawing->removeDamBar(drawing->damBar(i));
+                        graphicsScene->removeItem(damBar);
+                        damBarReigons.erase(std::find(damBarReigons.begin(), damBarReigons.end(), damBar));
+                        });
+                    graphicsScene->addItem(damBar);
+                    damBarReigons.push_back(damBar);
+                }
+            }
+
+            for (unsigned i = 0; i < damBarReigons.size(); i++) {
+                Drawing::DamBar& damBar = drawing->damBar(i);
+                damBarReigons[i]->setBounds(QRectF(
+                    QPointF(matBoundingRegion.left() + (damBar.pos.x / width) * matBoundingRegion.width(),
+                        matBoundingRegion.top() + (damBar.pos.y / length) * matBoundingRegion.height()),
+                    QSizeF((damBar.width / width) * matBoundingRegion.width(),
+                        (damBar.length / length) * matBoundingRegion.height())
                 ));
             }
 

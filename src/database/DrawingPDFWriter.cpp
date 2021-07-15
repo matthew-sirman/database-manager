@@ -368,6 +368,26 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
 
+    if (drawing.numberOfDamBars()) {
+        std::stringstream damBarTextField;
+        std::vector<Drawing::DamBar> bars = drawing.damBars();
+        for (unsigned i = 0; i < bars.size(); i++) {
+            Drawing::DamBar bar = bars[i];
+
+            damBarTextField << bar.width << "x" << bar.length << "x" << bar.thickness << " at " << "(" << bar.pos.x << ", " << bar.pos.y
+                << ") ";
+
+            if (i != bars.size() - 1) {
+                damBarTextField << ", ";
+            }
+        }
+
+        labelText = "Dam Bar(s)";
+        fieldText = damBarTextField.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
     if (drawing.numberOfCentreHoles()) {
         std::stringstream centreHolesFieldText;
         std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
@@ -917,6 +937,16 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
                 (space.length / lengthDim.rCentre) * matBoundingRegion.height())
         );
         painter.setBrush(QColor(200, 200,200, 127));
+        painter.drawRect(padRegion);
+    }
+    for (const Drawing::DamBar& bar : drawing.damBars()) {
+        QRectF padRegion(
+            QPointF((bar.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (bar.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((bar.width / widthDim.rCentre) * matBoundingRegion.width(),
+                (bar.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(255, 50, 50, 127));
         painter.drawRect(padRegion);
     }
 

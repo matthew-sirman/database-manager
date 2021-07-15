@@ -15,6 +15,7 @@
 #include "AddLapWidget.h"
 #include "addons/ImpactPadGraphicsItem.h"
 #include "addons/BlankSpaceGraphicsItem.h"
+#include "addons/DamBarGraphicsItem.h"
 #include "addons/CentreHoleSetGraphicsItem.h"
 #include "addons/DivertorSetGraphicsItem.h"
 #include "addons/DeflectorSetGraphicsItem.h"
@@ -101,6 +102,7 @@ private:
     std::vector<QGraphicsRectItem *> matSectionRects;
     std::vector<ImpactPadGraphicsItem *> impactPadRegions;
     std::vector<BlankSpaceGraphicsItem *> blankSpaceReigons;
+    std::vector<DamBarGraphicsItem*> damBarReigons;
     CentreHoleSetGraphicsItem *centreHoleSet = nullptr;
     DeflectorSetGraphicsItem *deflectorSet = nullptr;
     DivertorSetGraphicsItem *divertorSet = nullptr;
@@ -111,6 +113,7 @@ private:
         NONE,
         ADD_IMPACT_PAD,
         ADD_BLANK_SPACE,
+        ADD_DAM_BAR,
         ADD_CENTRE_HOLES,
         ADD_DEFLECTORS,
         ADD_DIVERTORS
@@ -118,8 +121,10 @@ private:
 
     QRubberBand *impactPadRegionSelector = nullptr;
     QRubberBand *blankSpaceReigonSelector = nullptr;
+    QRubberBand* damBarReigonSelector = nullptr;
     QPoint impactPadAnchorPoint;
     QPoint blankSpaceAnchorPoint;
+    QPoint damBarAnchorPoint;
     AddPartState addPartState = AddPartState::NONE;
 
     bool lapsDisabled = false;
