@@ -1504,7 +1504,7 @@ std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
     for (std::vector<Drawing::BlankSpace>::const_iterator it = blankSpaces.begin(); it != blankSpaces.end(); it++) {
         Drawing::BlankSpace space = *it;
 
-        insert << "', " << space.width << ", " << space.length << ", " << space.pos.x << ", " << space.pos.y << ")";
+        insert << "(" << matID << ", " << space.width << ", " << space.length << ", " << space.pos.x << ", " << space.pos.y << ")";
 
         if (it != blankSpaces.end() - 1) {
             insert << ", ";
@@ -1524,21 +1524,20 @@ std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO {0}.blank_spaces" << std::endl;
+    insert << "INSERT INTO {0}.dam_bars" << std::endl;
     insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
         Drawing::DamBar bar = *it;
 
-        insert << "', " << bar.width << ", " << bar.length << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+        insert << "(" << matID << ", " << bar.width << ", " << bar.length  << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
 
         if (it != damBars.end() - 1) {
             insert << ", ";
         }
         insert << std::endl;
     }
-
     return insert.str();
 }
 

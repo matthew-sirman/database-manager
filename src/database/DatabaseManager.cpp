@@ -615,7 +615,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
 			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID),
-			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), damBarInsert = insert.deflectorsInsertQuery(matID);
+			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
 
 		if (!impactPadsInsert.empty()) {
 			sess.sql(format(impactPadsInsert, database)).execute();
