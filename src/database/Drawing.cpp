@@ -948,7 +948,7 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     // Blank Spaces
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__blankSpaces.begin(), drawing.__blankSpaces.end(), 0,
-            [](unsigned size, const Drawing::BlankSpace& pad) { return size + pad.serialisedSize(); });
+            [](unsigned size, const Drawing::BlankSpace& space) { return size + space.serialisedSize(); });
     // Centre Holes
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
@@ -1149,9 +1149,9 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     // Blank Spaces
     unsigned char blankSpacesCount = *buffer++;
     for (unsigned i = 0; i < blankSpacesCount; i++) {
-        Drawing::BlankSpace& pad = Drawing::BlankSpace::deserialise(buffer);
-        buffer += pad.serialisedSize();
-        drawing->__blankSpaces.push_back(pad);
+        Drawing::BlankSpace& space = Drawing::BlankSpace::deserialise(buffer);
+        buffer += space.serialisedSize();
+        drawing->__blankSpaces.push_back(space);
     }
 
     // Centre Holes
