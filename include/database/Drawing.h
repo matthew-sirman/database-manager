@@ -546,6 +546,118 @@ public:
         unsigned apertureHandle;
     };
 
+    struct DamBar {
+        // Friend the drawing structure
+        friend struct Drawing;
+
+        // The coordinate position of the top left corner of this impact pad (in mat coordinates)
+        Coordinate pos;
+        // The width and length of this impact pad (in mat coordinates)
+        float width, length;
+        
+        float thickness = 25;
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline DamBar() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline DamBar(const DamBar& bar) {
+            this->pos.x = bar.pos.x;
+            this->pos.y = bar.pos.y;
+            this->width = bar.width;
+            this->length = bar.length;
+            this->thickness = bar.thickness;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~DamBar() = default;
+
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered equal.</returns>
+        inline bool operator==(const DamBar& other) {
+            // Two impact pads are considered equal if and only if their top left corners, width, length, material and
+            // aperture are all equal.
+            return pos == other.pos && width == other.width && length == other.length &&
+                thickness == other.thickness;
+        }
+
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered inequal.</returns>
+        inline bool operator!=(const DamBar& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // A dam bar is specified by 4 float values for the X, Y, W, H, T of the rectangle, and 
+            // two unsigned integer handles representing the material and aperture handles.
+            return sizeof(float) * 5;
+        }
+
+        /// <summary>
+        /// Serialises the dam bar data into (the start of) a target data buffer
+        /// </summary>
+        /// <param name="target">The data buffer to write to.</param>
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+            *((float*)buff) = thickness;
+            buff += sizeof(float);
+        }
+
+        /// <summary>
+        /// Deserialises an dam bar from (the start of) a data buffer
+        /// </summary>
+        /// <param name="buffer">The data buffer to interpret as an dam bar.</param>
+        /// <returns>A newly constructed impact pad object specified by the data from the buffer.</returns>
+        inline static DamBar& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new ImpactPad object for returning (hence on the heap)
+            DamBar* bar = new DamBar();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
+            bar->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            bar->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            bar->width = *((float*)buff);
+            buff += sizeof(float);
+            bar->length = *((float*)buff);
+            buff += sizeof(float);
+            bar->thickness = *((float*)buff);
+            buff += sizeof(float);
+
+            // Return the impact pad object we constructed
+            return *bar;
+        }
+    };
+
     struct BlankSpace {
 
         friend struct Drawing;
@@ -616,86 +728,6 @@ public:
 
             // Return the BlankSpace object we constructed
             return *pad;
-        }
-    };
-
-    struct DamBar {
-
-        friend struct Drawing;
-#
-        Coordinate pos;
-
-        float width, length;
-
-        float thickness = 25.0;
-
-        inline DamBar() = default;
-
-        inline DamBar(const DamBar& bar) {
-            this->pos.x = bar.pos.x;
-            this->pos.y = bar.pos.y;
-            this->width = bar.width;
-            this->length = bar.length;
-            this->thickness = bar.thickness;
-        }
-
-        inline ~DamBar() = default;
-
-        inline bool operator==(const DamBar& other) {
-            // Two DamBar are considered equal if and only if their top left corners, width, and length are the same
-            return pos == other.pos && width == other.width && length == other.length && thickness == other.thickness;
-        }
-
-        inline bool operator!=(const DamBar& other) {
-            // Return the boolean NOT of whether the bars are considered equal
-            return !(*this == other);
-        }
-
-        inline unsigned serialisedSize() const {
-            // An DamBar is specified by 4 float values for the X, Y, W, H, T of the rectangle.
-            return sizeof(float) * 5;
-        }
-
-        inline void serialise(void* target) const {
-            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
-            unsigned char* buff = (unsigned char*)target;
-
-            // Write each value to the buffer in turn, each time incrementing the buffer pointer
-            // by the size of the object added
-            *((float*)buff) = pos.x;
-            buff += sizeof(float);
-            *((float*)buff) = pos.y;
-            buff += sizeof(float);
-            *((float*)buff) = width;
-            buff += sizeof(float);
-            *((float*)buff) = length;
-            buff += sizeof(float);
-            *((float*)buff) = thickness;
-            buff += sizeof(float);
-        }
-
-        inline static DamBar& deserialise(void* buffer) {
-            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
-            unsigned char* buff = (unsigned char*)buffer;
-
-            // Construct a new DamBar object for returning (hence on the heap)
-            DamBar* bar = new DamBar();
-
-            // Read each value in turn in the same sequence as specified by the serialise function
-            // and write to each property in the pad itself.
-            bar->pos.x = *((float*)buff);
-            buff += sizeof(float);
-            bar->pos.y = *((float*)buff);
-            buff += sizeof(float);
-            bar->width = *((float*)buff);
-            buff += sizeof(float);
-            bar->length = *((float*)buff);
-            buff += sizeof(float);
-            bar->thickness = *((float*)buff);
-            buff += sizeof(float);
-
-            // Return the DamBar object we constructed
-            return *bar;
         }
     };
 
@@ -1059,6 +1091,7 @@ public:
         // Handle for the material this divertor is made from
         unsigned materialHandle;
     };
+
 
     /// <summary>
     /// Default constructor for a Drawing object
@@ -1453,6 +1486,16 @@ public:
     /// <returns>The size of the impact pads vector.</returns>
     unsigned numberOfImpactPads() const;
 
+    void addDamBar(const DamBar& bar);
+
+    std::vector<DamBar> damBars() const;
+
+    DamBar& damBar(unsigned index);
+
+    void removeDamBar(const DamBar& bar);
+
+    unsigned numberOfDamBars() const;
+
     void addBlankSpace(const BlankSpace& blankSpace);
 
     std::vector<BlankSpace> blankSpaces() const;
@@ -1462,16 +1505,6 @@ public:
     void removeBlankSpace(const BlankSpace& space);
 
     unsigned numberOfBlankSpaces() const;
-
-    void addDamBar(const DamBar& damBar);
-
-    std::vector<DamBar> damBars() const;
-
-    DamBar& damBar(unsigned index);
-
-    void removeDamBar(const DamBar& space);
-
-    unsigned numberOfDamBars() const;
 
     /// <summary>
     /// Adds a centre hole to the drawing

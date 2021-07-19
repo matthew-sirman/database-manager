@@ -1488,6 +1488,34 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
     return insert.str();
 }
 
+std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
+    std::vector<Drawing::DamBar> damBars = drawingData->damBars();
+
+    if (damBars.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.impact_pads" << std::endl;
+    insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
+        Drawing::DamBar bar = *it;
+
+
+        insert << "', " << bar.width << ", " << bar.length << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+
+        if (it != damBars.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
 std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
     std::vector<Drawing::BlankSpace> blankSpaces = drawingData->blankSpaces();
 
@@ -1512,32 +1540,6 @@ std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
         insert << std::endl;
     }
 
-    return insert.str();
-}
-
-std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
-    std::vector<Drawing::DamBar> damBars = drawingData->damBars();
-
-    if (damBars.empty()) {
-        return std::string();
-    }
-
-    std::stringstream insert;
-
-    insert << "INSERT INTO {0}.dam_bars" << std::endl;
-    insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
-    insert << "VALUES" << std::endl;
-
-    for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
-        Drawing::DamBar bar = *it;
-
-        insert << "(" << matID << ", " << bar.width << ", " << bar.length  << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
-
-        if (it != damBars.end() - 1) {
-            insert << ", ";
-        }
-        insert << std::endl;
-    }
     return insert.str();
 }
 

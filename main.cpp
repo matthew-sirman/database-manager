@@ -258,7 +258,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath, con
     }
 }
 
-void runServer(std::filesystem::path metaFilePath, const std::string &user) {
+void runServer(std::filesystem::path metaFilePath, const std::string &user, bool dev) {
     metaFilePath = metaFilePath / "serverMeta.json";
     if (!std::filesystem::exists(metaFilePath)) {
         std::cerr << "Meta file path " << metaFilePath << " does not exist." << std::endl;
@@ -363,10 +363,13 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
     std::string dbPassword;
     dbPasswordFile >> dbPassword;*/
 
-    std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");
-    // REMOVE THIS
-
-    s.connectToDatabaseServer("screen_mat_database_dev", "alistairsirman", databasePassword_dev, "scs.local");
+    if (!dev) {
+        s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
+    }
+    else {
+        std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");
+        s.connectToDatabaseServer("screen_mat_database_dev", "alistairsirman", databasePassword_dev, "scs.local");
+    }
 
     s.setRequestHandler(handler);
 
@@ -396,6 +399,7 @@ void printHelpMessage() {
     std::cout << "Database Manager Help" << std::endl;
     std::cout << "Flags: " << std::endl;
     std::cout << "  --server            - run the server." << std::endl;
+    std::cout << "  --dev               - run the server on the dev database" << std::endl;
     std::cout << "  --client            - run a client instance." << std::endl;
     std::cout << "  --setup             - set the server keys up and save them in key files." << std::endl;
     std::cout << "                        NOTE: This will not start the server." << std::endl;
@@ -421,6 +425,8 @@ int main(int argc, char *argv[]) {
 
     // The mode to run in. This changes depending on the arguments provided
     RunMode mode = NO_MODE;
+    // Whether it is in normal or dev mode
+    bool dev = false;
     // The user to start the server on
     std::string user = "root";
     // The new user if they are running in add user mode
@@ -457,6 +463,11 @@ int main(int argc, char *argv[]) {
                     std::cerr << "ERROR: You can only use one mode at a time." << std::endl;
                     goto error;
                 }
+            }
+            
+            // If they used the flag "--dev" they want to run the server in dev mode.
+            if (strcmp(argv[i], "--dev") == 0) {
+                dev = true;
             }
 
             // If they used the flag "--client" they want to run a client
@@ -497,9 +508,15 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (dev && mode != SERVER) {
+        std::cout << "Invalid arguments. Use --help for more information." << std::endl;
+        std::cerr << "Only the server can be in dev mode." << std::endl;
+        goto error;
+    }
+
     switch (mode) {
         case SERVER:
-            runServer(metaFilePath, user);
+            runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
             return runClient(metaFilePath, argc, argv);

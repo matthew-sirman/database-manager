@@ -457,9 +457,9 @@ public:
     /// <returns>An SQL query string or an empty string if there are no impact pads to insert.</returns>
     std::string impactPadsInsertQuery(unsigned matID) const;
 
-    std::string blankSpaceInsertQuery(unsigned matID) const;
-
     std::string damBarInsertQuery(unsigned matID) const;
+
+    std::string blankSpaceInsertQuery(unsigned matID) const;
 
     /// <summary>
     /// Constructs an SQL query for inserting the centre holes specified in the drawingData 

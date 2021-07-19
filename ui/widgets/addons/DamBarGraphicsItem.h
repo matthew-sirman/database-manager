@@ -13,7 +13,7 @@
 #include "../Inspector.h"
 #include "../DimensionLine.h"
 #include "../../../include/database/Drawing.h"
-
+	
 class DamBarGraphicsItem : public QGraphicsItem {
 public:
 	explicit DamBarGraphicsItem(const QRectF& bounds, Drawing::DamBar& damBar,
