@@ -83,7 +83,11 @@ public:
     /// <param name="tableName">The string name of the table we wish to source.</param>
     /// <param name="orderBy">An optional string to order the results from the query.</param>
     /// <returns>The rows from the table.</returns>
-    mysqlx::RowResult sourceTable(const std::string &tableName, const std::string &orderBy = std::string());
+    mysqlx::RowResult sourceTable(const std::string& tableName, const std::string& orderBy = std::string());
+
+    mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy = std::string());
+
+    mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy = std::string());
 
     /// <summary>
     /// Inserts a drawing into the database based upon the passed in DrawingInsert object, which contains

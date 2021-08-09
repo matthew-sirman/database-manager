@@ -25,7 +25,7 @@ public:
 
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-    void sourceDataFromBuffer(void *buffer);
+    void sourceDataFromBuffer(void* buffer);
 
     DrawingSummary summaryAtRow(int row) const;
 

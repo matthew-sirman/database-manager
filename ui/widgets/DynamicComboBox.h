@@ -24,6 +24,8 @@ public:
 
     void updateSourceList();
 
+    void setManualIndexFunc(std::function<void(DynamicComboBox*)> func);
+
 protected:
     void showPopup() override;
 
@@ -35,6 +37,8 @@ private:
     std::vector<ComboboxDataElement> elementsBeforeSource, elementsAfterSource;
 
     unsigned sourceState = 0;
+
+    std::function<void(DynamicComboBox*)> setManualIndex = nullptr;
 };
 
 

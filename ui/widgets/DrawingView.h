@@ -15,6 +15,7 @@
 #include "AddLapWidget.h"
 #include "addons/ImpactPadGraphicsItem.h"
 #include "addons/BlankSpaceGraphicsItem.h"
+#include "addons/ExtraApertureGraphicsItem.h"
 #include "addons/DamBarGraphicsItem.h"
 #include "addons/CentreHoleSetGraphicsItem.h"
 #include "addons/DivertorSetGraphicsItem.h"
@@ -101,7 +102,8 @@ private:
     std::vector<WidgetDimensionLine *> spacingDimensions, barDimensions;
     std::vector<QGraphicsRectItem *> matSectionRects;
     std::vector<ImpactPadGraphicsItem *> impactPadRegions;
-    std::vector<BlankSpaceGraphicsItem *> blankSpaceReigons;
+    std::vector<BlankSpaceGraphicsItem*> blankSpaceReigons;
+    std::vector<ExtraApertureGraphicsItem*> extraApertureReigons;
     std::vector<DamBarGraphicsItem*> damBarReigons;
     CentreHoleSetGraphicsItem *centreHoleSet = nullptr;
     DeflectorSetGraphicsItem *deflectorSet = nullptr;
@@ -113,6 +115,7 @@ private:
         NONE,
         ADD_IMPACT_PAD,
         ADD_BLANK_SPACE,
+        ADD_EXTRA_APERTURE,
         ADD_DAM_BAR,
         ADD_CENTRE_HOLES,
         ADD_DEFLECTORS,
@@ -120,10 +123,12 @@ private:
     };
 
     QRubberBand *impactPadRegionSelector = nullptr;
-    QRubberBand *blankSpaceReigonSelector = nullptr;
+    QRubberBand* blankSpaceReigonSelector = nullptr;
+    QRubberBand* extraApertureReigonSelector = nullptr;
     QRubberBand* damBarReigonSelector = nullptr;
     QPoint impactPadAnchorPoint;
     QPoint blankSpaceAnchorPoint;
+    QPoint extraApertureAnchorPoint;
     QPoint damBarAnchorPoint;
     AddPartState addPartState = AddPartState::NONE;
 

@@ -3,6 +3,7 @@
 //
 
 #include "../../include/database/drawingComponents.h"
+#include "../../include/database/ExtraPriceManager.h"
 
 void DrawingComponent::serialise(void *buffer) const {
     *((unsigned *) buffer) = __handle;
@@ -28,17 +29,15 @@ Product::Product(unsigned id) : DrawingComponent(id) {
 
 }
 
-Product *Product::fromSource(void *buffer, unsigned &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+Product *Product::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    Product *product = new Product(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    Product *product = new Product(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
+    unsigned char nameSize = *(*buff)++;
 
-    unsigned char nameSize = buff[elementSize++];
-    product->productName = std::string((const char *) &buff[elementSize], nameSize);
-    elementSize += nameSize;
+    product->productName = std::string((const char *) *buff, nameSize);
+    *buff += nameSize;
 
     return product;
 }
@@ -51,26 +50,23 @@ Aperture::Aperture(unsigned id) : DrawingComponent(id) {
 
 }
 
-Aperture *Aperture::fromSource(void *buffer, unsigned &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+Aperture *Aperture::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    Aperture *aperture = new Aperture(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    Aperture *aperture = new Aperture(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
-
-    aperture->width = *((float *) (buff + elementSize));
-    elementSize += sizeof(float);
-    aperture->length = *((float *) (buff + elementSize));
-    elementSize += sizeof(float);
-    aperture->baseWidth = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
-    aperture->baseLength = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
-    aperture->apertureShapeID = *((unsigned *) (buff + elementSize));
-    elementSize += sizeof(unsigned);
-    aperture->quantity = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
+    aperture->width = *((float *) (*buff));
+    *buff += sizeof(float);
+    aperture->length = *((float *) (*buff));
+    *buff += sizeof(float);
+    aperture->baseWidth = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
+    aperture->baseLength = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
+    aperture->apertureShapeID = *((unsigned *) (*buff));
+    *buff += sizeof(unsigned);
+    aperture->quantity = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
 
     return aperture;
 }
@@ -101,17 +97,14 @@ ApertureShape::ApertureShape(unsigned id) : DrawingComponent(id) {
 
 }
 
-ApertureShape *ApertureShape::fromSource(void *buffer, unsigned &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+ApertureShape *ApertureShape::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    ApertureShape *apertureShape = new ApertureShape(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    ApertureShape *apertureShape = new ApertureShape(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
-
-    unsigned char shapeSize = buff[elementSize++];
-    apertureShape->shape = std::string((const char *) &buff[elementSize], shapeSize);
-    elementSize += shapeSize;
+    unsigned char shapeSize = *(*buff)++;
+    apertureShape->shape = std::string((const char *) *buff, shapeSize);
+    *buff += shapeSize;
 
     return { apertureShape };
 }
@@ -124,24 +117,139 @@ Material::Material(unsigned id) : DrawingComponent(id) {
 
 }
 
-Material *Material::fromSource(void *buffer, unsigned &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+Material *Material::fromSource(unsigned char ** buff) {
 
-    elementSize = 0;
+    Material *material = new Material(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    Material *material = new Material(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
+    material->hardness = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
 
-    material->hardness = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
-    material->thickness = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
+    material->thickness = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
 
-    unsigned char nameSize = buff[elementSize++];
-    material->materialName = std::string((const char *) &buff[elementSize], nameSize);
-    elementSize += nameSize;
+    
+    unsigned char nameSize = *(*buff)++;
+
+    material->materialName = std::string((const char *) *buff, nameSize);
+    *buff += nameSize;
+
+    unsigned char priceElements = *(*buff)++;
+    for (unsigned char i = 0; i < priceElements; i++) {
+        float item1 = *((float*)(*buff));
+        *buff += sizeof(float);
+        float item2 = *((float*)(*buff));
+        *buff += sizeof(float);
+        float item3 = *((float*)(*buff));
+        *buff += sizeof(float);
+        MaterialPricingType pricingType = *((MaterialPricingType*)(*buff));
+        *buff += sizeof(MaterialPricingType);
+        material->materialPrices.push_back({item1, item2, item3, pricingType });
+    }
 
     return material;
+}
+
+ExtraPrice::ExtraPrice(unsigned id) :DrawingComponent(id) {
+
+}
+
+std::string ExtraPrice::extraPrice() const {
+    switch (type) {
+        case (ExtraPriceType::SIDE_IRON_NUTS) :
+            return "Side Iron Nuts";
+        case (ExtraPriceType::SIDE_IRON_SCREWS) :
+            return "Side Iron Screws";
+        case (ExtraPriceType::TACKYBACK_GLUE):
+            return "Tackyback Glue";
+        case (ExtraPriceType::LABOUR):
+            return "Labour";
+        default:
+            return std::string();
+    }
+}
+
+ComboboxDataElement ExtraPrice::toDataElement(unsigned mode) const
+{
+    return { extraPrice(), __handle };;
+}
+
+//float ExtraPrice::getPrice(float n) {
+//    if (type == ExtraPriceType::TACKYBACK_GLUE)
+//        return n * (price / squareMetres);
+//    else if (type == ExtraPriceType::LABOUR)
+//        return n * (price / 60.0);
+//    return n * (price / amount);
+//}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::SIDE_IRON_NUTS>(typename ExtraPriceTrait<ExtraPriceType::SIDE_IRON_NUTS>::numType n) {
+    return n * (price / amount);
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(typename ExtraPriceTrait<ExtraPriceType::SIDE_IRON_SCREWS>::numType n) {
+    return n * (price / amount);
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::TACKYBACK_GLUE>(typename ExtraPriceTrait<ExtraPriceType::TACKYBACK_GLUE>::numType n) {
+    return n * (price / squareMetres);
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::LABOUR>(typename ExtraPriceTrait<ExtraPriceType::LABOUR>::numType n) {
+    return n * (price / 60);
+}
+
+ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
+
+    ExtraPrice* extraPrice = new ExtraPrice(*((unsigned*)*buff));
+    *buff += sizeof(unsigned);
+
+    ExtraPriceType type = *((ExtraPriceType*)(*buff));
+    *buff += sizeof(ExtraPriceType);
+
+    extraPrice->type = type;
+
+    extraPrice->price = *((float*)(*buff));
+    *buff += sizeof(float);
+
+    switch (extraPrice->type) {
+        case (ExtraPriceType::SIDE_IRON_NUTS):
+            extraPrice->amount = *((unsigned*)(*buff));
+            *buff += sizeof(unsigned);
+            break;
+        case (ExtraPriceType::SIDE_IRON_SCREWS):
+            extraPrice->amount = *((unsigned*)(*buff));
+            *buff += sizeof(unsigned);
+            break;
+        case (ExtraPriceType::TACKYBACK_GLUE):
+            extraPrice->squareMetres = *((float*)(*buff));
+            *buff += sizeof(float);
+            break;
+        case (ExtraPriceType::LABOUR):
+
+            break;
+    }
+    switch (type) {
+        case ExtraPriceType::SIDE_IRON_NUTS :
+            ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::SIDE_IRON_SCREWS :
+            ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::TACKYBACK_GLUE :
+            ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::LABOUR :
+            ExtraPriceManager<ExtraPriceType::LABOUR>::setExtraPrice(extraPrice);
+            break;
+        default:
+            break;
+    }
+    return extraPrice;
+
 }
 
 std::string Material::material() const {
@@ -156,30 +264,48 @@ ComboboxDataElement Material::toDataElement(unsigned mode) const {
     return { material(), __handle };
 }
 
+void Material::updateMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>& prev, const std::tuple<float, float, float, MaterialPricingType> &value) {
+    for (std::tuple<float, float, float, MaterialPricingType>& tuple : materialPrices) {
+        if (std::get<0>(tuple) == std::get<0>(prev) && std::get<1>(tuple) == std::get<1>(prev)) {
+            tuple = value;
+        }
+    }
+}
+
+void Material::addMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>& tuple) {
+    materialPrices.push_back(tuple);
+}
+
+void Material::removeMaterialPrces(const std::tuple<float, float, float, MaterialPricingType> &tuple) {
+    for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator it = materialPrices.begin(); it < materialPrices.end(); it++) {
+        if (*it == tuple) {
+            materialPrices.erase(it);
+            return;
+        }
+    };
+}
+
 SideIron::SideIron(unsigned id) : DrawingComponent(id) {
 
 }
 
-SideIron *SideIron::fromSource(void *buffer, unsigned &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+SideIron *SideIron::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    SideIron *sideIron = new SideIron(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    SideIron *sideIron = new SideIron(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
+    sideIron->type = (SideIronType) *(*buff);
+    *buff += sizeof(unsigned char);
+    sideIron->length = *((unsigned short *) (*buff));
+    *buff += sizeof(unsigned short);
 
-    sideIron->type = (SideIronType) *(buff + elementSize);
-    elementSize += sizeof(unsigned char);
-    sideIron->length = *((unsigned short *) (buff + elementSize));
-    elementSize += sizeof(unsigned short);
+    unsigned char drawingNumberSize = *(*buff)++;
+    sideIron->drawingNumber = std::string((const char *) *buff, drawingNumberSize);
+    *buff += drawingNumberSize;
 
-    unsigned char drawingNumberSize = buff[elementSize++];
-    sideIron->drawingNumber = std::string((const char *) &buff[elementSize], drawingNumberSize);
-    elementSize += drawingNumberSize;
-
-    unsigned char hyperlinkSize = buff[elementSize++];
-    sideIron->hyperlink = std::string((const char *) &buff[elementSize], hyperlinkSize);
-    elementSize += hyperlinkSize;
+    unsigned char hyperlinkSize = *(*buff)++;
+    sideIron->hyperlink = std::string((const char *) *buff, hyperlinkSize);
+    *buff += hyperlinkSize;
 
     return sideIron;
 }
@@ -215,25 +341,88 @@ ComboboxDataElement SideIron::toDataElement(unsigned mode) const {
     return { sideIronStr(), __handle };
 }
 
+SideIronPrice::SideIronPrice(unsigned id) : DrawingComponent(id) {
+
+}
+
+std::string SideIronPrice::sideIronPriceStr() const {
+    std::stringstream ss;
+    switch (type) {
+        case SideIronType::None:
+            return "None";
+        case SideIronType::A:
+            ss << "A";
+            break;
+        case SideIronType::B:
+            ss << "B";
+            break;
+        case SideIronType::C:
+            ss << "C";
+            break;
+        case SideIronType::D:
+            ss << "D";
+            break;
+        case SideIronType::E:
+            ss << "E";
+            break;
+    }
+    ss << " Side Iron";
+    return ss.str();
+}
+
+SideIronPrice* SideIronPrice::fromSource(unsigned char** buff) {
+
+    SideIronPrice* sideIronPrice = new SideIronPrice(*((unsigned int*)*buff));
+    *buff += sizeof(unsigned); 
+
+    sideIronPrice->type = *((SideIronType*)(*buff));
+    *buff += sizeof(SideIronType);
+
+    unsigned char priceElements = *(*buff)++;
+
+    for (unsigned char i = 0; i < priceElements; i++) {
+        unsigned item1 = *((unsigned*)(*buff));
+        *buff += sizeof(unsigned);
+
+        float item2 = *((float*)(*buff));
+        *buff += sizeof(float);
+
+        float item3 = *((float*)(*buff));
+        *buff += sizeof(float);
+
+        unsigned item4 = *((unsigned*)(*buff));
+        *buff += sizeof(unsigned);
+
+        bool item5 = *((bool*)(*buff));
+        *buff += sizeof(bool);
+
+        sideIronPrice->prices.push_back({item1, item2, item3, item4, item5});
+    }
+
+    return sideIronPrice;
+
+}
+
+ComboboxDataElement SideIronPrice::toDataElement(unsigned mode) const {
+    return { sideIronPriceStr(), __handle };
+}
+
 Machine::Machine(unsigned int id) : DrawingComponent(id) {
 
 }
 
-Machine *Machine::fromSource(void *buffer, unsigned int &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+Machine *Machine::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    Machine *machine = new Machine(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    Machine *machine = new Machine(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
+    unsigned char manufacturerSize = *(*buff)++;
+    machine->manufacturer = std::string((const char *) *buff, manufacturerSize);
+    *buff += manufacturerSize;
 
-    unsigned char manufacturerSize = buff[elementSize++];
-    machine->manufacturer = std::string((const char *) &buff[elementSize], manufacturerSize);
-    elementSize += manufacturerSize;
-
-    unsigned char modelSize = buff[elementSize++];
-    machine->model = std::string((const char *) &buff[elementSize], modelSize);
-    elementSize += modelSize;
+    unsigned char modelSize = *(*buff)++;
+    machine->model = std::string((const char *) *buff, modelSize);
+    *buff += modelSize;
 
     return machine;
 }
@@ -257,17 +446,14 @@ MachineDeck::MachineDeck(unsigned int id) : DrawingComponent(id) {
 
 }
 
-MachineDeck *MachineDeck::fromSource(void *buffer, unsigned int &elementSize) {
-    unsigned char *buff = (unsigned char *) buffer;
+MachineDeck *MachineDeck::fromSource(unsigned char** buff) {
 
-    elementSize = 0;
+    MachineDeck *machineDeck = new MachineDeck(*((unsigned *) *buff));
+    *buff += sizeof(unsigned);
 
-    MachineDeck *machineDeck = new MachineDeck(*((unsigned *) buff));
-    elementSize += sizeof(unsigned);
-
-    unsigned char deckSize = buff[elementSize++];
-    machineDeck->deck = std::string((const char *) &buff[elementSize], deckSize);
-    elementSize += deckSize;
+    unsigned char deckSize = *(*buff)++;
+    machineDeck->deck = std::string((const char *) *buff, deckSize);
+    *buff += deckSize;
 
     return machineDeck;
 }

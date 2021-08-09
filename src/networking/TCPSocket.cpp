@@ -318,9 +318,9 @@ TCPSocketCode TCPSocket::tryAccept(bool callbackAsync) const {
 
     if (acceptCallback) {
         if (callbackAsync) {
-            std::thread(acceptCallback, acceptedSocket).detach();
+            std::thread(acceptCallback, std::move(acceptedSocket)).detach();
         } else {
-            acceptCallback(acceptedSocket);
+            acceptCallback(std::move(acceptedSocket));
         }
     }
 
@@ -513,7 +513,7 @@ bool TCPSocket::dead() const {
     return flags & SOCKET_DEAD;
 }
 
-void TCPSocket::setAcceptCallback(const std::function<void(TCPSocket &)> &callback) {
+void TCPSocket::setAcceptCallback(const std::function<void(TCPSocket &&)> &callback) {
     this->acceptCallback = callback;
 }
 

@@ -186,7 +186,15 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->drawingMenu_addDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::AUTOMATIC); });
     connect(ui->drawingMenu_addManualDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::MANUAL); });
     connect(this, SIGNAL(itemAddedToDrawingQueue()), this, SLOT(processDrawings()));
-
+    connect(ui->pricingMenu_materialPricesAction, &QAction::triggered, [this]() {
+        (new MaterialPricingWindow(client))->show();
+    });
+    connect(ui->pricingMenu_sideIronPricesAction, &QAction::triggered, [this]() {
+        (new SideIronPricingWindow(client))->show();
+        });
+    connect(ui->pricingMenu_extraPricesAction, &QAction::triggered, [this]() {
+        (new ExtraPricingWindow(client))->show();
+    });
     connect(ui->componentsMenu_addApertureAction, &QAction::triggered, [this]() {
         (new AddApertureWindow(client))->show();
     });
@@ -296,8 +304,10 @@ void MainMenu::sendSourceTableRequests() const {
     sourceTable(RequestType::SOURCE_APERTURE_SHAPE_TABLE);
     sourceTable(RequestType::SOURCE_MATERIAL_TABLE);
     sourceTable(RequestType::SOURCE_SIDE_IRON_TABLE);
+    sourceTable(RequestType::SOURCE_SIDE_IRON_PRICES_TABLE);
     sourceTable(RequestType::SOURCE_MACHINE_TABLE);
     sourceTable(RequestType::SOURCE_MACHINE_DECK_TABLE);
+    sourceTable(RequestType::SOURCE_EXTRA_PRICES_TABLE);
 }
 
 void MainMenu::sourceTable(RequestType requestType) const {

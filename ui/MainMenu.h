@@ -17,13 +17,15 @@
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
 #include "../include/database/DatabaseResponseHandler.h"
-
 #include "widgets/AddDrawingPageWidget.h"
 #include "widgets/DrawingViewWidget.h"
 #include "AddApertureWindow.h"
 #include "AddMachineWindow.h"
 #include "AddSideIronWindow.h"
 #include "AddMaterialWindow.h"
+#include "MaterialPricingWindow.h"
+#include "SideIronPricingWindow.h"
+#include "ExtraPricingWindow.h"
 
 #define DEFAULT_REFRESH_RATE 16
 

@@ -1,7 +1,10 @@
+// #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+
 #include <iostream>
 //#include <unistd.h>
 #include <filesystem>
 #include <regex>
+#include <Windows.h>
 
 #include <QApplication>
 
@@ -312,6 +315,13 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user, bool
         return;
     }
 
+    if (!dev) {
+        std::cout << "Live Mode" << std::endl;
+    }
+    else {
+        std::cout << "DEV MODE" << std::endl;
+    }
+
     // Create the prompt
     std::stringstream prompt;
     prompt << "Enter the password for " << user << ": ";
@@ -367,8 +377,8 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user, bool
         s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
     }
     else {
-        std::string databasePassword_dev = getPassword("REMOVE THIS\nPassword: ");
-        s.connectToDatabaseServer("screen_mat_database_dev", "alistairsirman", databasePassword_dev, "scs.local");
+        std::string databasePassword_dev = getPassword("Dev Password: ");
+        s.connectToDatabaseServer("screen_mat_database_dev", "dev", databasePassword_dev, "scs.local");
     }
 
     s.setRequestHandler(handler);
@@ -384,7 +394,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user, bool
     delete errStream;
 }
 
-int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
+int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[], bool console) {
     QApplication app(argc, argv);
     QApplication::setWindowIcon(QIcon(":/scs_logo.png"));
 
@@ -401,6 +411,7 @@ void printHelpMessage() {
     std::cout << "  --server            - run the server." << std::endl;
     std::cout << "  --dev               - run the server on the dev database" << std::endl;
     std::cout << "  --client            - run a client instance." << std::endl;
+    std::cout << "  --console           - runs client with console" << std::endl;
     std::cout << "  --setup             - set the server keys up and save them in key files." << std::endl;
     std::cout << "                        NOTE: This will not start the server." << std::endl;
     std::cout << "  --add-user [USER]   - add a new admin user and password. This user will be able to" << std::endl;
@@ -427,6 +438,8 @@ int main(int argc, char *argv[]) {
     RunMode mode = NO_MODE;
     // Whether it is in normal or dev mode
     bool dev = false;
+    // Whether to run with console
+    bool console = false;
     // The user to start the server on
     std::string user = "root";
     // The new user if they are running in add user mode
@@ -481,6 +494,10 @@ int main(int argc, char *argv[]) {
                 }
             }
 
+            if (strcmp(argv[i], "--console") == 0) {
+                console = true;
+            }
+
             if (strcmp(argv[i], "--add-user") == 0) {
                 if (mode == NO_MODE) {
                     mode = ADD_USER;
@@ -507,6 +524,10 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    if (!console && mode != SERVER) {
+        FreeConsole();
+        PostMessage(GetConsoleWindow(), WM_CLOSE, 0, 0);
+    }
 
     if (dev && mode != SERVER) {
         std::cout << "Invalid arguments. Use --help for more information." << std::endl;
@@ -519,7 +540,7 @@ int main(int argc, char *argv[]) {
             runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
-            return runClient(metaFilePath, argc, argv);
+            return runClient(metaFilePath, argc, argv, console);
         case SETUP:
             setupServerKeys(metaFilePath);
             break;

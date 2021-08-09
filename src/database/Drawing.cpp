@@ -111,6 +111,7 @@ Drawing::Drawing(const Drawing &drawing) {
     this->__impactPads = drawing.__impactPads;
     this->__damBars = drawing.__damBars;
     this->__blankSpaces = drawing.__blankSpaces;
+    this->__extraApertures = drawing.__extraApertures;
     this->__centreHoles = drawing.__centreHoles;
     this->__deflectors = drawing.__deflectors;
     this->__divertors = drawing.__divertors;
@@ -148,6 +149,7 @@ void Drawing::setAsDefault() {
     this->__impactPads = {};
     this->__damBars = {};
     this->__blankSpaces = {};
+    this->__extraApertures = {};
     this->__centreHoles = {};
     this->__deflectors = {};
     this->__divertors = {};
@@ -378,6 +380,7 @@ void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
             sideIronHandles[1] = sideIron.handle();
             break;
     }
+    __sideIronType = sideIron.type;
     invokeUpdateCallbacks();
 }
 
@@ -553,6 +556,27 @@ void Drawing::removeBlankSpace(const Drawing::BlankSpace& space) {
 
 unsigned Drawing::numberOfBlankSpaces() const {
     return __blankSpaces.size();
+}
+
+void Drawing::addExtraAperture(const ExtraAperture& extraAperture) {
+    __extraApertures.push_back(extraAperture);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::ExtraAperture> Drawing::extraApertures() const {
+    return __extraApertures;
+}
+
+Drawing::ExtraAperture& Drawing::extraAperture(unsigned index) {
+    return __extraApertures[index];
+}
+
+void Drawing::removeExtraAperture(const Drawing::ExtraAperture& aperture) {
+    __extraApertures.erase(std::find(__extraApertures.begin(), __extraApertures.end(), aperture));
+}
+
+unsigned Drawing::numberOfExtraApertures() const {
+    return __extraApertures.size();
 }
 
 void Drawing::addCentreHole(const CentreHole &centreHole) {
@@ -883,6 +907,13 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         buffer += pad.serialisedSize();
     }
 
+    // Extra Apertures
+    *buffer++ = drawing.__extraApertures.size();
+    for (const Drawing::ExtraAperture& aperture : drawing.__extraApertures) {
+        aperture.serialise(buffer);
+        buffer += aperture.serialisedSize();
+    }
+
     // Centre Holes
     *buffer++ = drawing.__centreHoles.size();
     for (const Drawing::CentreHole &hole : drawing.__centreHoles) {
@@ -983,6 +1014,10 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__blankSpaces.begin(), drawing.__blankSpaces.end(), 0,
             [](unsigned size, const Drawing::BlankSpace& space) { return size + space.serialisedSize(); });
+    // Extra Apertures
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__extraApertures.begin(), drawing.__extraApertures.end(), 0,
+            [](unsigned size, const Drawing::ExtraAperture& aperture) { return size + aperture.serialisedSize(); });
     // Centre Holes
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
@@ -1194,6 +1229,14 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         Drawing::BlankSpace& space = Drawing::BlankSpace::deserialise(buffer);
         buffer += space.serialisedSize();
         drawing->__blankSpaces.push_back(space);
+    }
+
+    // Extra Apertures
+    unsigned char extraApertureCount = *buffer++;
+    for (unsigned i = 0; i < extraApertureCount; i++) {
+        Drawing::ExtraAperture& aperture = Drawing::ExtraAperture::deserialise(buffer);
+        buffer += aperture.serialisedSize();
+        drawing->__extraApertures.push_back(aperture);
     }
 
     // Centre Holes

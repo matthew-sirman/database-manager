@@ -48,8 +48,14 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
     case RequestType::SOURCE_MATERIAL_TABLE:
         DrawingComponentManager<Material>::sourceComponentTable(message, messageSize);
         break;
+    case RequestType::SOURCE_EXTRA_PRICES_TABLE:
+        DrawingComponentManager<ExtraPrice>::sourceComponentTable(message, messageSize);
+        break;
     case RequestType::SOURCE_SIDE_IRON_TABLE:
         DrawingComponentManager<SideIron>::sourceComponentTable(message, messageSize);
+        break;
+    case RequestType::SOURCE_SIDE_IRON_PRICES_TABLE:
+        DrawingComponentManager<SideIronPrice>::sourceComponentTable(message, messageSize);
         break;
     case RequestType::SOURCE_MACHINE_TABLE:
         DrawingComponentManager<Machine>::sourceComponentTable(message, messageSize);

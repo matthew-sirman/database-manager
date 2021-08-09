@@ -427,6 +427,23 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->addBlankSpace(space);
 		}
 
+		// Extra Apertures
+		mysqlx::RowResult extraApertureResult = sess.getSchema(database).getTable("extra_apertures")
+			.select("width", "length", "x_coord", "y_coord", "aperture_id")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : extraApertureResult) {
+			Drawing::ExtraAperture aperture;
+
+			aperture.width = row[0].get<float>();
+			aperture.length = row[1].get<float>();
+			aperture.pos.x = row[2].get<float>();
+			aperture.pos.y = row[3].get<float>();
+			aperture.apertureID = row[4].get<unsigned>();
+
+			drawing->addExtraAperture(aperture);
+		}
+
 		// Dam Bars
 		mysqlx::RowResult damBarResults = sess.getSchema(database).getTable("dam_bars")
 			.select("width", "length", "thickness", "x_coord", "y_coord")
@@ -515,6 +532,27 @@ mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, con
         logError(e, __LINE__);
 		return mysqlx::RowResult();
 	}
+}
+
+mysqlx::RowResult DatabaseManager::sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy) {
+	// Wrapped in a try statement to catch any MySQL errors.
+	try {
+		std::stringstream ss;
+		ss << "SELECT * FROM " << database << "." << leftTable << " RIGHT JOIN " << database << "." << rightTable << " ON ";
+		ss << database << "." << leftTable << "." << std::get<0>(commons) << " = " << database << "." << rightTable << "." << std::get<1>(commons) << (orderBy.empty() ? "" : " ORDER BY " + orderBy) << std::endl;
+		return sess.sql(ss.str()).execute();
+	}
+	catch (mysqlx::Error& e) {
+		// If there was an error, print it to the console.
+		// This is not considered a fatal error; if there was an error we just return an empty row set
+		logError(e, __LINE__);
+		return mysqlx::RowResult();
+	}
+}
+
+mysqlx::RowResult DatabaseManager::sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy) {
+	return sourceMultipleTable(leftTable, rightTable, { common, common });
+
 }
 
 bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
@@ -615,10 +653,15 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
 			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID),
-			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
+			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), extraApertureInsert = insert.extraApertureInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
+
+		std::cout << extraApertureInsert << std::endl;
 
 		if (!impactPadsInsert.empty()) {
 			sess.sql(format(impactPadsInsert, database)).execute();
+		}
+		if (!extraApertureInsert.empty()) {
+			sess.sql(format(extraApertureInsert, database)).execute();
 		}
 		if (!blankSpaceInsert.empty()) {
 			sess.sql(format(blankSpaceInsert, database)).execute();
@@ -673,6 +716,8 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 		// Get the insert query string from the insert object. This string will be empty if there is nothing
 		// to insert (which likely indicates an error at some stage)
 		std::string insertString = insert.toSQLQueryString();
+
+		std::cout << format(insertString, database) << std::endl;
 
 		// If there is a query string to execute, execute it
 		if (!insertString.empty()) {

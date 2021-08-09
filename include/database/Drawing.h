@@ -661,7 +661,7 @@ public:
     struct BlankSpace {
 
         friend struct Drawing;
-#
+
         Coordinate pos;
 
         float width, length;
@@ -728,6 +728,86 @@ public:
 
             // Return the BlankSpace object we constructed
             return *pad;
+        }
+    };
+
+    struct ExtraAperture {
+
+        friend struct Drawing;
+
+        Coordinate pos;
+
+        float width, length;
+
+        unsigned apertureID;
+
+        inline ExtraAperture() = default;
+
+        inline ExtraAperture(const ExtraAperture& aperture) {
+            this->pos.x = aperture.pos.x;
+            this->pos.y = aperture.pos.y;
+            this->width = aperture.width;
+            this->length = aperture.length;
+            this->apertureID = aperture.apertureID;
+        }
+
+        inline ~ExtraAperture() = default;
+
+        inline bool operator==(const ExtraAperture& other) {
+            // Two aperture are considered equal if and only if their top left corners, width, and length and shape are the same
+            return pos == other.pos && width == other.width && length == other.length && apertureID == other.apertureID;
+        }
+
+        inline bool operator!=(const ExtraAperture& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // An aperture is specified by 4 float values for the X, Y, W, H of the rectangle and unsigned for shape ID.
+            return sizeof(float) * 4 + sizeof(unsigned);
+        }
+
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+            *((unsigned*)buff) = apertureID;
+            buff += sizeof(unsigned);
+        }
+
+        inline static ExtraAperture& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new aperture object for returning (hence on the heap)
+            ExtraAperture* aperture = new ExtraAperture();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the aperture itself.
+            aperture->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            aperture->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            aperture->width = *((float*)buff);
+            buff += sizeof(float);
+            aperture->length = *((float*)buff);
+            buff += sizeof(float);
+            aperture->apertureID = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            // Return the aperture object we constructed
+            return *aperture;
         }
     };
 
@@ -1506,6 +1586,16 @@ public:
 
     unsigned numberOfBlankSpaces() const;
 
+    void addExtraAperture(const ExtraAperture& extraAperture);
+
+    std::vector<ExtraAperture> extraApertures() const;
+
+    ExtraAperture& extraAperture(unsigned index);
+
+    void removeExtraAperture(const ExtraAperture& aperture);
+
+    unsigned numberOfExtraApertures() const;
+
     /// <summary>
     /// Adds a centre hole to the drawing
     /// </summary>
@@ -1644,6 +1734,7 @@ private:
     std::string __drawingNumber;
     Date __date;
     float __width, __length;
+    SideIronType __sideIronType = SideIronType::None;
     std::filesystem::path __hyperlink;
     std::string __notes;
     MachineTemplate __machineTemplate;
@@ -1671,6 +1762,7 @@ private:
 
     std::vector<ImpactPad> __impactPads;
     std::vector<BlankSpace> __blankSpaces;
+    std::vector<ExtraAperture> __extraApertures;
     std::vector<DamBar> __damBars;
     std::vector<CentreHole> __centreHoles;
     std::vector<Deflector> __deflectors;

@@ -103,7 +103,7 @@ public:
 
     bool dead() const;
 
-    void setAcceptCallback(const std::function<void(TCPSocket &)> &callback);
+    void setAcceptCallback(const std::function<void(TCPSocket &&)> &callback);
 
     void setConnectionTimeout(float timeout);
 
@@ -127,7 +127,7 @@ private:
     // FLAGS: UNUSED, Dead, Waiting, Blocking, Listening, Connected, Bound, Socket Open
     unsigned char flags = SOCKET_BLOCKING;
 
-    std::function<void(TCPSocket &)> acceptCallback;
+    std::function<void(TCPSocket &&)> acceptCallback;
 
     std::chrono::system_clock::time_point lastHeard;
 

@@ -44,7 +44,7 @@ void Server::initialiseServer(unsigned short serverPort) {
 
     guardTCPSocketCode(serverSocket.beginListen(), *errorStream);
 
-    serverSocket.setAcceptCallback([this](TCPSocket &s) {
+    serverSocket.setAcceptCallback([this](TCPSocket &&s) {
         std::future<void> acceptAsync = std::async(std::launch::async, &Server::acceptClient, this, std::ref(s));
 
         // TODO: Make non constant
@@ -139,7 +139,7 @@ void Server::startServer() {
             // If the message received successfully
             if (!message.error()) {
                 // Get the message and decrypt it with this client's key
-                uint8 *decryptedMessage = (uint8 *) message.decryptMessageData(connectedClient.clientSessionKey);
+                uint8* decryptedMessage = (uint8*)message.decryptMessageData(connectedClient.clientSessionKey);
                 uint64 messageToken = *((uint64 *) decryptedMessage);
 
                 // If the message starts with the client's secret session token, the message is valid
@@ -223,8 +223,7 @@ void Server::closeServer() {
     *logStream << timestamp() << "Server closed" << std::endl << std::endl;
 }
 
-void
-Server::addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned messageLength) {
+void Server::addMessageToSendQueue(const ClientHandle &clientHandle, const void *message, unsigned messageLength) {
     sendQueueMutex.lock();
     sendQueue.emplace(clientHandle.clientID, new EncryptedNetworkMessage(message, sizeof(uint64) + messageLength,
                                                                          handleMap[clientHandle.clientID]->clientSessionKey));

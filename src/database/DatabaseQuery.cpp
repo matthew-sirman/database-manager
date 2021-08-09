@@ -3,7 +3,6 @@
 //
 
 #include "../../include/database/DatabaseQuery.h"
-
 // Default constructor for the DatabaseQuery object
 DatabaseQuery::DatabaseQuery() = default;
 
@@ -842,7 +841,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
 }
 
 // Translates a list of query result rows into a list of DrawingSummary objects
-std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult &resultSet) {
+std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult resultSet) {
     // Declare the target array
     std::vector<DrawingSummary> summaries;
 
@@ -1543,6 +1542,33 @@ std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
     return insert.str();
 }
 
+std::string DrawingInsert::extraApertureInsertQuery(unsigned matID) const {
+    std::vector<Drawing::ExtraAperture> extraApertures = drawingData->extraApertures();
+
+    if (extraApertures.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.extra_apertures" << std::endl;
+    insert << "(mat_id, width, length, x_coord, y_coord, aperture_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::ExtraAperture>::const_iterator it = extraApertures.begin(); it != extraApertures.end(); it++) {
+        Drawing::ExtraAperture aperture = *it;
+
+        insert << "(" << matID << ", " << aperture.width << ", " << aperture.length << ", " << aperture.pos.x << ", " << aperture.pos.y << ", " << aperture.apertureID <<")";
+
+        if (it != extraApertures.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
 std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
 
@@ -1645,6 +1671,8 @@ ComponentInsert::ComponentInsert() {
     machineData = std::nullopt;
     sideIronData = std::nullopt;
     materialData = std::nullopt;
+    materialPriceData = std::nullopt;
+    extraPriceData = std::nullopt;
 }
 
 void ComponentInsert::serialise(void *target) const {
@@ -1688,9 +1716,9 @@ void ComponentInsert::serialise(void *target) const {
             break;
         }
         case InsertType::SIDE_IRON: {
-            *((SideIronType *)buff) = sideIronData->type;
+            *((SideIronType*)buff) = sideIronData->type;
             buff += sizeof(SideIronType);
-            *((unsigned *)buff) = sideIronData->length;
+            *((unsigned*)buff) = sideIronData->length;
             buff += sizeof(unsigned);
             unsigned char drawingNumberSize = sideIronData->drawingNumber.size(),
                 hyperlinkSize = sideIronData->hyperlink.generic_string().size();
@@ -1700,6 +1728,30 @@ void ComponentInsert::serialise(void *target) const {
             *buff++ = hyperlinkSize;
             memcpy(buff, sideIronData->hyperlink.generic_string().c_str(), hyperlinkSize);
             buff += hyperlinkSize;
+            break;
+        }
+        case InsertType::SIDE_IRON_PRICE: {
+            *((SideIronType*)buff) = sideIronPriceData->type;
+            buff += sizeof(SideIronType);
+
+            *((bool*)buff) = sideIronPriceData->extraflex;
+            buff += sizeof(bool);
+
+            *((float*)buff) = sideIronPriceData->length;
+            buff += sizeof(float);
+
+            *((float*)buff) = sideIronPriceData->price;
+            buff += sizeof(float);
+
+            *((PriceMode*)buff) = sideIronPriceData->priceMode;
+            buff += sizeof(PriceMode);
+
+            *((unsigned*)buff) = sideIronPriceData->screws;
+            buff += sizeof(unsigned);
+
+            *((unsigned*)buff) = sideIronPriceData->sideIronPriceId;
+            buff += sizeof(unsigned);
+
             break;
         }
         case InsertType::MATERIAL: {
@@ -1713,6 +1765,53 @@ void ComponentInsert::serialise(void *target) const {
             buff += sizeof(unsigned);
             break;
         }
+        case InsertType::MATERIAL_PRICE: {
+            *((unsigned *)buff) = materialPriceData->material_id;;
+            buff += sizeof(unsigned);
+            *((float*)buff) = materialPriceData->length;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->width;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->price;
+            buff += sizeof(float);
+            *((MaterialPricingType*)buff) = materialPriceData->pricingType;
+            buff += sizeof(MaterialPricingType);
+            *((PriceMode*)buff) = materialPriceData->priceMode;
+            buff += sizeof(PriceMode);
+            *((float*)buff) = materialPriceData->oldWidth;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->oldLength;
+            buff += sizeof(float);
+
+            break;
+        }
+        case (InsertType::EXTRA_PRICE): {
+            *((unsigned*)buff) = extraPriceData->priceId;
+            buff += sizeof(unsigned);
+            *((ExtraPriceType*)buff) = extraPriceData->type;
+            buff += sizeof(ExtraPriceType);
+            *((float*)buff) = extraPriceData->price;
+            buff += sizeof(float);
+            switch (extraPriceData->type) {
+                case (ExtraPriceType::SIDE_IRON_NUTS):
+                    *((unsigned*)buff) = extraPriceData->amount;
+                    buff += sizeof(unsigned);
+                    break;
+                case (ExtraPriceType::SIDE_IRON_SCREWS):
+                    *((unsigned*)buff) = extraPriceData->amount;
+                    buff += sizeof(unsigned);
+                    break;
+                case (ExtraPriceType::TACKYBACK_GLUE):
+                    *((float*)buff) = extraPriceData->squareMetres;
+                    buff += sizeof(float);
+                    break;
+                case (ExtraPriceType::LABOUR):
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
     }
 }
 
@@ -1724,8 +1823,14 @@ unsigned int ComponentInsert::serialisedSize() const {
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + machineData->serialisedSize();
         case InsertType::SIDE_IRON:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + sideIronData->serialisedSize();
+        case InsertType::SIDE_IRON_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + sideIronPriceData->serialisedSize();
         case InsertType::MATERIAL:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + materialData->serialisedSize();
+        case InsertType::MATERIAL_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + materialPriceData->serialisedSize();
+        case InsertType::EXTRA_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + extraPriceData->serialisedSize();
         case InsertType::NONE:
         default:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse);
@@ -1778,18 +1883,45 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
         }
         case InsertType::SIDE_IRON: {
             SideIronData data;
-            data.type = *((SideIronType *)buff);
+            data.type = *((SideIronType*)buff);
             buff += sizeof(SideIronType);
-            data.length = *((unsigned *)buff);
+            data.length = *((unsigned*)buff);
             buff += sizeof(unsigned);
             unsigned char drawingNumberSize = *buff++;
-            data.drawingNumber = std::string((const char *)buff, drawingNumberSize);
+            data.drawingNumber = std::string((const char*)buff, drawingNumberSize);
             buff += drawingNumberSize;
             unsigned char hyperlinkSize = *buff++;
-            data.hyperlink = std::string((const char *)buff, hyperlinkSize);
+            data.hyperlink = std::string((const char*)buff, hyperlinkSize);
             buff += hyperlinkSize;
 
             insert->sideIronData = data;
+            break;
+        }
+        case InsertType::SIDE_IRON_PRICE: {
+            SideIronPriceData data;
+
+            data.type = *((SideIronType*)buff);
+            buff += sizeof(SideIronType);
+
+            data.extraflex = *((bool*)buff);
+            buff += sizeof(bool);
+
+            data.length = *((float*)buff);
+            buff += sizeof(float);
+
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+
+            data.priceMode = *((PriceMode*)buff);
+            buff += sizeof(PriceMode);
+
+            data.screws = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            data.sideIronPriceId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            insert->sideIronPriceData = data;
             break;
         }
         case InsertType::MATERIAL: {
@@ -1805,6 +1937,60 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             insert->materialData = data;
             break;
         }
+        case InsertType::MATERIAL_PRICE: {
+            MaterialPriceData data;
+            data.material_id = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.length = *((float*)buff);
+            buff += sizeof(float);
+            data.width = *((float*)buff);
+            buff += sizeof(float);
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+            data.pricingType = *((MaterialPricingType*)buff);
+            buff += sizeof(MaterialPricingType);
+            data.priceMode = *((PriceMode*)buff);
+            buff += sizeof(PriceMode);
+            data.oldWidth = *((float*)buff);
+            buff += sizeof(float);
+            data.oldLength = *((float*)buff);
+            buff += sizeof(float);
+
+            insert->materialPriceData = data;
+            break;
+        }
+        case InsertType::EXTRA_PRICE :
+            ExtraPriceData data;
+
+            data.priceId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            data.type = *((ExtraPriceType*)buff);
+            buff += sizeof(ExtraPriceType);
+
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+
+            switch (data.type) {
+                case ExtraPriceType::SIDE_IRON_NUTS:
+                    data.amount = *((unsigned*)buff);
+                    buff += sizeof(unsigned);
+                    break;
+                case ExtraPriceType::SIDE_IRON_SCREWS:
+                    data.amount = *((unsigned*)buff);
+                    buff += sizeof(unsigned);
+                    break;
+                case ExtraPriceType::TACKYBACK_GLUE:
+                    data.squareMetres = *((float*)buff);
+                    buff += sizeof(float);
+                    break;
+                case ExtraPriceType::LABOUR:
+                    break;
+                default:
+                    break;
+            }
+            insert->extraPriceData = data;
+            break;
     }
 
     return *insert;
@@ -1835,11 +2021,36 @@ void ComponentInsert::setComponentData(const SideIronData &data) {
 }
 
 template<>
-void ComponentInsert::setComponentData(const MaterialData &data) {
+void ComponentInsert::setComponentData(const SideIronPriceData& data) {
+    insertType = InsertType::SIDE_IRON_PRICE;
+
+    responseCode = ComponentInsertResponse::NONE;
+
+    sideIronPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const MaterialData& data) {
     insertType = InsertType::MATERIAL;
     responseCode = ComponentInsertResponse::NONE;
 
     materialData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const MaterialPriceData& data) {
+    insertType = InsertType::MATERIAL_PRICE;
+    responseCode = ComponentInsertResponse::NONE;
+
+    materialPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const ExtraPriceData& data) {
+    insertType = InsertType::EXTRA_PRICE;
+    responseCode = ComponentInsertResponse::NONE;
+
+    extraPriceData = data;
 }
 
 std::string ComponentInsert::toSQLQueryString() const {
@@ -1863,10 +2074,98 @@ std::string ComponentInsert::toSQLQueryString() const {
             insert << "(" << (unsigned)sideIronData->type << ", " << sideIronData->length << ", '" << sideIronData->drawingNumber << "', '"
                 << sideIronData->hyperlink.generic_string() << "')" << std::endl;
             break;
+        case InsertType::SIDE_IRON_PRICE:
+            switch (sideIronPriceData->priceMode) {
+                case PriceMode::ADD:
+                    insert << "INSERT INTO {0}.side_iron_prices (type, length, price, screws, product_id)" << std::endl;
+                    insert << "VALUES" << std::endl;
+                    insert << "(" << (unsigned)sideIronPriceData->type << ", " << sideIronPriceData->length << ", " << sideIronPriceData->price << ", " << sideIronPriceData->screws << ", " << (int)sideIronPriceData->extraflex + 1 << ")" << std::endl;
+                    break;
+                case PriceMode::UPDATE:
+                    insert << "UPDATE {0}.side_iron_prices SET" << std::endl;
+                    insert << "length = " << sideIronPriceData->length << ", price = " << sideIronPriceData->price << ", product_id="  << (int)sideIronPriceData->extraflex + 1 << std::endl;
+                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    break;
+                case PriceMode::REMOVE:
+                    insert << "DELETE FROM {0}.side_iron_prices" << std::endl;
+                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    break;
+                default:
+                    break;
+            }
+            break;
         case InsertType::MATERIAL:
             insert << "INSERT INTO {0}.materials (material, hardness, thickness)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "('" << materialData->materialName << "', " << materialData->hardness << ", " << materialData->thickness << ")" << std::endl;
+            break;
+        case InsertType::MATERIAL_PRICE:
+            switch (materialPriceData->priceMode) {
+                case (PriceMode::ADD): 
+                    insert << "INSERT INTO {0}.material_prices (material_id, width, length, price, pricing)" << std::endl;
+                    insert << "VALUES" << std::endl;
+                    if (materialPriceData->pricingType == MaterialPricingType::RUNNING_M) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'running_m')" << std::endl;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SQUARE_M) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'square_m')" << std::endl;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SHEET) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'sheet')" << std::endl;
+                    }
+                    break;
+
+                case (PriceMode::UPDATE):
+                    if (materialPriceData->pricingType == MaterialPricingType::RUNNING_M) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'running_m'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SQUARE_M) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'square_m'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SHEET) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'sheet'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    break;
+                case (PriceMode::REMOVE):
+                    insert << "DELETE FROM {0}.material_prices" << std::endl;
+                    insert << "WHERE material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->width << " AND length = " << materialPriceData->length;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case InsertType::EXTRA_PRICE:
+            switch (extraPriceData->type) {
+                case ExtraPriceType::SIDE_IRON_NUTS:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", amount = " << extraPriceData->amount << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'side_iron_nuts'" << std::endl;
+                    break;
+                case ExtraPriceType::SIDE_IRON_SCREWS:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", amount = " << extraPriceData->amount << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'side_iron_screws'" << std::endl;
+                    break;
+                case ExtraPriceType::TACKYBACK_GLUE:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", square_metres = " << extraPriceData->squareMetres << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'glue'" << std::endl;
+                    break;
+                case ExtraPriceType::LABOUR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'labour'" << std::endl;
+                    break;
+            }
             break;
         default:
             break;
@@ -1883,8 +2182,14 @@ RequestType ComponentInsert::getSourceTableCode() const {
             return RequestType::SOURCE_MACHINE_TABLE;
         case InsertType::SIDE_IRON:
             return RequestType::SOURCE_SIDE_IRON_TABLE;
+        case InsertType::SIDE_IRON_PRICE:
+            return RequestType::SOURCE_SIDE_IRON_PRICES_TABLE;
         case InsertType::MATERIAL:
             return RequestType::SOURCE_MATERIAL_TABLE;
+        case InsertType::MATERIAL_PRICE:
+            return RequestType::SOURCE_MATERIAL_TABLE;
+        case InsertType::EXTRA_PRICE:
+            return RequestType::SOURCE_EXTRA_PRICES_TABLE;
         default:
             return (RequestType)(-1);
     }

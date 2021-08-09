@@ -368,6 +368,26 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
 
+    if (drawing.numberOfExtraApertures()) {
+        std::stringstream ExtraAperturesFieldText;
+        std::vector<Drawing::ExtraAperture> apertures = drawing.extraApertures();
+        for (unsigned i = 0; i < apertures.size(); i++) {
+            Drawing::ExtraAperture aperture = apertures[i];
+
+            ExtraAperturesFieldText << DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName() << " Aperture across " << aperture.width << "x" << aperture.length << " at " << "(" << aperture.pos.x << ", " << aperture.pos.y
+                << ") ";
+
+            if (i != apertures.size() - 1) {
+                ExtraAperturesFieldText << ", ";
+            }
+        }
+
+        labelText = "Extra Aperture(s)";
+        fieldText = ExtraAperturesFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
     if (drawing.numberOfDamBars()) {
         std::stringstream damBarTextField;
         std::vector<Drawing::DamBar> bars = drawing.damBars();
@@ -932,12 +952,26 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     for (const Drawing::BlankSpace& space : drawing.blankSpaces()) {
         QRectF padRegion(
             QPointF((space.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
-                (space.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+                    (space.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
             QSizeF((space.width / widthDim.rCentre) * matBoundingRegion.width(),
-                (space.length / lengthDim.rCentre) * matBoundingRegion.height())
+                   (space.length / lengthDim.rCentre) * matBoundingRegion.height())
         );
-        painter.setBrush(QColor(200, 200,200, 127));
+        painter.setBrush(QColor(200, 200, 200, 127));
         painter.drawRect(padRegion);
+    }
+
+    for (const Drawing::ExtraAperture& aperture : drawing.extraApertures()) {
+        QRectF apertureRegion(
+            QPointF((aperture.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                    (aperture.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((aperture.width / widthDim.rCentre) * matBoundingRegion.width(),
+                   (aperture.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(141, 221, 247, 127));
+        painter.drawRect(apertureRegion);
+
+        painter.setBrush(QBrush(QColor(0, 0, 0, 255)));
+        painter.drawText(apertureRegion, Qt::AlignHCenter | Qt::AlignVCenter, DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName().c_str());
     }
     for (const Drawing::DamBar& bar : drawing.damBars()) {
         QRectF padRegion(

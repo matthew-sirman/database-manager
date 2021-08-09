@@ -15,6 +15,7 @@
 
 #include "AddDrawingPageWidget.h"
 #include "../../include/database/Drawing.h"
+#include "../../include/database/ExtraPriceManager.h"
 
 #define PUNCH_PDF_LOCATION "T:/Drawings/2. Rubber Screen Cloths/Punch Program PDF's"
 
