@@ -128,6 +128,22 @@ private:
     static Product * fromSource(unsigned char** buff);
 };
 
+struct BackingStrip : public DrawingComponent {
+    friend class DrawingComponentManager<BackingStrip>;
+
+public:
+    unsigned materialID{};
+
+    std::string backingStripName() const;
+
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+private:
+    BackingStrip(unsigned id);
+
+    static BackingStrip* fromSource(unsigned char** buff);
+};
+
 /// <summary>
 /// Aperture
 /// Represents an aperture tool
@@ -172,6 +188,7 @@ public:
     std::string materialName;
     unsigned short hardness{}, thickness{};
 
+    // width, length if exists, price, type
     std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
 
     void updateMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>&, const std::tuple<float, float, float, MaterialPricingType>&);

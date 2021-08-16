@@ -308,6 +308,7 @@ void MainMenu::sendSourceTableRequests() const {
     sourceTable(RequestType::SOURCE_MACHINE_TABLE);
     sourceTable(RequestType::SOURCE_MACHINE_DECK_TABLE);
     sourceTable(RequestType::SOURCE_EXTRA_PRICES_TABLE);
+    sourceTable(RequestType::SOURCE_BACKING_STRIPS_TABLE);
 }
 
 void MainMenu::sourceTable(RequestType requestType) const {

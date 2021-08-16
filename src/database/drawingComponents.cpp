@@ -46,6 +46,30 @@ ComboboxDataElement Product::toDataElement(unsigned mode) const {
     return { productName, __handle };
 }
 
+BackingStrip::BackingStrip(unsigned id) : DrawingComponent(id) {
+
+}
+
+
+BackingStrip* BackingStrip::fromSource(unsigned char** buff) {
+
+    BackingStrip* strip = new BackingStrip(*((unsigned*)*buff));
+    *buff += sizeof(unsigned);
+
+    strip->materialID = *((unsigned*)(*buff));
+    *buff += sizeof(unsigned);
+
+    return strip;
+}
+
+std::string BackingStrip::backingStripName() const {
+    return DrawingComponentManager<Material>::getComponentByHandle(materialID).material();
+}
+
+ComboboxDataElement BackingStrip::toDataElement(unsigned mode) const {
+    return { backingStripName(), __handle };
+}
+
 Aperture::Aperture(unsigned id) : DrawingComponent(id) {
 
 }

@@ -130,6 +130,21 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
             break;
         }
+        case RequestType::SOURCE_BACKING_STRIPS_TABLE:
+        {
+            if (DrawingComponentManager<BackingStrip>::dirty()) {
+                if (DrawingComponentManager<Material>::dirty()) {
+                    createSourceData<MaterialData>(caller.databaseManager().sourceMultipleTable("material_prices", "materials", "material_id"));
+                }
+
+                createSourceData<BackingStripData>(caller.databaseManager().sourceTable("backing_strips"));
+            }
+
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<BackingStrip>::rawSourceData(),
+                                         DrawingComponentManager<BackingStrip>::rawSourceDataSize());
+
+            break;
+        }
         case RequestType::SOURCE_APERTURE_TABLE: {
             if (DrawingComponentManager<Aperture>::dirty()) {
                 if (DrawingComponentManager<ApertureShape>::dirty()) {
@@ -272,7 +287,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             unsigned sourceDataBufferSize;
 
             switch (insert.getSourceTableCode()) {
-                case RequestType::SOURCE_APERTURE_TABLE: {
+                case RequestType::SOURCE_APERTURE_TABLE:
+                {
                     if (DrawingComponentManager<ApertureShape>::dirty()) {
                         createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
                     }
@@ -280,6 +296,16 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
                     sourceData = DrawingComponentManager<Aperture>::rawSourceData();
                     sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
+
+                    caller.changelogMessage(clientHandle, "Added a new aperture");
+                    break;
+                }
+                case RequestType::SOURCE_BACKING_STRIPS_TABLE:
+                {
+                    createSourceData<BackingStripData>(caller.databaseManager().sourceTable("apertures"));
+
+                    sourceData = DrawingComponentManager<BackingStrip>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<BackingStrip>::rawSourceDataSize();
 
                     caller.changelogMessage(clientHandle, "Added a new aperture");
                     break;
@@ -564,6 +590,38 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
 template<>
 RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::ApertureData>() const {
 	return RequestType::SOURCE_APERTURE_TABLE;
+}
+
+template<>
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& stripRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::BackingStripData>& elements, unsigned& sizeValue
+) const {
+    for (mysqlx::Row row : stripRow) {
+        BackingStripData strip;
+        strip.handle = handle++;
+        strip.id = row[0];
+        strip.materialID = row[1];
+
+        sizeValue += sizeof(unsigned) * 3;
+
+        elements.push_back(strip);
+    }
+}
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::BackingStripData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buffer;
+
+    *((unsigned*)buff) = element.materialID;
+    buff += sizeof(unsigned);
+
+    sizeValue += sizeof(unsigned);
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::BackingStripData>() const {
+    return RequestType::SOURCE_BACKING_STRIPS_TABLE;
 }
 
 template<>

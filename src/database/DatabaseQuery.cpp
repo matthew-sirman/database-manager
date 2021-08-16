@@ -1115,7 +1115,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     // First we specify the columns we are inserting
     insert << "INSERT INTO {0}.drawings" << std::endl;
     insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
-              "rebated, backing_strips, hyperlink, notes)" << std::endl;
+              "rebated, hyperlink, notes)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Next we add the simple values from the drawingData object
@@ -1135,7 +1135,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
 
     // Finally we add the rest of the details
     insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", " <<
-        drawingData->rebated() << ", " << drawingData->hasBackingStrips() << ", '" << drawingData->hyperlink().generic_string() <<
+        drawingData->rebated() << ", '" << drawingData->hyperlink().generic_string() <<
         "', '" << drawingData->notes() << "')" << std::endl;
 
     // Returns the constructed query string
@@ -1237,6 +1237,27 @@ std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
     }
 
     insert << "')" << std::endl;
+
+    // Return the constructed MySQL string
+    return insert.str();
+}
+
+// Creates a MySQL query string for inserting the aperture into the mat_backing_strip_link table
+std::string DrawingInsert::backingStripInsertQuery(unsigned matID) const {
+    if (drawingData->backingStrip() == std::nullopt) {
+        return "";
+    }
+    std::stringstream insert;
+
+    // First specify the columns to insert
+    insert << "INSERT INTO {0}.mat_backing_strip_link" << std::endl;
+    insert << "(mat_id, backing_strip_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    // Add the basic data to the query
+    insert << "(" << matID << ", " << drawingData->backingStrip()->componentID();
+
+    insert << ")" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();

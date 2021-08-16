@@ -151,6 +151,7 @@ void AddDrawingPageWidget::setupComboboxSources() {
         machineModelSource.updateSource();
     });
     DrawingComponentManager<MachineDeck>::addCallback([this]() { machineDeckSource.updateSource(); });
+    DrawingComponentManager<BackingStrip>::addCallback([this]() { backingStripSource.updateSource(); });
 
     machineManufacturerSource.setMode(1);
     machineModelSource.setMode(2);
@@ -165,6 +166,7 @@ void AddDrawingPageWidget::setupComboboxSources() {
     machineManufacturerSource.makeDistinct();
     machineModelSource.updateSource();
     machineDeckSource.updateSource();
+    backingStripSource.updateSource();
 
     machineModelFilter = machineModelSource.setFilter<MachineModelFilter>();
 
@@ -179,6 +181,7 @@ void AddDrawingPageWidget::setupComboboxSources() {
     ui->manufacturerInput->setDataSource(machineManufacturerSource);
     ui->modelInput->setDataSource(machineModelSource);
     ui->machineDeckInput->setDataSource(machineDeckSource);
+    ui->backingStripsInput->setDataSource(backingStripSource);
 }
 
 void AddDrawingPageWidget::setupActivators() {
@@ -196,7 +199,23 @@ void AddDrawingPageWidget::setupActivators() {
             }
     );
 
+    ui->backingStripsLabel->addTarget(ui->backingStripsInput);
+    ui->backingStripsLabel->addActivationCallback(
+            [this](bool active) {
+                if (!active) {
+                    drawing.removeBackingStrip();
+                }
+                else {
+                    if (ui->backingStripsInput->currentIndex() != -1) {
+                        drawing.setBackingStrip(DrawingComponentManager<BackingStrip>::getComponentByHandle(
+                            ui->backingStripsInput->currentData().toInt()));
+                    }
+                }
+            }
+    );
+
     ui->leftSideIronLabel->setActive();
+    ui->backingStripsLabel->setActive(drawing.hasBackingStrips());
     ui->leftSideIronLabel->addTarget(ui->leftSideIronTypeLabel);
     ui->leftSideIronLabel->addTarget(ui->leftSideIronTypeInput);
     ui->leftSideIronLabel->addTarget(ui->leftSideIronLengthLabel);
@@ -399,6 +418,10 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setMaterial(Drawing::MaterialLayer::BOTTOM, DrawingComponentManager<Material>::getComponentByHandle(
                 ui->bottomMaterialInput->itemData(index).toInt()));
     });
+    connect(ui->backingStripsInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
+        drawing.setBackingStrip(DrawingComponentManager<BackingStrip>::getComponentByHandle(
+            ui->backingStripsInput->itemData(index).toInt()));
+});
     connect(ui->apertureInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setAperture(
                 DrawingComponentManager<Aperture>::getComponentByHandle(ui->apertureInput->itemData(index).toInt()));
@@ -436,15 +459,6 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             updatedNotes << drawing.notes() << REBATED_NOTE << std::endl;
             ui->notesInput->setText(updatedNotes.str().c_str());
             addedNotes.insert(REBATED);
-        }
-    });
-    connect(ui->backingStripsInput, &QCheckBox::clicked, [this](bool checked) {
-        drawing.setHasBackingStrips(checked);
-        if (checked && addedNotes.find(HAS_BACKING_STRIPS) == addedNotes.end()) {
-            std::stringstream updatedNotes;
-            updatedNotes << drawing.notes() << BACKING_STRIPS_NOTE << std::endl;
-            ui->notesInput->setText(updatedNotes.str().c_str());
-            addedNotes.insert(HAS_BACKING_STRIPS);
         }
     });
     connect(ui->rubberCoverStrapsAddNoteButton, &QPushButton::clicked, [this]() {
@@ -641,7 +655,6 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
         drawing.setPressDrawingHyperlinks(links);
     });
-
     connect(ui->confirmDrawingButton, &QPushButton::pressed, this, &AddDrawingPageWidget::confirmDrawing);
 }
 
@@ -659,6 +672,9 @@ void AddDrawingPageWidget::loadDrawing() {
                     ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
         }
     }
+    if (!drawing.loadWarning(Drawing::INVALID_BACKING_STRIP_DETECTED)) {
+        ui->backingStripsInput->setCurrentIndex(ui->backingStripsInput->findData(drawing.backingStrip()->handle()));
+    }
     if (!drawing.loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
         ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
     }
@@ -672,7 +688,6 @@ void AddDrawingPageWidget::loadDrawing() {
             break;
     }
     ui->rebatedInput->setChecked(drawing.rebated());
-    ui->backingStripsInput->setChecked(drawing.hasBackingStrips());
 
     if (drawing.rebated()) {
         addedNotes.insert(REBATED);

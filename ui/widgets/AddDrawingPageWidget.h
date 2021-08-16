@@ -67,6 +67,7 @@ private:
     ComboboxComponentDataSource<SideIron> leftSideIronSource, rightSideIronSource;
     ComboboxComponentDataSource<Machine> machineManufacturerSource, machineModelSource;
     ComboboxComponentDataSource<MachineDeck> machineDeckSource;
+    ComboboxComponentDataSource<BackingStrip> backingStripSource;
 
     SideIronFilter *leftSideIronFilter = nullptr, *rightSideIronFilter = nullptr;
     MachineModelFilter *machineModelFilter = nullptr;

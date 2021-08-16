@@ -455,7 +455,7 @@
              </item>
             </widget>
            </item>
-           <item row="7" column="0">
+           <item row="8" column="0">
             <widget class="QLabel" name="rebatedLabel">
              <property name="styleSheet">
               <string notr="true">
@@ -475,64 +475,14 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
+           <item row="8" column="1">
             <widget class="QCheckBox" name="rebatedInput">
              <property name="text">
               <string/>
              </property>
             </widget>
            </item>
-           <item row="11" column="0">
-            <widget class="QLabel" name="notesLabel">
-             <property name="styleSheet">
-              <string notr="true">
-                              QLabel {
-                              padding: 3px;
-                              }
-
-                              QLabel[hovering=true] {
-                              padding: 3px;
-                              background-color: #d9d9d9;
-                              border-radius: 5px;
-                              }
-                            </string>
-             </property>
-             <property name="text">
-              <string>Notes</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="1">
-            <widget class="QTextEdit" name="notesInput"/>
-           </item>
-           <item row="8" column="1">
-            <widget class="QCheckBox" name="backingStripsInput">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="backingStripsLabel">
-             <property name="styleSheet">
-              <string notr="true">
-                              QLabel {
-                              padding: 3px;
-                              }
-
-                              QLabel[hovering=true] {
-                              padding: 3px;
-                              background-color: #d9d9d9;
-                              border-radius: 5px;
-                              }
-                            </string>
-             </property>
-             <property name="text">
-              <string>Backing Strips</string>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="0">
+           <item row="10" column="0">
             <widget class="QLabel" name="rubberCoverStrapsLabel">
              <property name="styleSheet">
               <string notr="true">
@@ -552,14 +502,14 @@
              </property>
             </widget>
            </item>
-           <item row="9" column="1">
+           <item row="10" column="1">
             <widget class="QPushButton" name="rubberCoverStrapsAddNoteButton">
              <property name="text">
               <string>Add Note</string>
              </property>
             </widget>
            </item>
-           <item row="10" column="0">
+           <item row="11" column="0">
             <widget class="QLabel" name="wtlStrapLabel">
              <property name="styleSheet">
               <string notr="true">
@@ -579,7 +529,7 @@
              </property>
             </widget>
            </item>
-           <item row="10" column="1">
+           <item row="11" column="1">
             <layout class="QHBoxLayout" name="wearTileLinerNotesHorizonalLayout">
              <item>
               <widget class="QPushButton" name="addDrawingWTLStrapNoteButton">
@@ -596,6 +546,59 @@
               </widget>
              </item>
             </layout>
+           </item>
+           <item row="12" column="0">
+            <widget class="QLabel" name="notesLabel">
+             <property name="styleSheet">
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+             </property>
+             <property name="text">
+              <string>Notes</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="1">
+            <widget class="QTextEdit" name="notesInput"/>
+           </item>
+           <item row="7" column="0">
+            <widget class="ActivatorLabel" name="backingStripsLabel">
+             <property name="styleSheet">
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+             </property>
+             <property name="text">
+              <string>Backing Strips</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="DynamicComboBox" name="backingStripsInput">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -1397,7 +1400,6 @@
   <tabstop>confirmDrawingButton</tabstop>
   <tabstop>drawingFormTabs</tabstop>
   <tabstop>rebatedInput</tabstop>
-  <tabstop>backingStripsInput</tabstop>
   <tabstop>rubberCoverStrapsAddNoteButton</tabstop>
   <tabstop>addDrawingWTLStrapNoteButton</tabstop>
   <tabstop>addSideIronWTLStrapNoteButton</tabstop>

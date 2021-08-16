@@ -88,6 +88,14 @@ private:
 		std::string name;
 	};
 
+	struct BackingStripData : TableSourceData {
+		// Typedef for the ComponentType. This is used for accessing the appropriate DrawingComponentManager.
+		typedef BackingStrip ComponentType;
+
+		// The ID of the shape of this aperture
+		unsigned materialID{};
+	};
+
 	/// <summary>
 	/// ApertureData
 	/// Inherits from TableSourceData. This object is for storing data about an aperture read 

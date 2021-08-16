@@ -70,7 +70,6 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
         ComponentInsert insert;
 
         ComponentInsert::ExtraPriceData* priceData = nullptr;
-        std::cout << values[1]->text().toFloat() << std::endl;
         switch (extraPrice.type) {
             case (ExtraPriceType::SIDE_IRON_NUTS) :
                 priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt());

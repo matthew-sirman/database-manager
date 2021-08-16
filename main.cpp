@@ -374,7 +374,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user, bool
     dbPasswordFile >> dbPassword;*/
 
     if (!dev) {
-        s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
+        s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword, "scs.local");
     }
     else {
         std::string databasePassword_dev = getPassword("Dev Password: ");
@@ -524,7 +524,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    if (!console && mode != SERVER) {
+    if (!console && mode != SERVER && mode != SETUP) {
         FreeConsole();
         PostMessage(GetConsoleWindow(), WM_CLOSE, 0, 0);
     }

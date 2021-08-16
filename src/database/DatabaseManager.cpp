@@ -82,7 +82,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			<< std::endl;
 		queryString << "d.length AS length, d.tension_type AS tension_type, UNIX_TIMESTAMP(d.drawing_date) AS drawing_date, "
 			<< std::endl;
-		queryString << "d.rebated, d.backing_strips, d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
+		queryString << "d.rebated, d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
 		queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, "
 			<< std::endl;
 		queryString << "mt.deck_id AS deck_id, " << std::endl;
@@ -106,18 +106,17 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setTensionType((drawingResults[4].get<std::string>() == "Side") ? Drawing::SIDE : Drawing::END);
 			drawing->setDate(Date::parse(drawingResults[5].get<int>()));
 			drawing->setRebated(drawingResults[6].get<bool>());
-			drawing->setHasBackingStrips(drawingResults[7].get<bool>());
-			drawing->setHyperlink(drawingResults[8].get<std::string>());
-			drawing->setNotes(drawingResults[9].get<std::string>());
-			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[10]));
-			drawing->setQuantityOnDeck(drawingResults[11].get<int>());
-			drawing->setMachinePosition(drawingResults[12].get<std::string>());
-			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[13]));
+			drawing->setHyperlink(drawingResults[7].get<std::string>());
+			drawing->setNotes(drawingResults[8].get<std::string>());
+			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[9]));
+			drawing->setQuantityOnDeck(drawingResults[10].get<int>());
+			drawing->setMachinePosition(drawingResults[11].get<std::string>());
+			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[12]));
 
 			// It may be the case that the physical aperture is able to be rotated. This is internally represented in the manager
 			// as two separate Aperture objects, both with the same componentID. For this reason, we must search for all apertures
 			// with the matching component ID to select the correct one.
-			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(drawingResults[14]);
+			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(drawingResults[13]);
 
 			if (matchingApertures.size() == 1) {
 				// If there was just a single aperture which matched, this must be the correct aperture, so
@@ -125,7 +124,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				drawing->setAperture(*matchingApertures.front());
 			} else {
 				// If there were multiple matches, we must get the direction this aperture was stored to be facing.
-				std::string apertureDirectionString = drawingResults[15].get<std::string>();
+				std::string apertureDirectionString = drawingResults[14].get<std::string>();
 
 				// Boolean value to determine if we found an aperture. If we didn't there is an error with this
 				// drawing.
@@ -204,6 +203,16 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			barWidths.push_back(row[1]);
 		}
 
+		// get the backing strip
+		mysqlx::RowResult backingStrips = sess.getSchema(database).getTable("mat_backing_strip_link").select("backing_strip_id")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+		mysqlx::Row backingStrip = backingStrips.fetchOne();
+		if (!backingStrip.isNull()) {
+			drawing->setBackingStrip(DrawingComponentManager<BackingStrip>::findComponentByID(backingStrip[0]));
+		}
+		else {
+			drawing->setLoadWarning(Drawing::LoadWarning::INVALID_BACKING_STRIP_DETECTED);
+		}
 		// Get the side irons associated with this drawing
 		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted")
 			.where("mat_id=:matID").orderBy("side_iron_index ASC").bind("matID", query.matID).execute();
@@ -624,6 +633,8 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// Insert the aperture
 		sess.sql(format(insert.apertureInsertQuery(matID), database)).execute();
+		// Insert the backing strips
+		sess.sql(format(insert.backingStripInsertQuery(matID), database)).execute();
 		// Insert the side irons
 		sess.sql(format(insert.sideIronInsertQuery(matID), database)).execute();
 		// Insert the materials
@@ -654,8 +665,6 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
 			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID),
 			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), extraApertureInsert = insert.extraApertureInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
-
-		std::cout << extraApertureInsert << std::endl;
 
 		if (!impactPadsInsert.empty()) {
 			sess.sql(format(impactPadsInsert, database)).execute();
@@ -716,8 +725,6 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 		// Get the insert query string from the insert object. This string will be empty if there is nothing
 		// to insert (which likely indicates an error at some stage)
 		std::string insertString = insert.toSQLQueryString();
-
-		std::cout << format(insertString, database) << std::endl;
 
 		// If there is a query string to execute, execute it
 		if (!insertString.empty()) {

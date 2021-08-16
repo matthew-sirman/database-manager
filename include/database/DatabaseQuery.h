@@ -416,6 +416,8 @@ public:
     /// <returns>An SQL query string.</returns>
     std::string apertureInsertQuery(unsigned matID) const;
 
+    std::string backingStripInsertQuery(unsigned matID) const;
+
     /// <summary>
     /// Constructs an SQL query for inserting the side irons specified in the drawingData
     /// object in this query object.

@@ -92,9 +92,9 @@ Drawing::Drawing(const Drawing &drawing) {
     this->__machineTemplate = drawing.__machineTemplate;
     this->productHandle = drawing.productHandle;
     this->apertureHandle = drawing.apertureHandle;
+    this->backingStripHandle = drawing.backingStripHandle;
     this->__tensionType = drawing.__tensionType;
     this->__rebated = drawing.__rebated;
-    this->__hasBackingStrips = drawing.__hasBackingStrips;
     this->__pressDrawingHyperlinks = drawing.__pressDrawingHyperlinks;
     this->barSpacings = drawing.barSpacings;
     this->barWidths = drawing.barWidths;
@@ -130,9 +130,10 @@ void Drawing::setAsDefault() {
     this->__machineTemplate = MachineTemplate();
     this->productHandle = 0;
     this->apertureHandle = 0;
+    this->backingStripHandle = std::nullopt;
     this->__tensionType = TensionType::SIDE;
     this->__rebated = false;
-    this->__hasBackingStrips = false;
+    // this->__hasBackingStrips = false;
     this->__pressDrawingHyperlinks = std::vector<std::filesystem::path>();
     this->barSpacings = { 0 };
     this->barWidths = { 0, 0 };
@@ -278,12 +279,24 @@ void Drawing::setRebated(bool isRebated) {
     __rebated = isRebated;
 }
 
-bool Drawing::hasBackingStrips() const {
-    return __hasBackingStrips;
+std::optional<BackingStrip> Drawing::backingStrip() const {
+    if (backingStripHandle == std::nullopt)
+        return std::nullopt;
+    return DrawingComponentManager<BackingStrip>::getComponentByHandle(backingStripHandle.value());
 }
 
-void Drawing::setHasBackingStrips(bool backingStrips) {
-    __hasBackingStrips = backingStrips;
+void Drawing::setBackingStrip(const BackingStrip& strip) {
+    backingStripHandle = strip.handle();
+}
+
+void Drawing::removeBackingStrip() {
+    backingStripHandle = std::nullopt;
+}
+
+bool Drawing::hasBackingStrips() const {
+    if (backingStripHandle == std::nullopt)
+        return false;
+    return DrawingComponentManager<BackingStrip>::validComponentHandle(backingStripHandle.value());
 }
 
 std::optional<Material> Drawing::material(Drawing::MaterialLayer layer) const {
@@ -773,14 +786,18 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *((unsigned *) buffer) = drawing.apertureHandle;
     buffer += sizeof(unsigned);
 
+    // Backing Strip ID, which is optional, so must have a bool to identify its presence
+    *buffer++ = drawing.hasBackingStrips();
+    if (drawing.hasBackingStrips()) {
+        *((unsigned*)buffer) = drawing.backingStripHandle.value();
+    }
+    buffer += sizeof(unsigned);
+
     // Tension Type
     *buffer++ = (unsigned char) drawing.__tensionType;
 
     // Rebated
     *buffer++ = drawing.__rebated;
-
-    // Backing Strips
-    *buffer++ = drawing.__hasBackingStrips;
 
     // Press Drawing Links
     *buffer++ = drawing.__pressDrawingHyperlinks.size();
@@ -961,6 +978,8 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned);
     // Aperture ID
     size += sizeof(unsigned);
+    // Backing Strip
+    size += sizeof(bool) + sizeof(unsigned);
     // Tension Type
     size += sizeof(unsigned char);
     // Rebated
@@ -1090,14 +1109,21 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     drawing->apertureHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
 
+    // Backing Strip ID
+    bool backingStripExists = *buffer++;
+    if (backingStripExists) {
+        drawing->backingStripHandle = *((unsigned*)buffer);
+    }
+    else {
+        drawing->backingStripHandle = std::nullopt;
+    }
+    buffer += sizeof(unsigned);
+
     // Tension Type
     drawing->__tensionType = (Drawing::TensionType) *buffer++;
 
     // Rebated
     drawing->__rebated = *buffer++;
-
-    // Backing Strips
-    drawing->__hasBackingStrips = *buffer++;
 
     // Press Drawing Links
     unsigned char noPressDrawings = *buffer++;

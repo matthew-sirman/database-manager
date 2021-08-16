@@ -39,6 +39,9 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
     case RequestType::SOURCE_PRODUCT_TABLE:
         DrawingComponentManager<Product>::sourceComponentTable(message, messageSize);
         break;
+    case RequestType::SOURCE_BACKING_STRIPS_TABLE:
+        DrawingComponentManager<BackingStrip>::sourceComponentTable(message, messageSize);
+        break;
     case RequestType::SOURCE_APERTURE_TABLE:
         DrawingComponentManager<Aperture>::sourceComponentTable(message, messageSize);
         break;

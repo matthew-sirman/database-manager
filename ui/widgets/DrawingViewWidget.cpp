@@ -11,8 +11,6 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
 
     ui->rebatedCheckbox->setAttribute(Qt::WA_TransparentForMouseEvents);
     ui->rebatedCheckbox->setFocusPolicy(Qt::NoFocus);
-    ui->backingStripsCheckbox->setAttribute(Qt::WA_TransparentForMouseEvents);
-    ui->backingStripsCheckbox->setFocusPolicy(Qt::NoFocus);
 
     this->drawing = &drawing;
 
@@ -127,8 +125,13 @@ void DrawingViewWidget::updateFields() {
             ui->bottomMaterialTextbox->setText("None");
         }
     }
+    if (drawing->hasBackingStrips()) {
+        ui->backingStripTextbox->setText(drawing->backingStrip()->backingStripName().c_str());
+    }
+    else {
+        ui->backingStripTextbox->setText("None");
+    }
     ui->rebatedCheckbox->setChecked(drawing->rebated());
-    ui->backingStripsCheckbox->setChecked(drawing->hasBackingStrips());
     ui->notesTextbox->setText(drawing->notes().c_str());
 
     // Machine Template Page
@@ -180,11 +183,23 @@ void DrawingViewWidget::updateFields() {
     // material pricing
     Material material = *drawing->material(Drawing::MaterialLayer::TOP);
     float materialPrice = std::numeric_limits<float>::max();
+    float overlapPrice = std::numeric_limits<float>::max();
+    float sidelapPrice = std::numeric_limits<float>::max();
+    Drawing::Lap overlap = Drawing::Lap();
+    overlap.width = 0;
+    if (drawing->hasOverlaps()) {
+        overlap = drawing->overlap(Drawing::Side::LEFT).has_value() ? drawing->overlap(Drawing::Side::LEFT).value() : drawing->overlap(Drawing::Side::RIGHT).value();
+    }
+    Drawing::Lap sidelap = Drawing::Lap();
+    sidelap.width = 0;
+    if (drawing->hasSidelaps()) {
+        sidelap = drawing->sidelap(Drawing::Side::LEFT).has_value() ? drawing->sidelap(Drawing::Side::LEFT).value() : drawing->sidelap(Drawing::Side::RIGHT).value();
+    }
     for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator element = material.materialPrices.begin(); element != material.materialPrices.end(); element++) {
         // needs to account for pressing 2 700mm out of 1600mm instead of 1 700mm from 1070mm
         if (std::get<3>(*element) == MaterialPricingType::SHEET) {
             if (std::get<0>(*element) >= drawing->width() && std::get<1>(*element) && std::get<1>(*element) >= drawing->length()) {
-                int tempPrice = std::get<2>(*element);
+                float tempPrice = std::get<2>(*element);
                 if (tempPrice < materialPrice) {
                     materialPrice = tempPrice;
                 }
@@ -192,26 +207,40 @@ void DrawingViewWidget::updateFields() {
         }
         else if (std::get<3>(*element) == MaterialPricingType::RUNNING_M) {
             if (std::get<0>(*element) >= drawing->width()) {
-                float tempPrice = std::get<2>(*element) * (drawing->length())/1000;
+                float tempPrice = std::get<2>(*element) * ((drawing->length()) / 1000);
                 if (tempPrice < materialPrice) {
                     materialPrice = tempPrice;
+                    overlapPrice = std::get<2>(*element) * ((2 * overlap.width) / 1000);
+                    sidelapPrice = std::get<2>(*element) * ((2 * sidelap.width) / 1000);
                 }
             }
         }
         else if (std::get<3>(*element) == MaterialPricingType::SQUARE_M) {
             if (std::get<0>(*element) >= drawing->width()) {
-                int tempPrice = std::get<2>(*element) * (drawing->length() * drawing->width()/1000)/1000;
+                float tempPrice = std::get<2>(*element) * ((drawing->length()) * drawing->width()/1000)/1000;
                 if (tempPrice < materialPrice) {
                     materialPrice = tempPrice;
+                    overlapPrice = std::get<2>(*element) * ((2 * overlap.width) / 1000);
+                    sidelapPrice = std::get<2>(*element) * ((2 * sidelap.width) / 1000);
                 }
             }
         }
+    }
+    if (overlap.attachmentType == LapAttachment::BONDED) {
+        // for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator element = material.materialPrices.begin(); element != material.materialPrices.end(); element++) {
+        //     needs to account for pressing 2 700mm out of 1600mm instead of 1 700mm from 1070mm
+        // }
     }
     if (materialPrice == std::numeric_limits<float>::max()) {
         missing.push_back("Material");
         materialPrice = 0;
     }
-    prices.push_back({ "Material Price: ", materialPrice });
+    else {
+        prices.push_back({ "Material Price: ", materialPrice });
+    }
+    // Bonded overlap pricing, does it use offcuts or how to price
+    // prices.push_back({ "Overlap Price: ", overlapPrice });
+    // prices.push_back({ "Sidelap Price: ", overlapPrice });
 
     // Side Iron pricing
     float sideIronPrice = std::numeric_limits<float>::max();
@@ -226,8 +255,8 @@ void DrawingViewWidget::updateFields() {
                 if (std::get<1>(price) >= drawing->sideIron(Drawing::Side::LEFT).length && std::get<2>(price) < sideIronPrice) {
                     if (drawing->product().productName != "Extraflex" && !std::get<4>(price)) {
                         sideIronPrice = std::get<2>(price);
-                        sideIronNutsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_NUTS>(std::get<3>(price));
-                        sideIronScrewsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(std::get<3>(price));
+                        sideIronNutsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_NUTS>(2 * std::get<3>(price));
+                        sideIronScrewsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(2 * std::get<3>(price));
                     }
                     else if (drawing->product().productName == "Extraflex" && std::get<4>(price)) {
                         prices.push_back({ "Side Iron Screws Price: ",
@@ -239,6 +268,14 @@ void DrawingViewWidget::updateFields() {
             }
         }
     }
+    // Backing strips
+    if (drawing->hasBackingStrips()) {
+        prices.push_back({ "Backing Strip Price: ",
+                         std::get<2>(DrawingComponentManager<Material>::findComponentByID(drawing->backingStrip()->materialID).materialPrices[0]) * ((drawing->barWidth(0) * drawing->length()) / 1000 / 1000) * drawing->numberOfBars()});
+        prices.push_back({ "Backing Strip Glue: ",
+                         ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(((drawing->barWidth(0) * drawing->length()) / 1000 / 1000) * drawing->numberOfBars()) });
+    }
+
     if (sideIronPrice < std::numeric_limits<float>::max()) {
         prices.push_back({ "Side Irons Price: ", sideIronPrice });
         prices.push_back({ "Side Iron Screws Price: ", sideIronScrewsPrice });
@@ -247,7 +284,6 @@ void DrawingViewWidget::updateFields() {
     else {
         missing.push_back("Side Iron");
     }
-
     // Extras
     // Glue and Labour
     // prices.push_back({ "Labour: ",
@@ -268,7 +304,7 @@ void DrawingViewWidget::updateFields() {
 
         }
         box->setText(ss.str().c_str());
-        box->exec();
+        // box->exec();
     }
 
     QFormLayout* layout = new QFormLayout();

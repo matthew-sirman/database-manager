@@ -131,7 +131,8 @@ public:
         MISSING_SIDE_IRONS_DETECTED = 0x04,
         MISSING_MATERIAL_DETECTED = 0x08,
         INVALID_APERTURE_DETECTED = 0x10,
-        INVALID_IMPACT_PAD_DETECTED = 0x20
+        INVALID_IMPACT_PAD_DETECTED = 0x20,
+        INVALID_BACKING_STRIP_DETECTED = 0x40
     };
 
     /// <summary>
@@ -1329,6 +1330,14 @@ public:
     /// <param name="ap">The Aperture to set this drawing to.</param>
     void setAperture(const Aperture &ap);
 
+    std::optional<BackingStrip> backingStrip() const;
+
+    void setBackingStrip(const BackingStrip& strip);
+
+    void removeBackingStrip();
+
+    bool hasBackingStrips() const;
+
     /// <summary>
     /// Getter for the tension type
     /// </summary>
@@ -1352,18 +1361,6 @@ public:
     /// </summary>
     /// <param name="isRebated">Value to set the rebated property to.</param>
     void setRebated(bool isRebated);
-
-    /// <summary>
-    /// Getter for the has backing strips property
-    /// </summary>
-    /// <returns>Whether this drawing has backing strips or not.</returns>
-    bool hasBackingStrips() const;
-
-    /// <summary>
-    /// Setter for the has backing strips property
-    /// </summary>
-    /// <param name="backingStrips">Value to set the has backing strips property to.</param>
-    void setHasBackingStrips(bool backingStrips);
 
     /// <summary>
     /// Getter for the product
@@ -1741,11 +1738,11 @@ private:
 
     unsigned productHandle;
     unsigned apertureHandle;
+    std::optional<unsigned> backingStripHandle;
 
     TensionType __tensionType;
 
     bool __rebated;
-    bool __hasBackingStrips;
 
     std::vector<std::filesystem::path> __pressDrawingHyperlinks;
 
