@@ -676,6 +676,7 @@ void AddDrawingPageWidget::loadDrawing() {
         ui->backingStripsInput->setCurrentIndex(ui->backingStripsInput->findData(drawing.backingStrip()->handle()));
     }
     if (!drawing.loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
+        std::cout << drawing.aperture().componentID() << std::endl;
         ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
     }
     ui->numberOfBarsInput->setValue(drawing.numberOfBars());

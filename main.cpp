@@ -394,7 +394,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user, bool
     delete errStream;
 }
 
-int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[], bool console) {
+int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[]) {
     QApplication app(argc, argv);
     QApplication::setWindowIcon(QIcon(":/scs_logo.png"));
 
@@ -524,7 +524,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    if (!console && mode != SERVER && mode != SETUP) {
+    if (!console && mode != SERVER && mode != SETUP && mode != HELP) {
         FreeConsole();
         PostMessage(GetConsoleWindow(), WM_CLOSE, 0, 0);
     }
@@ -540,7 +540,7 @@ int main(int argc, char *argv[]) {
             runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
-            return runClient(metaFilePath, argc, argv, console);
+            return runClient(metaFilePath, argc, argv);
         case SETUP:
             setupServerKeys(metaFilePath);
             break;

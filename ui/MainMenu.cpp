@@ -10,6 +10,40 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     ui(new Ui::MainMenu) {
     ui->setupUi(this);
 
+    QShortcut* closeTab = new QShortcut(ui->mainTabs);
+    closeTab->setKey(Qt::CTRL + Qt::Key_W);
+    connect(closeTab, &QShortcut::activated, [this]() {
+        if (ui->mainTabs->currentIndex() > 0) {
+            ui->mainTabs->removeTab(ui->mainTabs->currentIndex());
+        }
+    });
+    
+    for (int i = 0; i < 10; i++) {
+        QShortcut* changeTab = new QShortcut(ui->mainTabs);
+        changeTab->setKey((Qt::CTRL + Qt::Key_0 + i));
+        connect(changeTab, &QShortcut::activated, [this, i]() {
+            int j = i;
+            if (j == 0) {
+                j = 10;
+            }
+            j--;
+            if (j < ui->mainTabs->count())
+                ui->mainTabs->setCurrentIndex(j);
+        });
+    }
+
+    //std::cout << Qt::Key_1 + 1 << " " << Qt::Key_2 << " " << (Qt::Key_1 + 1 == Qt::Key_2) << std::endl;
+    //for (unsigned i = 0; i < 9; i++) {
+    //    QShortcut* changeTab = new QShortcut(ui->mainTabs);
+    //    changeTab->setKey(QKeySequence(Qt::CTRL + Qt::Key_1));
+    //    connect(closeTab, &QShortcut::activated, [this, i]() {
+    //        std::cout << "here" << std::endl;
+    //        if (ui->mainTabs->count() >= i-1) {
+    //            ui->mainTabs->setCurrentIndex(i);
+    //        }
+    //    });
+    //}
+
     std::ifstream clientMetaFile;
     clientMetaFile.open(clientMetaFilePath / "clientMeta.json");
 

@@ -74,7 +74,6 @@ void ExtraApertureGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 				inspector->addFloatField("Length:", extraAperture.length, 1, 0);
 				inspector->addFloatField("X Position:", extraAperture.pos.x, 1, 0);
 				inspector->addFloatField("Y Position:", extraAperture.pos.y, 1, 0);
-				ComboboxDataSource apertureSouce;
 				inspector->addComponentField<Aperture>("Aperture:", [this](const Aperture& aperture) {
 					extraAperture.apertureID = aperture.componentID();
 				}, apertureSource, DrawingComponentManager<Aperture>::validComponentID(extraAperture.apertureID) ? DrawingComponentManager<Aperture>::findComponentByID(extraAperture.apertureID).handle() : -1);

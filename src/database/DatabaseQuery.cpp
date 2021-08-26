@@ -558,7 +558,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     // First, we specify every value we wish to select. This includes two aggregated fields, namely for the thicknesses
     // and the laps, which are returned as JSON arrays. Otherwise, every selection is a standard SQL selection.
     sql << "SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, "
-           "mal.aperture_id AS aperture_id, mal.direction AS direction, "
+           "mal.aperture_id AS aperture_id, "
            "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM {0}.thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
            "d.tension_type AS tension_type, "
            "COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) "
@@ -579,6 +579,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     std::vector<std::string> conditions;
     std::stringstream condition;
 
+    // SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, mal.aperture_id AS aperture_id, (SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, d.tension_type AS tension_type, COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM sidelaps UNION SELECT mat_id, 'O' AS type, width, mat_side FROM overlaps) AS l WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps, COALESCE((SELECT JSON_ARRAYAGG(bs.bar_spacing) FROM bar_spacings AS bs WHERE bs.mat_id=d.mat_id), JSON_ARRAY()) AS spacings.FROM drawings AS d.INNER JOIN mat_aperture_link AS malON d.mat_id=mal.mat_id
     // For each of these simpler queries, we simply check if the parameter is present, 
     // and if it is, we create a conditional string matching the field in the database
     // to whatever was passed into the query.
@@ -613,23 +614,6 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition.str(std::string());
         condition << "mal.aperture_id=" << aperture->componentID();
         conditions.push_back(condition.str());
-        
-        // Find out the component ID of the aperture shape, so if it is a longitudinal or transverse aperture,
-        // we impose this added restriction.
-        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(aperture->apertureShapeID).componentID()) {
-            case 3:
-                condition.str(std::string());
-                condition << "mal.direction='Longitudinal'";
-                conditions.push_back(condition.str());
-                break;
-            case 4:
-                condition.str(std::string());
-                condition << "mal.direction='Transverse'";
-                conditions.push_back(condition.str());
-                break;
-            default:
-                break;
-        }
     }
     if (topThickness.has_value()) {
         condition.str(std::string());
@@ -857,39 +841,8 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
 
         // It may be the case that this mat uses a bidirectional aperture, in which case we return
         // all matching apertures and choose the correct one, based upon the aperture direction
-        std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(row[4]);
-
-        if (matchingApertures.size() == 1) {
-            // If there is just one matching aperture, we simply use this.
-            summary.apertureHandle = matchingApertures.front()->handle();
-        } else {
-            // If there are multiple matching apertures, we start by getting the direction string 
-            std::string apertureDirectionString = row[5].get<std::string>();
-
-            // By default we set the aperture handle to 0. This indicates that there was no matching aperture
-            // and as such there was an error with this drawing. If there is a correct aperture found, then
-            // the handle will be overwritten with the correct value.
-            summary.apertureHandle = 0;
-
-            // Depending on which direction the aperture faces, we loop through the aperture list to find whichever has
-            // the correct "shape". Note that these matchingApertures lists should have at maximum a length of 2, so 
-            // this operation should not be slow.
-            if (apertureDirectionString == "Longitudinal") {
-                for (const Aperture *ap : matchingApertures) {
-                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
-                        summary.apertureHandle = ap->handle();
-                        break;
-                    }
-                }
-            } else if (apertureDirectionString == "Transverse") {
-                for (const Aperture *ap : matchingApertures) {
-                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
-                        summary.apertureHandle = ap->handle();
-                        break;
-                    }
-                }
-            }
-        }
+        Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[4]);
+        summary.apertureHandle = matchingAperture.handle();
 
         // We nullify the thickness handles and lap sizes to clear any residual memory which might
         // be accidentally written
@@ -900,12 +853,12 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
 
         // We then loop through each returned element in the thicknesses returned and set the corresponding thickness
         // handle in the summary object
-        for (unsigned thicknessSlot = 0; thicknessSlot < row[6].elementCount(); thicknessSlot++) {
-            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[6][thicknessSlot]).handle();
+        for (unsigned thicknessSlot = 0; thicknessSlot < row[5].elementCount(); thicknessSlot++) {
+            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[5][thicknessSlot]).handle();
         }
 
         // Then we deal with any laps there may be in the drawing
-        for (const mysqlx::Value &lap : row[8]) {
+        for (const mysqlx::Value &lap : row[7]) {
             // If we encounter a "damaged" lap, we just skip it to avoid a possible
             // error
             if (lap[2].isNull()) {
@@ -917,7 +870,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             // 0 if inequal, so if lap[2] == "Right", then the index will be 1 to start with, otherwise 0.
             // This means we can easily calculate the index associated with this lap value.
             unsigned index = (lap[2].get<std::string>() == "Right");
-            if (row[7].get<std::string>() == "Side") {
+            if (row[6].get<std::string>() == "Side") {
                 index += 2 * (lap[0].get<std::string>() == "O");
             }
             else {
@@ -927,7 +880,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             summary.setLapSize(index, lap[1].get<double>());
         }
 
-        for (double spacing : row[9]) {
+        for (double spacing : row[8]) {
             summary.addSpacing(spacing);
         }
 
@@ -1217,26 +1170,11 @@ std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
 
     // First specify the columns to insert
     insert << "INSERT INTO {0}.mat_aperture_link" << std::endl;
-    insert << "(mat_id, aperture_id, direction)" << std::endl;
+    insert << "(mat_id, aperture_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Add the basic data to the query
-    insert << "(" << matID << ", " << drawingData->aperture().componentID() << ", '";
-
-    // Depending on what direction the aperture was in, we insert a direction parameter
-    switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(drawingData->aperture().apertureShapeID).componentID()) {
-        case 3:
-            insert << "Longitudinal";
-            break;
-        case 4:
-            insert << "Transverse";
-            break;
-        default:
-            insert << "Nondirectional";
-            break;
-    }
-
-    insert << "')" << std::endl;
+    insert << "(" << matID << ", " << drawingData->aperture().componentID() << ")" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();
@@ -1475,7 +1413,7 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     insert << "INSERT INTO {0}.impact_pads" << std::endl;
-    insert << "(mat_id, material_id, aperture_id, aperture_direction, width, length, x_coord, y_coord)" << std::endl;
+    insert << "(mat_id, material_id, aperture_id, width, length, x_coord, y_coord)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::ImpactPad>::const_iterator it = impactPads.begin(); it != impactPads.end(); it++) {
@@ -1483,21 +1421,9 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
 
         Aperture &ap = pad.aperture();
 
-        insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", '";
+        insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", ";
 
-        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap.apertureShapeID).componentID()) {
-            case 3:
-                insert << "Longitudinal";
-                break;
-            case 4:
-                insert << "Transverse";
-                break;
-            default:
-                insert << "Nondirectional";
-                break;
-        }
-
-        insert << "', " << pad.width << ", " << pad.length << ", " << pad.pos.x << ", " << pad.pos.y << ")";
+        insert << pad.width << ", " << pad.length << ", " << pad.pos.x << ", " << pad.pos.y << ")";
 
         if (it != impactPads.end() - 1) {
             insert << ", ";
@@ -1517,7 +1443,7 @@ std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
 
     std::stringstream insert;
 
-    insert << "INSERT INTO {0}.impact_pads" << std::endl;
+    insert << "INSERT INTO {0}.dam_bars" << std::endl;
     insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
     insert << "VALUES" << std::endl;
 
@@ -1525,7 +1451,7 @@ std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
         Drawing::DamBar bar = *it;
 
 
-        insert << "', " << bar.width << ", " << bar.length << ", " << bar.thickness << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+        insert << "', " << bar.width << ", " << bar.length << ", " << bar.pos.x << ", " << bar.pos.y << ")";
 
         if (it != damBars.end() - 1) {
             insert << ", ";
@@ -1600,14 +1526,13 @@ std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     insert << "INSERT INTO {0}.centre_holes" << std::endl;
-    insert << "(mat_id, x_coord, y_coord, shape_width, shape_length, rounded)" << std::endl;
+    insert << "(mat_id, x_coord, y_coord, aperture_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::CentreHole>::const_iterator it = centreHoles.begin(); it != centreHoles.end(); it++) {
         Drawing::CentreHole hole = *it;
 
-        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.centreHoleShape.width << "," <<
-            hole.centreHoleShape.length << ", " << hole.centreHoleShape.rounded << ")";
+        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.apertureID << ")";
 
         if (it != centreHoles.end() - 1) {
             insert << ", ";

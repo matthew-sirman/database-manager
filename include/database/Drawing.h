@@ -555,8 +555,6 @@ public:
         Coordinate pos;
         // The width and length of this impact pad (in mat coordinates)
         float width, length;
-        
-        float thickness = 25;
 
         /// <summary>
         /// Default constructor
@@ -571,7 +569,6 @@ public:
             this->pos.y = bar.pos.y;
             this->width = bar.width;
             this->length = bar.length;
-            this->thickness = bar.thickness;
         }
 
         /// <summary>
@@ -587,8 +584,7 @@ public:
         inline bool operator==(const DamBar& other) {
             // Two impact pads are considered equal if and only if their top left corners, width, length, material and
             // aperture are all equal.
-            return pos == other.pos && width == other.width && length == other.length &&
-                thickness == other.thickness;
+            return pos == other.pos && width == other.width && length == other.length;
         }
 
         /// <summary>
@@ -625,8 +621,6 @@ public:
             buff += sizeof(float);
             *((float*)buff) = length;
             buff += sizeof(float);
-            *((float*)buff) = thickness;
-            buff += sizeof(float);
         }
 
         /// <summary>
@@ -650,8 +644,6 @@ public:
             bar->width = *((float*)buff);
             buff += sizeof(float);
             bar->length = *((float*)buff);
-            buff += sizeof(float);
-            bar->thickness = *((float*)buff);
             buff += sizeof(float);
 
             // Return the impact pad object we constructed
@@ -824,7 +816,8 @@ public:
         /// Shape
         /// Internal Shape grouping structure for the shape of a centre hole
         /// </summary>
-        struct Shape {
+        unsigned apertureID;
+        /*struct Shape {
             // The width and length of the shape which is cut out of the mat
             float width, length;
             // Whether or not the shape is cut from a rounded tool
@@ -849,7 +842,7 @@ public:
                 // Return the boolean NOT of whether the two shapes are considered equal.
                 return !(*this == other);
             }
-        } centreHoleShape; // The shame of this particular centre hole
+        } centreHoleShape;*/ // The shame of this particular centre hole
 
         // The position of the centre of the where the centre hole is punched
         Coordinate pos;
@@ -865,9 +858,7 @@ public:
         inline CentreHole(const CentreHole &pad) {
             this->pos.x = pad.pos.x;
             this->pos.y = pad.pos.y;
-            this->centreHoleShape.width = pad.centreHoleShape.width;
-            this->centreHoleShape.length = pad.centreHoleShape.length;
-            this->centreHoleShape.rounded = pad.centreHoleShape.rounded;
+            this->apertureID = pad.apertureID;
         }
 
         /// <summary>
@@ -883,7 +874,7 @@ public:
         inline bool operator==(const CentreHole &other) {
             // We consider two centre holes to be equal if and only if their shapes are equal and their positions are
             // equal.
-            return centreHoleShape == other.centreHoleShape && pos == other.pos;
+            return apertureID == other.apertureID && pos == other.pos;
         }
 
         /// <summary>
@@ -919,11 +910,8 @@ public:
             buff += sizeof(float);
             *((float *) buff) = pos.y;
             buff += sizeof(float);
-            *((float *) buff) = centreHoleShape.width;
-            buff += sizeof(float);
-            *((float *) buff) = centreHoleShape.length;
-            buff += sizeof(float);
-            *buff++ = centreHoleShape.rounded;
+            *((unsigned*)buff) = apertureID;
+            buff += sizeof(unsigned);
         }
 
         /// <summary>
@@ -939,11 +927,8 @@ public:
             buff += sizeof(float);
             hole->pos.y = *((float *) buff);
             buff += sizeof(float);
-            hole->centreHoleShape.width = *((float *) buff);
-            buff += sizeof(float);
-            hole->centreHoleShape.length = *((float *) buff);
-            buff += sizeof(float);
-            hole->centreHoleShape.rounded = *buff++;
+            hole->apertureID = *((unsigned *) buff);
+            buff += sizeof(unsigned);
 
             return *hole;
         }

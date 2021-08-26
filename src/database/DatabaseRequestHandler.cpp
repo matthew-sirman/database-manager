@@ -523,47 +523,19 @@ void DatabaseRequestHandler::constructDataElements(
             ERROR_RAW_SAFE("Aperture with missing shape ID detected.", std::cerr);
             return;
         }
+        ApertureData data;
+        data.handle = handle++;
+        data.id = row[0];
+        data.width = row[1].isNull() ? 0 : row[1].get<float>();
+        data.length = row[2].isNull() ? 0 : row[2].get<float>();
+        data.baseWidth = row[3].isNull() ? 0 : row[3].get<unsigned>();
+        data.baseLength = row[4].isNull() ? 0 : row[4].get<unsigned>();
+        data.quantity = row[5].isNull() ? 0 : row[5].get<unsigned>();
+        data.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(row[6]).handle();
 
-        if (row[6].get<unsigned>() == DrawingComponentManager<ApertureShape>::findComponentByID(5).handle()) {
-            ApertureData slData, stData;
-            slData.handle = handle++;
-            slData.id = row[0];
-            slData.width = row[1].get<float>();
-            slData.length = row[2].get<float>();
-            slData.baseWidth = row[3].get<unsigned>();
-            slData.baseLength = row[4].get<unsigned>();
-            slData.quantity = row[5].get<unsigned>();
-            slData.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(3).handle();
+        sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned);
 
-            stData.handle = handle++;
-            stData.id = row[0];
-            stData.width = row[1].get<float>();
-            stData.length = row[2].get<float>();
-            stData.baseWidth = row[3].get<unsigned>();
-            stData.baseLength = row[4].get<unsigned>();
-            stData.quantity = row[5].get<unsigned>();
-            stData.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(4).handle();
-
-            sizeValue += (sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned)) * 2;
-
-            elements.push_back(slData);
-            elements.push_back(stData);
-        }
-        else {
-            ApertureData data;
-            data.handle = handle++;
-            data.id = row[0];
-            data.width = row[1].isNull() ? 0 : row[1].get<float>();
-            data.length = row[2].isNull() ? 0 : row[2].get<float>();
-            data.baseWidth = row[3].isNull() ? 0 : row[3].get<unsigned>();
-            data.baseLength = row[4].isNull() ? 0 : row[4].get<unsigned>();
-            data.quantity = row[5].isNull() ? 0 : row[5].get<unsigned>();
-            data.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(row[6]).handle();
-
-            sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned);
-
-            elements.push_back(data);
-        }
+        elements.push_back(data);
     }
 }
 

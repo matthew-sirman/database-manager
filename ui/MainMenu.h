@@ -13,6 +13,7 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <regex>
+#include <QShortcut>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"

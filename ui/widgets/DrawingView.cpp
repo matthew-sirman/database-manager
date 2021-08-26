@@ -331,7 +331,12 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                     drawing->width();
                 hole.pos.y = ((holeCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
                     drawing->length();
-                hole.centreHoleShape = centreHoleSet->currentShape();
+                if (!centreHoleSet->empty()) {
+                    hole.apertureID = centreHoleSet->currentAperture().componentID();
+                }
+                else {
+                    hole.apertureID = 113;
+                }
 
                 drawing->addCentreHole(hole);
                 centreHoleSet->clearCentreHoles();

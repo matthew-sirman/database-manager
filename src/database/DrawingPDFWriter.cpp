@@ -306,20 +306,20 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
             if (drawing.hasBackingStrips()) {
                 labelText = "Backing Strips";
-                fieldText = "Yes";
+                fieldText = drawing.backingStrip()->backingStripName().c_str();
                 drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                                   fieldText, fieldWidth, horizontalOffset, verticalOffset);
             }
         } else {
             labelText = "Backing Strips";
-            fieldText = drawing.hasBackingStrips() ? "Yes" : "No";
+            fieldText = drawing.hasBackingStrips() ? drawing.backingStrip()->backingStripName().c_str() : "No";
             drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                               fieldText, fieldWidth, horizontalOffset, verticalOffset);
         }
     } else if (productName == "Extraflex" || productName == "Polyflex") {
         if (drawing.hasBackingStrips()) {
             labelText = "Backing Strips";
-            fieldText = "Yes";
+            fieldText = drawing.backingStrip()->backingStripName().c_str();
             drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                               fieldText, fieldWidth, horizontalOffset, verticalOffset);
         }
@@ -394,7 +394,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         for (unsigned i = 0; i < bars.size(); i++) {
             Drawing::DamBar bar = bars[i];
 
-            damBarTextField << bar.width << "x" << bar.length << "x" << bar.thickness << " at " << "(" << bar.pos.x << ", " << bar.pos.y
+            damBarTextField << bar.width << "x" << bar.length << " at " << "(" << bar.pos.x << ", " << bar.pos.y
                 << ") ";
 
             if (i != bars.size() - 1) {
@@ -411,20 +411,21 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     if (drawing.numberOfCentreHoles()) {
         std::stringstream centreHolesFieldText;
         std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
+        Aperture aperture = DrawingComponentManager<Aperture>::findComponentByID(holes.front().apertureID);
+        std::string shape = DrawingComponentManager<ApertureShape>::findComponentByID(aperture.apertureShapeID).shape;
 
-        Drawing::CentreHole::Shape shape = holes.front().centreHoleShape;
-
-        centreHolesFieldText << shape.width << "x" << shape.length << " ";
-        if (shape.rounded) {
-            centreHolesFieldText << "(rounded) ";
-        }
+        centreHolesFieldText << aperture.apertureName();
         centreHolesFieldText << "at ";
 
         std::vector<float> positions;
+        float total = 0;
         positions.reserve(holes.size());
         for (const Drawing::CentreHole &hole : holes) {
             positions.push_back(hole.pos.y);
+            total += hole.pos.y;
         }
+
+        positions.push_back(drawing.length() - total);
 
         std::sort(positions.begin(), positions.end());
         std::vector<float>::iterator last = std::unique(positions.begin(), positions.end());
@@ -989,17 +990,17 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     for (const Drawing::CentreHole &hole : drawing.centreHoles()) {
         QRectF holeBounds = QRectF(
                 QPointF(matBoundingRegion.left() +
-                        ((hole.pos.x - hole.centreHoleShape.width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+                        ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
                         matBoundingRegion.top() +
-                        ((hole.pos.y - hole.centreHoleShape.length / 2) / lengthDim.rCentre) *
+                        ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) *
                         matBoundingRegion.height()),
-                QSizeF((hole.centreHoleShape.width / widthDim.rCentre) * matBoundingRegion.width(),
-                       (hole.centreHoleShape.length / lengthDim.rCentre) * matBoundingRegion.height())
+                QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
+                       (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
         );
 
         painter.setPen(Qt::red);
 
-        if (!hole.centreHoleShape.rounded) {
+        if (DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID).shape != "DIA") {
             painter.drawRect(holeBounds);
             painter.setPen(smallDashPen);
             painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
@@ -1010,7 +1011,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
             double radius =
-                    (std::min(hole.centreHoleShape.width, hole.centreHoleShape.length) / 2.0) / widthDim.rCentre *
+                    (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre *
                     matBoundingRegion.width();
             roundedRectPath.addRoundedRect(holeBounds, radius, radius);
             painter.drawPath(roundedRectPath);

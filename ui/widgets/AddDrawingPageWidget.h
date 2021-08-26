@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QDesktopServices>
 #include <QMessageBox>
+#include <QShortcut>
 
 #include <unordered_set>
 

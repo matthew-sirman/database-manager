@@ -53,7 +53,6 @@ void DamBarGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
 				inspectorAcquireID = inspector->acquire();
 				inspector->addFloatField("Width:", bar.width, 1, 0);
 				inspector->addFloatField("Length:", bar.length, 1, 0);
-				inspector->addFloatField("Thickness:", bar.thickness, 1, 0);
 				inspector->addFloatField("X Position:", bar.pos.x, 1, 0);
 				inspector->addFloatField("Y Position:", bar.pos.y, 1, 0);
 			}
