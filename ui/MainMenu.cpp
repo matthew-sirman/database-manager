@@ -14,6 +14,7 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     closeTab->setKey(Qt::CTRL + Qt::Key_W);
     connect(closeTab, &QShortcut::activated, [this]() {
         if (ui->mainTabs->currentIndex() > 0) {
+            ui->mainTabs->widget(ui->mainTabs->currentIndex())->close();
             ui->mainTabs->removeTab(ui->mainTabs->currentIndex());
         }
     });

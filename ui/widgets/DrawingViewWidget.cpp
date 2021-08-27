@@ -307,18 +307,20 @@ void DrawingViewWidget::updateFields() {
         // box->exec();
     }
 
-    QFormLayout* layout = new QFormLayout();
-    float total = 0;
-    for (std::pair<std::string, float> priced : prices) {
-        QLineEdit* priceTextbox = new QLineEdit(QString::number(priced.second, 'f', 2));
-        total += priced.second;
-        priceTextbox->setReadOnly(true);
-        layout->addRow(priced.first.c_str(), priceTextbox);
-    }
-    QLineEdit* priceTextbox = new QLineEdit(QString::number(total, 'f', 2));
-    priceTextbox->setReadOnly(true);
-    layout->addRow("Total: ", priceTextbox);
-    ui->pricesTab->setLayout(layout);
+    QLabel* label = new QLabel(ui->pricesTab);
+    label->setText("Not fully implimented yet.");
+    //QFormLayout* layout = new QFormLayout();
+    //float total = 0;
+    //for (std::pair<std::string, float> priced : prices) {
+    //    QLineEdit* priceTextbox = new QLineEdit(QString::number(priced.second, 'f', 2));
+    //    total += priced.second;
+    //    priceTextbox->setReadOnly(true);
+    //    layout->addRow(priced.first.c_str(), priceTextbox);
+    //}
+    //QLineEdit* priceTextbox = new QLineEdit(QString::number(total, 'f', 2));
+    //priceTextbox->setReadOnly(true);
+    //layout->addRow("Total: ", priceTextbox);
+    //ui->pricesTab->setLayout(layout);
 }
 
 void DrawingViewWidget::setChangeDrawingCallback(const std::function<void(AddDrawingPageWidget::AddDrawingMode)> &callback) {
