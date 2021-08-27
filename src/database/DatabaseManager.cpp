@@ -330,10 +330,10 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 
 			Aperture matchingApertures = DrawingComponentManager<Aperture>::findComponentByID(row[1]);
 
-			pad.width = row[3].get<float>();
-			pad.length = row[4].get<float>();
-			pad.pos.x = row[5].get<float>();
-			pad.pos.y = row[6].get<float>();
+			pad.width = row[2].get<float>();
+			pad.length = row[3].get<float>();
+			pad.pos.x = row[4].get<float>();
+			pad.pos.y = row[5].get<float>();
 
 			drawing->addImpactPad(pad);
 		}

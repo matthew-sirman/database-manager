@@ -415,30 +415,14 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         std::string shape = DrawingComponentManager<ApertureShape>::findComponentByID(aperture.apertureShapeID).shape;
 
         centreHolesFieldText << aperture.apertureName();
-        centreHolesFieldText << "at ";
+        centreHolesFieldText << " at ";
 
-        std::vector<float> positions;
         float total = 0;
-        positions.reserve(holes.size());
         for (const Drawing::CentreHole &hole : holes) {
-            positions.push_back(hole.pos.y);
-            total += hole.pos.y;
+            centreHolesFieldText << hole.pos.y << "+";
+            total = hole.pos.y;
         }
-
-        positions.push_back(drawing.length() - total);
-
-        std::sort(positions.begin(), positions.end());
-        std::vector<float>::iterator last = std::unique(positions.begin(), positions.end());
-        positions.erase(last, positions.end());
-
-        float lastY = 0;
-        for (float y : positions) {
-            centreHolesFieldText << (y - lastY);
-            lastY = y;
-            if (y != positions.back()) {
-                centreHolesFieldText << "+";
-            }
-        }
+        centreHolesFieldText << (drawing.length() - total);
 
         labelText = "Centre Holes";
         fieldText = centreHolesFieldText.str().c_str();
@@ -988,38 +972,109 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     painter.restore();
 
     for (const Drawing::CentreHole &hole : drawing.centreHoles()) {
-        QRectF holeBounds = QRectF(
+        //QRectF holeBounds = QRectF(
+        //        QPointF(matBoundingRegion.left() +
+        //                ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+        //                matBoundingRegion.top() +
+        //                ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) *
+        //                matBoundingRegion.height()),
+        //        QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
+        //               (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
+        //);
+
+        //painter.setPen(Qt::red);
+
+        //if (DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID).shape != "DIA") {
+        //    painter.drawRect(holeBounds);
+        //    painter.setPen(smallDashPen);
+        //    painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+        //                     QPointF(holeBounds.center().x(), holeBounds.bottom()));
+        //    painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+        //                     QPointF(holeBounds.right(), holeBounds.center().y()));
+        //} else {
+        //    painter.setRenderHint(QPainter::Antialiasing);
+        //    QPainterPath roundedRectPath;
+        //    double radius =
+        //            (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre *
+        //            matBoundingRegion.width();
+        //    roundedRectPath.addRoundedRect(holeBounds, radius, radius);
+        //    painter.drawPath(roundedRectPath);
+        //    painter.setPen(smallDashPen);
+        //    painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+        //                     QPointF(holeBounds.center().x(), holeBounds.bottom()));
+        //    painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+        //                     QPointF(holeBounds.right(), holeBounds.center().y()));
+        //}
+        QRectF verticalHoleBounds = QRectF(
                 QPointF(matBoundingRegion.left() +
                         ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
                         matBoundingRegion.top() +
-                        ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) *
-                        matBoundingRegion.height()),
+                        ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height()),
                 QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
                        (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
         );
+        QRectF horizontalHoleBounds = QRectF(
+        QPointF(matBoundingRegion.left() +
+                ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height(),
+                matBoundingRegion.top() +
+                ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width()),
+        QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height(),
+               (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width())
+        );
 
         painter.setPen(Qt::red);
-
-        if (DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID).shape != "DIA") {
-            painter.drawRect(holeBounds);
-            painter.setPen(smallDashPen);
-            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
-                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
-            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
-                             QPointF(holeBounds.right(), holeBounds.center().y()));
-        } else {
+        ApertureShape shape = DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID);
+        if (shape.shape == "SQ" or shape.shape == "SL") {
+            painter.drawRect(verticalHoleBounds);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "ST") {
+            painter.drawRect(horizontalHoleBounds);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.top()),
+                              QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.bottom()));
+            painter.drawLine(QPointF(horizontalHoleBounds.left(), horizontalHoleBounds.center().y()),
+                              QPointF(horizontalHoleBounds.right(), horizontalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "DIA") {
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
-            double radius =
-                    (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre *
-                    matBoundingRegion.width();
-            roundedRectPath.addRoundedRect(holeBounds, radius, radius);
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
             painter.drawPath(roundedRectPath);
-            painter.setPen(smallDashPen);
-            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
-                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
-            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
-                             QPointF(holeBounds.right(), holeBounds.center().y()));
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "RL") {
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath roundedRectPath;
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
+            painter.drawPath(roundedRectPath);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "RT") {
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath roundedRectPath;
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(horizontalHoleBounds, radius, radius);
+            painter.drawPath(roundedRectPath);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.top()),
+                              QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.bottom()));
+            painter.drawLine(QPointF(horizontalHoleBounds.left(), horizontalHoleBounds.center().y()),
+                              QPointF(horizontalHoleBounds.right(), horizontalHoleBounds.center().y()));
         }
     }
 
