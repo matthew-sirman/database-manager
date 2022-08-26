@@ -102,6 +102,8 @@ Drawing::Drawing(const Drawing &drawing) {
     this->sideIronHandles[1] = drawing.sideIronHandles[1];
     this->sideIronsInverted[0] = drawing.sideIronsInverted[0];
     this->sideIronsInverted[1] = drawing.sideIronsInverted[1];
+    this->sideIronsCutDown[0] = drawing.sideIronsCutDown[0];
+    this->sideIronsCutDown[1] = drawing.sideIronsCutDown[1];
     this->sidelaps[0] = drawing.sidelaps[0];
     this->sidelaps[1] = drawing.sidelaps[1];
     this->overlaps[0] = drawing.overlaps[0];
@@ -141,6 +143,8 @@ void Drawing::setAsDefault() {
     this->sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
     this->sideIronsInverted[0] = false;
     this->sideIronsInverted[1] = false;
+    this->sideIronsCutDown[0] = false;
+    this->sideIronsCutDown[1] = false;
     this->sidelaps[0] = std::nullopt;
     this->sidelaps[1] = std::nullopt;
     this->overlaps[0] = std::nullopt;
@@ -360,7 +364,7 @@ std::vector<float> Drawing::allBarSpacings() const {
     return barSpacings;
 }
 
-std::vector<float> Drawing::allBarWidths() const {
+const std::vector<float>& Drawing::allBarWidths() const {
     return barWidths;
 }
 
@@ -380,6 +384,16 @@ bool Drawing::sideIronInverted(Drawing::Side side) const {
             return sideIronsInverted[0];
         case RIGHT:
             return sideIronsInverted[1];
+    }
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
+}
+
+bool Drawing::sideIronCutDown(Drawing::Side side) const {
+    switch (side) {
+        case LEFT:
+            return sideIronsCutDown[0];
+        case RIGHT:
+            return sideIronsCutDown[1];
     }
     ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
 }
@@ -409,15 +423,27 @@ void Drawing::setSideIronInverted(Drawing::Side side, bool inverted) {
     invokeUpdateCallbacks();
 }
 
+void Drawing::setSideIronCutDown(Drawing::Side side, bool cutDown) {
+    switch (side) {
+        case LEFT:
+            sideIronsCutDown[0] = cutDown;
+        case RIGHT:
+            sideIronsCutDown[1] = cutDown;
+    }
+    invokeUpdateCallbacks();
+}
+
 void Drawing::removeSideIron(Drawing::Side side) {
     switch (side) {
         case LEFT:
             sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[0] = false;
+            sideIronsCutDown[0] = false;
             break;
         case RIGHT:
             sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[1] = false;
+            sideIronsCutDown[1] = false;
             break;
     }
     invokeUpdateCallbacks();
@@ -826,9 +852,11 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *((unsigned *) buffer) = drawing.sideIronHandles[0];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[0];
+    *buffer++ = drawing.sideIronsCutDown[0];
     *((unsigned *) buffer) = drawing.sideIronHandles[1];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[1];
+    *buffer++ = drawing.sideIronsCutDown[1];
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {
@@ -1151,10 +1179,13 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     drawing->sideIronHandles[0] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[0] = *buffer++;
+    drawing->sideIronsCutDown[0] = *buffer++;
 
     drawing->sideIronHandles[1] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[1] = *buffer++;
+    drawing->sideIronsCutDown[1] = *buffer++;
+
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {

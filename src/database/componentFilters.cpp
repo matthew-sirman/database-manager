@@ -57,6 +57,20 @@ void SideIronFilter::removeMinimumLength() {
 	}
 }
 
+void SideIronFilter::setSideIronFilterMatType(bool isScreenCloth) {
+	rubberScreenCloth = isScreenCloth;
+	if (filterUpdateCallback) {
+		filterUpdateCallback();
+	}
+}
+
+void SideIronFilter::removeMatType() {
+	rubberScreenCloth = std::nullopt;
+	if (filterUpdateCallback) {
+		filterUpdateCallback();
+	}
+}
+
 bool SideIronFilter::__filter(std::vector<unsigned>::const_iterator element) const {
 	SideIron &sideIron = DrawingComponentManager<SideIron>::getComponentByHandle(*element);
 	bool match = true;
@@ -68,6 +82,22 @@ bool SideIronFilter::__filter(std::vector<unsigned>::const_iterator element) con
 	if (minimumLength.has_value()) {
 		if (minimumLength.value() > sideIron.length) {
 			match = false;
+		}
+	}
+	if (rubberScreenCloth.has_value()) {
+		// Needs to match rubber screen cloths
+		if (rubberScreenCloth.value()) {
+			// not standard Side iron aka rubber screen cloth
+			if (sideIron.drawingNumber.find("1562") == std::string::npos && sideIron.drawingNumber.find("1565") == std::string::npos && sideIron.drawingNumber.find("1564") == std::string::npos && sideIron.drawingNumber.find("1567") == std::string::npos && sideIron.drawingNumber.find("1568") == std::string::npos) {
+				match = false;
+			}
+		}
+		// Needs to match extraflex
+		else {
+			// Not extraflex Side iron
+			if (sideIron.drawingNumber.find("1334") == std::string::npos && sideIron.drawingNumber.find("1335") == std::string::npos && sideIron.drawingNumber.find("1569") == std::string::npos) {
+				match = false;
+			}
 		}
 	}
 	return match;

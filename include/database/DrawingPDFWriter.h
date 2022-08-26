@@ -40,7 +40,7 @@ private:
 	};
 
 	static void drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label = QString(), ArrowMode mode = SINGLE_HEADED,
-		bool flipLabel = false, QPen tailPen = QPen(), QPen headPen = QPen(), double headSize = 50, double angle = 30);
+		bool flipLabel = false, QPen tailPen = QPen(), QPen headPen = QPen(), double headSize = 50, double angle = 30, unsigned lines = 1);
 };
 
 #endif //DATABASE_MANAGER_DRAWINGPDFWRITER_H

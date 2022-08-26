@@ -178,7 +178,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     std::stringstream sideIronText;
     SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
-
+    sideIronText << leftSideIron.length << "mm ";
     switch (leftSideIron.type) {
         case SideIronType::A:
             sideIronText << "Type A ";
@@ -199,12 +199,22 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             sideIronText << "None";
             break;
     }
+
+    if (drawing.sideIronInverted(Drawing::LEFT)) {
+        sideIronText << "Inverted ";
+    }
+
+    if (drawing.sideIronCutDown(Drawing::LEFT)) {
+        sideIronText << "Cut Down ";
+    }
+
     if (leftSideIron.type != SideIronType::None) {
-        sideIronText << "(" << leftSideIron.drawingNumber << ")";
+        sideIronText << leftSideIron.drawingNumber << " ";
     }
 
     if (leftSideIron.handle() != rightSideIron.handle()) {
-        sideIronText << ", ";
+        sideIronText << ",\n";
+        sideIronText << rightSideIron.length << "mm ";
         switch (rightSideIron.type) {
             case SideIronType::A:
                 sideIronText << "Type A ";
@@ -225,12 +235,22 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                 sideIronText << "None";
                 break;
         }
+
+        if (drawing.sideIronInverted(Drawing::RIGHT)) {
+            sideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::RIGHT)) {
+            sideIronText << "Cut Down ";
+        }
+
         if (rightSideIron.type != SideIronType::None) {
-            sideIronText << "(" << rightSideIron.drawingNumber << ")";
+            sideIronText << rightSideIron.drawingNumber << " ";
         }
     }
 
     fieldText = sideIronText.str().c_str();
+    std::cout << fieldText.toStdString() << std::endl;
     drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                       fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
@@ -417,9 +437,17 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         centreHolesFieldText << aperture.apertureName();
         centreHolesFieldText << " at ";
 
+        
         float total = 0;
+        float oldY = 0;
         for (const Drawing::CentreHole &hole : holes) {
-            centreHolesFieldText << hole.pos.y << "+";
+            std::cout << oldY << " " << hole.pos.y << std::endl;
+            if (hole.pos.y < oldY) {
+                centreHolesFieldText << (drawing.length() - total) << "\n";
+                total = 0;
+            }
+            oldY = hole.pos.y;
+            centreHolesFieldText << hole.pos.y - total << "+";
             total = hole.pos.y;
         }
         centreHolesFieldText << (drawing.length() - total);
@@ -695,8 +723,18 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     painter.drawLine(rightWidthExtender);
     painter.setPen(Qt::black);
 
-    drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), to_str(drawing.width()).c_str(),
-              DOUBLE_HEADED);
+    
+
+    if (drawing.sideIron(Drawing::LEFT).type == SideIronType::B || drawing.sideIron(Drawing::RIGHT).type == SideIronType::B) {
+        drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(),
+                  (to_str(drawing.width() + 60 * ((drawing.sideIron(Drawing::LEFT).type == SideIronType::B)
+                                                  + (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))) + " o/h\n" +to_str(drawing.width())).c_str(),
+          DOUBLE_HEADED, false, QPen(), QPen(), 50.0, 30.0, 2);
+    }
+    else {
+        drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), (to_str(drawing.width())).c_str(),
+                          DOUBLE_HEADED);
+    }
 
     QLineF topLengthExtender(
             QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.top()),
@@ -710,10 +748,92 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     painter.setPen(dashPen);
     painter.drawLine(topLengthExtender);
     painter.drawLine(bottomLengthExtender);
+    
     painter.setPen(Qt::black);
 
+    if (drawing.sideIron(Drawing::LEFT).type != drawing.sideIron(Drawing::RIGHT).type ||
+        drawing.sideIronInverted(Drawing::LEFT) != drawing.sideIronInverted(Drawing::RIGHT) ||
+        drawing.sideIronCutDown(Drawing::LEFT) != drawing.sideIronCutDown(Drawing::RIGHT)) {
+        std::stringstream leftSideIronText, rightSideIronText;
+        SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+
+        switch (leftSideIron.type) {
+            case SideIronType::A:
+                leftSideIronText << "Type A ";
+                break;
+            case SideIronType::B:
+                leftSideIronText << "Type B ";
+                break;
+            case SideIronType::C:
+                leftSideIronText << "Type C ";
+                break;
+            case SideIronType::D:
+                leftSideIronText << "Type D ";
+                break;
+            case SideIronType::E:
+                leftSideIronText << "Type E ";
+                break;
+            case SideIronType::None:
+                leftSideIronText << "None";
+                break;
+        }
+
+        if (drawing.sideIronInverted(Drawing::LEFT)) {
+            leftSideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::LEFT)) {
+            leftSideIronText << "Cut Down ";
+        }
+
+        QRectF leftSideIronLabel = QFontMetricsF(painter.font()).boundingRect(leftSideIronText.str().c_str());
+        leftSideIronLabel.moveBottomLeft(drawingRegion.bottomLeft());
+        leftSideIronLabel.adjust((bottomLengthExtender.center() - leftSideIronLabel.center()).x(), 0,
+                                 (bottomLengthExtender.center() - leftSideIronLabel.center()).x(), 0);
+
+        painter.drawText(leftSideIronLabel, Qt::AlignHCenter | Qt::AlignVCenter, leftSideIronText.str().c_str());
+
+        switch (rightSideIron.type) {
+            case SideIronType::A:
+                rightSideIronText << "Type A ";
+                break;
+            case SideIronType::B:
+                rightSideIronText << "Type B ";
+                break;
+            case SideIronType::C:
+                rightSideIronText << "Type C ";
+                break;
+            case SideIronType::D:
+                rightSideIronText << "Type D ";
+                break;
+            case SideIronType::E:
+                rightSideIronText << "Type E ";
+                break;
+            case SideIronType::None:
+                rightSideIronText << "None";
+                break;
+        }
+
+        if (drawing.sideIronInverted(Drawing::RIGHT)) {
+            rightSideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::RIGHT)) {
+            rightSideIronText << "Cut Down ";
+        }
+
+        QRectF rightSideIronLabel = QFontMetricsF(painter.font()).boundingRect(rightSideIronText.str().c_str());
+        rightSideIronLabel.moveBottomRight(drawingRegion.bottomRight());
+        rightSideIronLabel.adjust(-(rightSideIronLabel.center() - rightWidthExtender.center()).x(), 0,
+                                  -(rightSideIronLabel.center() - rightWidthExtender.center()).x(), 0);
+      
+
+        painter.drawText(rightSideIronLabel, Qt::AlignHCenter | Qt::AlignVCenter, rightSideIronText.str().c_str());
+    }
+    
     drawArrow(painter, topLengthExtender.center(), bottomLengthExtender.center(), to_str(drawing.length()).c_str(),
-              DOUBLE_HEADED, true);
+                  DOUBLE_HEADED, true);
+
 
     if (leftLap.has_value()) {
         QRectF leftLapRegion;
@@ -818,7 +938,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     double currentMatPosition = 0;
 
     painter.setPen(dashDotPen);
-
+    int total = 0;
     for (unsigned bar = 0; bar < drawing.numberOfBars(); bar++) {
         currentMatPosition += drawing.barSpacing(bar);
 
@@ -834,6 +954,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         ));
 
         painter.drawLine(barCentreDividerLine);
+
 
         double barWidth = drawing.barWidth(bar + 1);
         apertureRegionEndpoints.push_back(currentMatPosition - barWidth / 2);
@@ -868,7 +989,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     }
 
     double spacingPosition = 0;
-
+    float barWidthTotal = 0;
     for (unsigned spacingDimension = 0; spacingDimension <= drawing.numberOfBars(); spacingDimension++) {
         double nextSpacingPosition = spacingPosition + drawing.barSpacing(spacingDimension);
 
@@ -884,6 +1005,16 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
                             matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
                     to_str(drawing.barSpacing(spacingDimension)).c_str(), DOUBLE_HEADED
             );
+            if (spacingDimension != drawing.numberOfBars()) {
+                barWidthTotal += drawing.barSpacing(spacingDimension);
+                QString runningTotal = QString::number((int)barWidthTotal);
+                QRectF rect = QFontMetricsF(painter.font()).boundingRect(runningTotal);
+                rect.moveCenter(QPoint((nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
+                                       matBoundingRegion.left(),
+                                       (0.5 * (1.0 + pLength)) * regionHeight + drawingRegion.top() + rect.height() * 2));
+                painter.drawText(rect, runningTotal);
+            }
+
         }
 
         double leftInnerSpacing = apertureRegionEndpoints[2 *
@@ -1024,7 +1155,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
 
         painter.setPen(Qt::red);
         ApertureShape shape = DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID);
-        if (shape.shape == "SQ" or shape.shape == "SL") {
+        if (shape.shape == "SQ" || shape.shape == "SL") {
             painter.drawRect(verticalHoleBounds);
             painter.setPen(Qt::DashDotLine);
             painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
@@ -1178,7 +1309,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
 }
 
 void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label, ArrowMode mode,
-                                 bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle) {
+                                 bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle, unsigned lines) {
     painter.save();
     painter.setPen(tailPen);
 
@@ -1192,8 +1323,9 @@ void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, co
         QTextOption centreAlignedText;
         centreAlignedText.setAlignment(Qt::AlignCenter);
 
-        QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding,
+        QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding ,
                                                                                         padding);
+        labelBounds.setHeight(labelBounds.height() * lines);
         tail.center();
 
         QLineF boundsDiameter(labelBounds.center(), labelBounds.topLeft());

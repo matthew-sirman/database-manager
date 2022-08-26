@@ -8,6 +8,7 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QFileDialog>
+#include <QtGlobal>
 #include <QDesktopServices>
 #include <QMessageBox>
 #include <QShortcut>

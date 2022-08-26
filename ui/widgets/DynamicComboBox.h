@@ -38,6 +38,7 @@ private:
 
     unsigned sourceState = 0;
 
+    // Lambda that sets the index of the combobox at the begining
     std::function<void(DynamicComboBox*)> setManualIndex = nullptr;
 };
 

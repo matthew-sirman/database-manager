@@ -45,9 +45,9 @@ void ExtraPricingWindow::update(Client* client) {
             QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
 
             switch (extraPrice.type) {
-                case (ExtraPriceType::SIDE_IRON_NUTS):
+                case (ExtraPriceType::SIDE_IRON_NUTS): case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
                 {
-                    QLineEdit* amountTextbox = new QLineEdit(QString::number(extraPrice.amount, 'f', 0));
+                    QLineEdit* amountTextbox = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
                     amountTextbox->setReadOnly(true);
                     amountTextbox->setValidator(validator);
                     layout->addRow("Amount: ", amountTextbox);
@@ -57,21 +57,9 @@ void ExtraPricingWindow::update(Client* client) {
                     layout->addRow("Price: ", priceTextbox);
                     break;
                 }
-                case ExtraPriceType::SIDE_IRON_SCREWS:
+                case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
                 {
-                    QLineEdit* amountTextbox = new QLineEdit(QString::number(extraPrice.amount, 'f', 0));
-                    amountTextbox->setReadOnly(true);
-                    amountTextbox->setValidator(validator);
-                    layout->addRow("Amount: ", amountTextbox);
-                    QLineEdit* priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
-                    priceTextbox->setReadOnly(true);
-                    priceTextbox->setValidator(validator);
-                    layout->addRow("Price: ", priceTextbox);
-                    break;
-                }
-                case ExtraPriceType::TACKYBACK_GLUE:
-                {
-                    QLineEdit* squareMetresTextbox = new QLineEdit(QString::number(extraPrice.squareMetres, 'f', 2));
+                    QLineEdit* squareMetresTextbox = new QLineEdit(QString::number(extraPrice.squareMetres.value(), 'f', 2));
                     squareMetresTextbox->setReadOnly(true);
                     squareMetresTextbox->setValidator(validator);
                     layout->addRow("Square Metres: ", squareMetresTextbox);

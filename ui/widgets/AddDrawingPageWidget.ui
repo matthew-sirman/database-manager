@@ -798,6 +798,33 @@
                </property>
               </widget>
              </item>
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="leftSideIronCutDownInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="leftSideIronCutDownLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Cut Down</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -987,6 +1014,33 @@
                </property>
               </widget>
              </item>
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="rightSideIronCutDownInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="rightSideIronCutDownLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Cut Down</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -1017,7 +1071,7 @@
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
            </property>
            <item row="0" column="0">
-            <widget class="QLabel" name="manufacturerLabel">
+            <widget class="ActivatorLabel" name="manufacturerLabel">
              <property name="styleSheet">
               <string notr="true">
                               QLabel {
@@ -1146,7 +1200,7 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="ActivatorLabel" name="modelLabel">
+            <widget class="QLabel" name="modelLabel">
              <property name="styleSheet">
               <string notr="true">
                               QLabel {

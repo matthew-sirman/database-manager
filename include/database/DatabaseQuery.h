@@ -548,9 +548,11 @@ public:
         unsigned baseWidth, baseLength;
         unsigned quantity;
         unsigned shapeID;
+        bool isNibble;
+        unsigned nibbleApertureId;
 
         inline constexpr unsigned serialisedSize() const {
-            return sizeof(float) * 2 + sizeof(unsigned) * 4;
+            return (isNibble ? sizeof(unsigned) : 0) + (sizeof(float) * 2 + sizeof(unsigned) * 4 + sizeof(bool));
         }
     };
 
@@ -644,6 +646,24 @@ public:
             return sizeof(unsigned) + sizeof(ExtraPriceType) + sizeof(float) * 2 + sizeof(unsigned);
         }
     };
+
+    struct LabourTimeData {
+        unsigned labourId;
+        LabourTimeType type;
+        unsigned time;
+        LabourTimeData() {};
+
+        LabourTimeData(unsigned int id, LabourTimeType type, unsigned int time) {
+            labourId = id;
+            this->type = type;
+            this->time = time;
+        };
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) + sizeof(LabourTimeType) + sizeof(unsigned);
+        };
+
+        
+    };
     /// <summary>
     /// ComponentInsertResponse
     /// Represents a response code from the server which depends on whether the component was successfully
@@ -725,7 +745,8 @@ private:
         MATERIAL,
         MATERIAL_PRICE,
         SIDE_IRON_PRICE,
-        EXTRA_PRICE
+        EXTRA_PRICE,
+        LABOUR_TIMES
     };
 
     // The realisation of the insert type variable. Defaults to None
@@ -740,6 +761,7 @@ private:
     std::optional<MaterialData> materialData;
     std::optional<MaterialPriceData> materialPriceData;
     std::optional<ExtraPriceData> extraPriceData;
+    std::optional<LabourTimeData> labourTimeData;
 
 };
 

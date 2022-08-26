@@ -1207,14 +1207,14 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
 
     // First specify the columns to insert
     insert << "INSERT INTO {0}.mat_side_iron_link" << std::endl;
-    insert << "(mat_id, side_iron_id, bar_width, inverted, side_iron_index)" << std::endl;
+    insert << "(mat_id, side_iron_id, bar_width, inverted, cut_down, side_iron_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Then add the data to insert for both of the side iron side. We specify which is which by the final index parameter.
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::LEFT) << ", 0), " << std::endl;
+           drawingData->sideIronInverted(Drawing::LEFT) << ", " << drawingData->sideIronCutDown(Drawing::LEFT) << ", 0), " << std::endl;
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::RIGHT) << ", 1)" << std::endl;
+           drawingData->sideIronInverted(Drawing::RIGHT) << ", " << drawingData->sideIronCutDown(Drawing::RIGHT) << ", 1)" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();
@@ -1649,6 +1649,10 @@ void ComponentInsert::serialise(void *target) const {
             buff += sizeof(unsigned);
             *((unsigned *)buff) = apertureData->shapeID;
             buff += sizeof(unsigned);
+            *buff++ = apertureData->isNibble;
+            if (apertureData->isNibble) {
+                *((unsigned*)buff) = apertureData->nibbleApertureId;
+            }
             break;
         case InsertType::MACHINE: {
             unsigned char manufacturerSize = machineData->manufacturer.size(),
@@ -1739,15 +1743,11 @@ void ComponentInsert::serialise(void *target) const {
             *((float*)buff) = extraPriceData->price;
             buff += sizeof(float);
             switch (extraPriceData->type) {
-                case (ExtraPriceType::SIDE_IRON_NUTS):
+                case (ExtraPriceType::SIDE_IRON_NUTS):case (ExtraPriceType::SIDE_IRON_SCREWS):case (ExtraPriceType::DIVERTOR):case (ExtraPriceType::DEFLECTOR):case (ExtraPriceType::DAM_BAR):
                     *((unsigned*)buff) = extraPriceData->amount;
                     buff += sizeof(unsigned);
                     break;
-                case (ExtraPriceType::SIDE_IRON_SCREWS):
-                    *((unsigned*)buff) = extraPriceData->amount;
-                    buff += sizeof(unsigned);
-                    break;
-                case (ExtraPriceType::TACKYBACK_GLUE):
+                case (ExtraPriceType::TACKYBACK_GLUE): case (ExtraPriceType::PRIMER):
                     *((float*)buff) = extraPriceData->squareMetres;
                     buff += sizeof(float);
                     break;
@@ -1777,6 +1777,8 @@ unsigned int ComponentInsert::serialisedSize() const {
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + materialPriceData->serialisedSize();
         case InsertType::EXTRA_PRICE:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + extraPriceData->serialisedSize();
+        case InsertType::LABOUR_TIMES:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + labourTimeData->serialisedSize();
         case InsertType::NONE:
         default:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse);
@@ -1797,37 +1799,45 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
     switch (insert->insertType) {
         case InsertType::NONE:
             break;
-        case InsertType::APERTURE: {
+        case InsertType::APERTURE:
+        {
             ApertureData data;
-            data.width = *((float *)buff);
+            data.width = *((float*)buff);
             buff += sizeof(float);
-            data.length = *((float *)buff);
+            data.length = *((float*)buff);
             buff += sizeof(float);
-            data.baseWidth = *((unsigned *)buff);
+            data.baseWidth = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.baseLength = *((unsigned *)buff);
+            data.baseLength = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.quantity = *((unsigned *)buff);
+            data.quantity = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.shapeID = *((unsigned *)buff);
+            data.shapeID = *((unsigned*)buff);
             buff += sizeof(unsigned);
+            data.isNibble = *buff++;
+            if (data.isNibble) {
+                data.nibbleApertureId = *((unsigned*)buff);
+                buff += sizeof(unsigned);
+            }
 
             insert->apertureData = data;
             break;
         }
-        case InsertType::MACHINE: {
+        case InsertType::MACHINE:
+        {
             MachineData data;
             unsigned char manufacturerSize = *buff++;
-            data.manufacturer = std::string((const char *)buff, manufacturerSize);
+            data.manufacturer = std::string((const char*)buff, manufacturerSize);
             buff += manufacturerSize;
             unsigned char modelSize = *buff++;
-            data.model = std::string((const char *)buff, modelSize);
+            data.model = std::string((const char*)buff, modelSize);
             buff += modelSize;
 
             insert->machineData = data;
             break;
         }
-        case InsertType::SIDE_IRON: {
+        case InsertType::SIDE_IRON:
+        {
             SideIronData data;
             data.type = *((SideIronType*)buff);
             buff += sizeof(SideIronType);
@@ -1843,7 +1853,8 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             insert->sideIronData = data;
             break;
         }
-        case InsertType::SIDE_IRON_PRICE: {
+        case InsertType::SIDE_IRON_PRICE:
+        {
             SideIronPriceData data;
 
             data.type = *((SideIronType*)buff);
@@ -1870,20 +1881,22 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             insert->sideIronPriceData = data;
             break;
         }
-        case InsertType::MATERIAL: {
+        case InsertType::MATERIAL:
+        {
             MaterialData data;
             unsigned char nameSize = *buff++;
-            data.materialName = std::string((const char *)buff, nameSize);
+            data.materialName = std::string((const char*)buff, nameSize);
             buff += nameSize;
-            data.hardness = *((unsigned *)buff);
+            data.hardness = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.thickness = *((unsigned *)buff);
+            data.thickness = *((unsigned*)buff);
             buff += sizeof(unsigned);
 
             insert->materialData = data;
             break;
         }
-        case InsertType::MATERIAL_PRICE: {
+        case InsertType::MATERIAL_PRICE:
+        {
             MaterialPriceData data;
             data.material_id = *((unsigned*)buff);
             buff += sizeof(unsigned);
@@ -1905,7 +1918,8 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             insert->materialPriceData = data;
             break;
         }
-        case InsertType::EXTRA_PRICE :
+        case InsertType::EXTRA_PRICE:
+        {
             ExtraPriceData data;
 
             data.priceId = *((unsigned*)buff);
@@ -1918,15 +1932,11 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             buff += sizeof(float);
 
             switch (data.type) {
-                case ExtraPriceType::SIDE_IRON_NUTS:
+                case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
                     data.amount = *((unsigned*)buff);
                     buff += sizeof(unsigned);
                     break;
-                case ExtraPriceType::SIDE_IRON_SCREWS:
-                    data.amount = *((unsigned*)buff);
-                    buff += sizeof(unsigned);
-                    break;
-                case ExtraPriceType::TACKYBACK_GLUE:
+                case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
                     data.squareMetres = *((float*)buff);
                     buff += sizeof(float);
                     break;
@@ -1937,6 +1947,21 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             }
             insert->extraPriceData = data;
             break;
+        }
+        case InsertType::LABOUR_TIMES:
+        {
+            LabourTimeData data;
+
+            data.labourId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.type = *((LabourTimeType*)buff);
+            buff += sizeof(ExtraPriceType);
+            data.time = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            insert->labourTimeData = data;
+            break;
+        }
     }
 
     return *insert;
@@ -1999,15 +2024,24 @@ void ComponentInsert::setComponentData(const ExtraPriceData& data) {
     extraPriceData = data;
 }
 
+template<>
+void ComponentInsert::setComponentData(const LabourTimeData& data) {
+    insertType = InsertType::LABOUR_TIMES;
+    responseCode = ComponentInsertResponse::NONE;
+
+    labourTimeData = data;
+}
+
 std::string ComponentInsert::toSQLQueryString() const {
     std::stringstream insert;
 
     switch (insertType) {
         case InsertType::APERTURE:
-            insert << "INSERT INTO {0}.apertures (width, length, base_width, base_length, quantity, shape_id)" << std::endl;
+            insert << "INSERT INTO {0}.apertures (width, length, base_width, base_length, quantity, shape_id, nibble, nibble_aperture_id)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << apertureData->width << ", " << apertureData->length << ", " << apertureData->baseWidth << ", "
-                << apertureData->baseLength << ", " << apertureData->quantity << ", " << apertureData->shapeID << ")" << std::endl;
+                << apertureData->baseLength << ", " << apertureData->quantity << ", " << apertureData->shapeID << ", " << 
+                apertureData->isNibble << "," << (apertureData->isNibble ? std::to_string(apertureData->nibbleApertureId) : "NULL") << ")" << std::endl;
             break;
         case InsertType::MACHINE:
             insert << "INSERT INTO {0}.machines (manufacturer, model)" << std::endl;
@@ -2111,8 +2145,32 @@ std::string ComponentInsert::toSQLQueryString() const {
                     insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
                     insert << "price_id = " << extraPriceData->priceId << " AND type = 'labour'" << std::endl;
                     break;
+                case ExtraPriceType::PRIMER:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'primer'" << std::endl;
+                    break;
+                case ExtraPriceType::DEFLECTOR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'deflector'" << std::endl;
+                    break;
+                case ExtraPriceType::DIVERTOR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'divertor'" << std::endl;
+                    break;
+                case ExtraPriceType::DAM_BAR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'dam_bar'" << std::endl;
+                    break;
             }
             break;
+        case InsertType::LABOUR_TIMES:
+            insert << "UPDATE {0}.labour_times set" << std::endl;
+            insert << "time = " << labourTimeData->time << " WHERE" << std::endl;
+            insert << "labour_id = " << labourTimeData->labourId;
         default:
             break;
     }
@@ -2136,6 +2194,8 @@ RequestType ComponentInsert::getSourceTableCode() const {
             return RequestType::SOURCE_MATERIAL_TABLE;
         case InsertType::EXTRA_PRICE:
             return RequestType::SOURCE_EXTRA_PRICES_TABLE;
+        case InsertType::LABOUR_TIMES:
+            return RequestType::SOURCE_LABOUR_TIMES;
         default:
             return (RequestType)(-1);
     }

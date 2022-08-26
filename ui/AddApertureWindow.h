@@ -24,6 +24,7 @@ private:
 	Ui::AddApertureWindow *ui = nullptr;
 
 	ComboboxComponentDataSource<ApertureShape> apertureShapeSource;
+	ComboboxComponentDataSource<Aperture> apertureSource;
 
 };
 

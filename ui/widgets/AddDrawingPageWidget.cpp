@@ -30,6 +30,9 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
 
     ui->dateInput->setDate(QDate(today.year, today.month, today.day));
 
+    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
+    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
+
     setupActivators();
     setupComboboxSources();
     setupDrawingUpdateConnections();
@@ -49,9 +52,6 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     ui->machinePositionInput->setValidator(positionValidator);
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
             SLOT(capitaliseLineEdit(const QString &)));
-
-    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
-    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
 
     EventTracker* eventTracker = new EventTracker(ui->drawingNumberInput, this);
     ui->drawingNumberInput->installEventFilter(eventTracker);
@@ -74,6 +74,26 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
     // if (mode == CLONE_DRAWING) {
     //    this->drawing.setDrawingNumber("");
     //}
+
+    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
+    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
+
+    if (drawing.sideIron(Drawing::Side::LEFT).type != SideIronType::None) {
+        leftSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::LEFT).type);
+        ui->leftSideIronLabel->setActive();
+    }
+    else {
+        leftSideIronFilter->setSideIronType(SideIronType::A);
+        ui->leftSideIronLabel->setActive(false);
+    }
+    if (drawing.sideIron(Drawing::Side::RIGHT).type != SideIronType::None) {
+        rightSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::RIGHT).type);
+        ui->rightSideIronLabel->setActive();
+    }
+    else {
+        rightSideIronFilter->setSideIronType(SideIronType::A);
+        ui->rightSideIronLabel->setActive(false);
+    }
 
     setupActivators();
     setupComboboxSources();
@@ -98,20 +118,6 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
     setMode(mode);
 
     loadDrawing();
-
-    leftSideIronFilter = leftSideIronSource.setFilter<SideIronFilter>();
-    rightSideIronFilter = rightSideIronSource.setFilter<SideIronFilter>();
-
-    if (drawing.sideIron(Drawing::Side::LEFT).type != SideIronType::None) {
-        leftSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::LEFT).type);
-    } else {
-        leftSideIronFilter->setSideIronType(SideIronType::A);
-    }
-    if (drawing.sideIron(Drawing::Side::RIGHT).type != SideIronType::None) {
-        rightSideIronFilter->setSideIronType(drawing.sideIron(Drawing::Side::RIGHT).type);
-    } else {
-        leftSideIronFilter->setSideIronType(SideIronType::A);
-    }
 }
 
 AddDrawingPageWidget::~AddDrawingPageWidget() {
@@ -136,6 +142,8 @@ void AddDrawingPageWidget::setupComboboxSources() {
         return a.width < b.width;
     };
 
+    std::function<bool(const SideIron&, const SideIron&)> sideIronComparator = [](const SideIron& a, const SideIron& b) {return a.length < b.length; };
+
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
     DrawingComponentManager<Aperture>::addCallback([this, apertureComparator]() {
         apertureSource.updateSource();
@@ -143,8 +151,14 @@ void AddDrawingPageWidget::setupComboboxSources() {
     });
     DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); });
     DrawingComponentManager<Material>::addCallback([this]() { bottomMaterialSource.updateSource(); });
-    DrawingComponentManager<SideIron>::addCallback([this]() { leftSideIronSource.updateSource(); });
-    DrawingComponentManager<SideIron>::addCallback([this]() { rightSideIronSource.updateSource(); });
+    DrawingComponentManager<SideIron>::addCallback([this, sideIronComparator]() {
+        leftSideIronSource.updateSource();
+        leftSideIronSource.sort(sideIronComparator);
+    });
+    DrawingComponentManager<SideIron>::addCallback([this, sideIronComparator]() {
+        rightSideIronSource.updateSource();
+        rightSideIronSource.sort(sideIronComparator);
+    });
     DrawingComponentManager<Machine>::addCallback([this]() {
         machineManufacturerSource.updateSource();
         machineManufacturerSource.makeDistinct();
@@ -161,7 +175,9 @@ void AddDrawingPageWidget::setupComboboxSources() {
     topMaterialSource.updateSource();
     bottomMaterialSource.updateSource();
     leftSideIronSource.updateSource();
+    leftSideIronSource.sort(sideIronComparator);
     rightSideIronSource.updateSource();
+    rightSideIronSource.sort(sideIronComparator);
     machineManufacturerSource.updateSource();
     machineManufacturerSource.makeDistinct();
     machineModelSource.updateSource();
@@ -224,6 +240,8 @@ void AddDrawingPageWidget::setupActivators() {
     ui->leftSideIronLabel->addTarget(ui->leftSideIronDrawingInput);
     ui->leftSideIronLabel->addTarget(ui->leftSideIronInvertedLabel);
     ui->leftSideIronLabel->addTarget(ui->leftSideIronInvertedInput);
+    ui->leftSideIronLabel->addTarget(ui->leftSideIronCutDownLabel);
+    ui->leftSideIronLabel->addTarget(ui->leftSideIronCutDownInput);
 
     ui->rightSideIronLabel->addTarget(ui->rightSideIronTypeLabel);
     ui->rightSideIronLabel->addTarget(ui->rightSideIronTypeInput);
@@ -233,6 +251,8 @@ void AddDrawingPageWidget::setupActivators() {
     ui->rightSideIronLabel->addTarget(ui->rightSideIronDrawingInput);
     ui->rightSideIronLabel->addTarget(ui->rightSideIronInvertedLabel);
     ui->rightSideIronLabel->addTarget(ui->rightSideIronInvertedInput);
+    ui->rightSideIronLabel->addTarget(ui->rightSideIronCutDownLabel);
+    ui->rightSideIronLabel->addTarget(ui->rightSideIronCutDownInput);
 
     ui->leftSideIronLabel->addActivationCallback(
             [this](bool active) {
@@ -286,6 +306,23 @@ void AddDrawingPageWidget::setupActivators() {
                 }
             }
     );
+
+    ui->manufacturerLabel->setActive();
+    ui->manufacturerLabel->addTarget(ui->manufacturerInput);
+    ui->manufacturerLabel->addTarget(ui->modelLabel);
+    ui->manufacturerLabel->addTarget(ui->modelInput);
+    ui->manufacturerLabel->addTarget(ui->quantityOnDeckLabel);
+    ui->manufacturerLabel->addTarget(ui->quantityOnDeckInput);
+    ui->manufacturerLabel->addTarget(ui->machinePositionLabel);
+    ui->manufacturerLabel->addTarget(ui->machinePositionInput);
+    ui->manufacturerLabel->addTarget(ui->machineDeckLabel);
+    ui->manufacturerLabel->addTarget(ui->machineDeckInput);
+
+    ui->manufacturerLabel->addActivationCallback([this](bool active) {
+        if (!active) {
+            ui->manufacturerInput->setCurrentIndex(0);
+        }
+    });
 }
 
 void AddDrawingPageWidget::setupDrawingUpdateConnections() {
@@ -308,6 +345,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->tensionTypeInput->setEnabled(true);
 
             ui->numberOfBarsInput->setEnabled(true);
+
+            leftSideIronFilter->setSideIronFilterMatType(true);
+
+            //if (!ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(true);
+            //    ui->leftSideIronLabel->setDisabled(false);
+            //}
         } else if (product.productName == "Extraflex") {
             topMaterialSource.setFilter<TackyBackMaterialFilter>();
             bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
@@ -319,6 +363,12 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->tensionTypeInput->setEnabled(true);
 
             ui->numberOfBarsInput->setEnabled(true);
+            this->leftSideIronFilter->setSideIronFilterMatType(false);
+
+            //if (!ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(true);
+            //    ui->leftSideIronLabel->setDisabled(false);
+            //}
         } else if (product.productName == "Polyflex") {
             topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
             bottomMaterialSource.setFilter<FlexBottomMaterialFilter>();
@@ -330,6 +380,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->tensionTypeInput->setEnabled(true);
 
             ui->numberOfBarsInput->setEnabled(true);
+
+            leftSideIronFilter->setSideIronFilterMatType(false);
+
+            //if (!ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(true);
+            //    ui->leftSideIronLabel->setDisabled(false);
+            //}
         } else if (product.productName == "Bivitec") {
             topMaterialSource.setFilter<BivitecMaterialFilter>();
             ui->bottomMaterialLabel->setActive(false);
@@ -344,6 +401,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->numberOfBarsInput->setEnabled(false);
             ui->numberOfBarsInput->setValue(0);
             ui->drawingSpecsVisual->setNumberOfBars(0);
+
+            leftSideIronFilter->removeMatType();
+
+            //if (ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(false);
+            //    ui->leftSideIronLabel->setDisabled(true);
+            //}
         } else if (product.productName == "Flip Flow") {
             topMaterialSource.setFilter<PolyurethaneMaterialFilter>();
             ui->bottomMaterialLabel->setActive(false);
@@ -358,6 +422,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->numberOfBarsInput->setEnabled(false);
             ui->numberOfBarsInput->setValue(0);
             ui->drawingSpecsVisual->setNumberOfBars(0);
+
+            leftSideIronFilter->removeMatType();
+
+            //if (ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(false);
+            //    ui->leftSideIronLabel->setDisabled(true);
+            //}
         } else if (product.productName == "Rubber Modules and Panels") {
             topMaterialSource.setFilter<RubberModuleMaterialFilter>();
             ui->bottomMaterialLabel->setActive(false);
@@ -368,6 +439,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->tensionTypeInput->setEnabled(true);
 
             ui->numberOfBarsInput->setEnabled(true);
+
+            leftSideIronFilter->removeMatType();
+
+            //if (ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(false);
+            //    ui->leftSideIronLabel->setDisabled(true);
+            //}
         } else {
             topMaterialSource.removeFilter();
             bottomMaterialSource.removeFilter();
@@ -379,6 +457,13 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             ui->tensionTypeInput->setEnabled(true);
 
             ui->numberOfBarsInput->setEnabled(true);
+
+            leftSideIronFilter->removeMatType();
+
+            //if (ui->leftSideIronLabel->active()) {
+            //    ui->leftSideIronLabel->setActive(false);
+            //    ui->leftSideIronLabel->setDisabled(true);
+            //}
         }
 
         drawing.setProduct(product);
@@ -515,11 +600,15 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setSideIronInverted(Drawing::LEFT, checked);
     });
 
+    connect(ui->leftSideIronCutDownInput, &QCheckBox::clicked, [this](bool checked) {
+        drawing.setSideIronCutDown(Drawing::LEFT, checked);
+});
+
     connect(ui->rightSideIronTypeInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         if (rightSideIronFilter) {
             rightSideIronFilter->setSideIronType((SideIronType) (index + 1));
-        }
-    });
+		}
+	});
 
     connect(ui->rightSideIronLengthInput, qOverload<int>(&QSpinBox::valueChanged), [this](int value) {
         if (rightSideIronFilter) {
@@ -529,12 +618,17 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
     connect(ui->rightSideIronDrawingInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setSideIron(Drawing::RIGHT, DrawingComponentManager<SideIron>::getComponentByHandle(
-                ui->leftSideIronDrawingInput->itemData(index).toInt()));
+                ui->rightSideIronDrawingInput->itemData(index).toInt()));
+
         rightSICache = ui->rightSideIronDrawingInput->itemData(index).toInt();
     });
     connect(ui->rightSideIronInvertedInput, &QCheckBox::clicked, [this](bool checked) {
         drawing.setSideIronInverted(Drawing::RIGHT, checked);
     });
+
+    connect(ui->rightSideIronCutDownInput, &QCheckBox::clicked, [this](bool checked) {
+        drawing.setSideIronCutDown(Drawing::RIGHT, checked);
+});
 
     connect(ui->manufacturerInput, &DynamicComboBox::currentTextChanged, [this](const QString &text) {
         machineModelFilter->setManufacturer(text.toStdString());
@@ -676,7 +770,6 @@ void AddDrawingPageWidget::loadDrawing() {
         ui->backingStripsInput->setCurrentIndex(ui->backingStripsInput->findData(drawing.backingStrip()->handle()));
     }
     if (!drawing.loadWarning(Drawing::INVALID_APERTURE_DETECTED)) {
-        std::cout << drawing.aperture().componentID() << std::endl;
         ui->apertureInput->setCurrentIndex(ui->apertureInput->findData(drawing.aperture().handle()));
     }
     ui->numberOfBarsInput->setValue(drawing.numberOfBars());
@@ -702,9 +795,13 @@ void AddDrawingPageWidget::loadDrawing() {
     if (!drawing.loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
         SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
         ui->leftSideIronDrawingInput->setCurrentIndex(ui->leftSideIronDrawingInput->findData(leftSideIron.handle()));
+        ui->leftSideIronTypeInput->setCurrentIndex((unsigned)(leftSideIron.type) - 1);
         ui->leftSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::LEFT));
+        ui->leftSideIronCutDownInput->setChecked(drawing.sideIronCutDown(Drawing::LEFT));
         ui->rightSideIronDrawingInput->setCurrentIndex(ui->rightSideIronDrawingInput->findData(rightSideIron.handle()));
+        ui->rightSideIronTypeInput->setCurrentIndex((unsigned)(rightSideIron.type) - 1);
         ui->rightSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::RIGHT));
+        ui->rightSideIronCutDownInput->setChecked(drawing.sideIronCutDown(Drawing::RIGHT));
         if (leftSideIron.handle() == rightSideIron.handle()) {
             ui->rightSideIronLabel->setActive(false);
 

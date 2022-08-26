@@ -14,6 +14,7 @@
 #include <QKeyEvent>
 #include <regex>
 #include <QShortcut>
+#include <memory>
 
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"

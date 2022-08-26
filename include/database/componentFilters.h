@@ -100,11 +100,23 @@ public:
 	/// </summary>
 	void removeMinimumLength();
 
+	/// <summary>
+	///  Setter for the type of material the mat uses to filter by
+	/// </summary>
+	/// <param name="rubberScreenCloth">Whether the mat is rubber screen cloth or extraflex</param>
+	void setSideIronFilterMatType(bool isScreenCloth);
+
+	/// <summary>
+	/// Remover for the mat material filter. After calling this, no mat material filter will apply
+	/// </summary>
+	void removeMatType();
 private:
 	// The optional for the side iron type. Defaults to nullopt representing no filter.
 	std::optional<SideIronType> filterType = std::nullopt;
 	// The optional for the minimum length. Defaults to nullopt representing no filter.
 	std::optional<unsigned> minimumLength = std::nullopt;
+	// The optional for the material type. Defaults to nullopt representing no filter.
+	std::optional<bool> rubberScreenCloth = std::nullopt;
 
 	// Internal filter function called through interface
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;

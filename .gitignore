@@ -4,5 +4,10 @@
 
 /.vs
 /out/build
+/.idea
+/cmake-build-debug
+/CMakeFiles
+/encrypt-build
+/enc_temp_folder
 /pyapi
 /CMakeSettings.json

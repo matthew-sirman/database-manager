@@ -65,6 +65,10 @@ void DrawingViewWidget::updateFields() {
             "invalid sidelaps or overlaps were found.");
     }
 
+    if (drawing->loadWarning(Drawing::INVALID_CENTRE_HOLE_DETECTED)) {
+        QMessageBox::about(this, "Invalid Centre Holes Detected", "Invalid Aperture used for one or more centre hole(s).");
+    }
+
     if (drawing->hasSidelaps()) {
         std::optional<Drawing::Lap> left = drawing->sidelap(Drawing::Side::LEFT);
         std::optional<Drawing::Lap> right = drawing->sidelap(Drawing::Side::RIGHT);
@@ -104,9 +108,11 @@ void DrawingViewWidget::updateFields() {
     }
     else {
         ui->leftSideIronTextbox->setText((drawing->sideIron(Drawing::LEFT).sideIronStr() +
-            (drawing->sideIronInverted(Drawing::LEFT) ? " (inverted)" : "")).c_str());
+                                          (drawing->sideIronInverted(Drawing::LEFT) ? " (inverted)" : "") +
+                                          (drawing->sideIronCutDown(Drawing::LEFT) ? " (cut down)" : "")).c_str());
         ui->rightSideIronTextbox->setText((drawing->sideIron(Drawing::RIGHT).sideIronStr() +
-            (drawing->sideIronInverted(Drawing::RIGHT) ? " (inverted)" : "")).c_str());
+                                           (drawing->sideIronInverted(Drawing::RIGHT) ? " (inverted)" : "") +
+                                           (drawing->sideIronCutDown(Drawing::RIGHT) ? " (cut down)" : "")).c_str());
     }
     if (drawing->loadWarning(Drawing::MISSING_MATERIAL_DETECTED)) {
         QMessageBox::about(this, "Missing Material Detected", "The material(s) are missing from this drawing");
@@ -115,8 +121,8 @@ void DrawingViewWidget::updateFields() {
         Material topLayer = drawing->material(Drawing::MaterialLayer::TOP).value();
         std::optional<Material> bottomLayer = drawing->material(Drawing::MaterialLayer::BOTTOM);
         ui->thicknessTextbox->setText((to_str(topLayer.thickness) +
-            (bottomLayer.has_value() ? "+" + to_str(bottomLayer->thickness)
-                : "")).c_str());
+                                       (bottomLayer.has_value() ? "+" + to_str(bottomLayer->thickness)
+                                        : "")).c_str());
         ui->topMaterialTextbox->setText(topLayer.material().c_str());
         if (bottomLayer.has_value()) {
             ui->bottomMaterialTextbox->setText(bottomLayer->material().c_str());
@@ -175,121 +181,187 @@ void DrawingViewWidget::updateFields() {
     pdfDocument->load(drawing->hyperlink().generic_string().c_str());
     pdfViewer->setDocument(pdfDocument);
 
+    // Prices not yet implimented
     // Prices page
     std::vector<std::pair<std::string, float>> prices;
 
     std::vector<std::string> missing;
 
-    // material pricing
-    Material material = *drawing->material(Drawing::MaterialLayer::TOP);
-    float materialPrice = std::numeric_limits<float>::max();
-    float overlapPrice = std::numeric_limits<float>::max();
-    float sidelapPrice = std::numeric_limits<float>::max();
-    Drawing::Lap overlap = Drawing::Lap();
-    overlap.width = 0;
-    if (drawing->hasOverlaps()) {
-        overlap = drawing->overlap(Drawing::Side::LEFT).has_value() ? drawing->overlap(Drawing::Side::LEFT).value() : drawing->overlap(Drawing::Side::RIGHT).value();
-    }
-    Drawing::Lap sidelap = Drawing::Lap();
-    sidelap.width = 0;
-    if (drawing->hasSidelaps()) {
-        sidelap = drawing->sidelap(Drawing::Side::LEFT).has_value() ? drawing->sidelap(Drawing::Side::LEFT).value() : drawing->sidelap(Drawing::Side::RIGHT).value();
-    }
-    for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator element = material.materialPrices.begin(); element != material.materialPrices.end(); element++) {
-        // needs to account for pressing 2 700mm out of 1600mm instead of 1 700mm from 1070mm
-        if (std::get<3>(*element) == MaterialPricingType::SHEET) {
-            if (std::get<0>(*element) >= drawing->width() && std::get<1>(*element) && std::get<1>(*element) >= drawing->length()) {
-                float tempPrice = std::get<2>(*element);
-                if (tempPrice < materialPrice) {
-                    materialPrice = tempPrice;
-                }
-            }
+    //Material Price
+    if (drawing->material(Drawing::TOP).has_value()) {
+        Material m = drawing->material(Drawing::TOP).value();
+        std::tuple<float, float, float, MaterialPricingType> bestPrice(0.0, 0.0, std::numeric_limits<float>::max(), MaterialPricingType::RUNNING_M);
+        for (std::tuple<float, float, float, MaterialPricingType> price : m.materialPrices) {
+            if (std::get<0>(price) >= (drawing->width() + (
+                (drawing->sidelap(Drawing::LEFT).has_value() ? (drawing->sidelap(Drawing::LEFT)->attachmentType == LapAttachment::INTEGRAL ? drawing->sidelap(Drawing::LEFT)->width : 0) : 0) +
+                (drawing->sidelap(Drawing::RIGHT).has_value() ? (drawing->sidelap(Drawing::RIGHT)->attachmentType == LapAttachment::INTEGRAL ? drawing->sidelap(Drawing::RIGHT)->width : 0) : 0)
+                                        ) && std::get<2>(price) < std::get<2>(bestPrice)))
+                bestPrice = price;
         }
-        else if (std::get<3>(*element) == MaterialPricingType::RUNNING_M) {
-            if (std::get<0>(*element) >= drawing->width()) {
-                float tempPrice = std::get<2>(*element) * ((drawing->length()) / 1000);
-                if (tempPrice < materialPrice) {
-                    materialPrice = tempPrice;
-                    overlapPrice = std::get<2>(*element) * ((2 * overlap.width) / 1000);
-                    sidelapPrice = std::get<2>(*element) * ((2 * sidelap.width) / 1000);
-                }
-            }
+        if (bestPrice == std::tuple<float, float, float, MaterialPricingType>(0.0, 0.0, std::numeric_limits<float>::max(), MaterialPricingType::RUNNING_M)) {
+            missing.push_back("Material");
         }
-        else if (std::get<3>(*element) == MaterialPricingType::SQUARE_M) {
-            if (std::get<0>(*element) >= drawing->width()) {
-                float tempPrice = std::get<2>(*element) * ((drawing->length()) * drawing->width()/1000)/1000;
-                if (tempPrice < materialPrice) {
-                    materialPrice = tempPrice;
-                    overlapPrice = std::get<2>(*element) * ((2 * overlap.width) / 1000);
-                    sidelapPrice = std::get<2>(*element) * ((2 * sidelap.width) / 1000);
-                }
-            }
+        else {
+            prices.push_back({ "Material", std::get<2>(bestPrice) * (drawing->length() / 1000) });
         }
     }
-    if (overlap.attachmentType == LapAttachment::BONDED) {
-        // for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator element = material.materialPrices.begin(); element != material.materialPrices.end(); element++) {
-        //     needs to account for pressing 2 700mm out of 1600mm instead of 1 700mm from 1070mm
-        // }
-    }
-    if (materialPrice == std::numeric_limits<float>::max()) {
-        missing.push_back("Material");
-        materialPrice = 0;
-    }
-    else {
-        prices.push_back({ "Material Price: ", materialPrice });
-    }
-    // Bonded overlap pricing, does it use offcuts or how to price
-    // prices.push_back({ "Overlap Price: ", overlapPrice });
-    // prices.push_back({ "Sidelap Price: ", overlapPrice });
 
-    // Side Iron pricing
-    float sideIronPrice = std::numeric_limits<float>::max();
-    float sideIronScrewsPrice = std::numeric_limits<float>::max();
-    float sideIronNutsPrice = std::numeric_limits<float>::max();
-    for (unsigned index : DrawingComponentManager<SideIronPrice>::dataIndexSet()) {
-        SideIronPrice& sideIronPriceObj = DrawingComponentManager<SideIronPrice>::findComponentByID(index);
-        // assumes that 1 mat always has the same side iron set, and therefore grabs an arbitrary one to fetch the type
-        if (sideIronPriceObj.type == drawing->sideIron(Drawing::Side::LEFT).type) {
-            for (std::tuple<unsigned, float, float, unsigned, bool>price : sideIronPriceObj.prices) {
-      
-                if (std::get<1>(price) >= drawing->sideIron(Drawing::Side::LEFT).length && std::get<2>(price) < sideIronPrice) {
-                    if (drawing->product().productName != "Extraflex" && !std::get<4>(price)) {
-                        sideIronPrice = std::get<2>(price);
-                        sideIronNutsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_NUTS>(2 * std::get<3>(price));
-                        sideIronScrewsPrice = ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(2 * std::get<3>(price));
+    //Side Iron Price
+    std::optional<std::tuple<unsigned, float, float, unsigned, bool>> lBestPrice, rBestPrice;
+    std::optional<SideIron> left = std::nullopt, right = std::nullopt;
+    try {
+        left = drawing->sideIron(Drawing::LEFT);
+    }
+    catch (std::exception _) {}
+    try {
+        right = drawing->sideIron(Drawing::RIGHT);
+    }
+    catch (std::exception _) {}
+
+    for (unsigned i : DrawingComponentManager<SideIronPrice>::dataIndexSet()) {
+        SideIronPrice p = DrawingComponentManager<SideIronPrice>::getComponentByHandle(i);
+        if (left.has_value() && p.type == left->type) {
+            for (std::tuple<unsigned, float, float, unsigned, bool> price : p.prices) {
+                //TODO: make sure length is correct
+                if (std::get<1>(price) > drawing->length() && (drawing->material(Drawing::TOP)->materialName == "Extraflex") == std::get<4>(price)) {
+                    if (!lBestPrice.has_value()) {
+                        lBestPrice = price;
                     }
-                    else if (drawing->product().productName == "Extraflex" && std::get<4>(price)) {
-                        prices.push_back({ "Side Iron Screws Price: ",
-                                        trunc(1.3 * ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(std::get<3>(price))) });
-                        prices.push_back({ "Side Iron Nuts Price: ",
-                                        trunc(1.3 * ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_NUTS>(std::get<3>(price))) });
+                    else if (std::get<2>(lBestPrice.value()) > std::get<2>(price)) {
+                        lBestPrice = price;
+                    }
+                }
+            }
+        }
+        if (right.has_value() && p.type == right->type) {
+            for (std::tuple<unsigned, float, float, unsigned, bool> price : p.prices) {
+                //TODO: make sure length is correct
+                if (std::get<1>(price) > drawing->length() && (drawing->material(Drawing::TOP)->materialName == "Extraflex") == std::get<4>(price)) {
+                    if (!rBestPrice.has_value()) {
+                        rBestPrice = price;
+                    }
+                    else if (std::get<2>(rBestPrice.value()) > std::get<2>(price)) {
+                        rBestPrice = price;
                     }
                 }
             }
         }
     }
-    // Backing strips
+    if (lBestPrice.has_value() || rBestPrice.has_value()) {
+        unsigned screws = 0;
+        if (lBestPrice.has_value()) {
+            prices.push_back({ "Left Side Iron", std::get<2>(lBestPrice.value()) / 2 });
+            screws += std::get<3>(lBestPrice.value());
+        }
+        if (rBestPrice.has_value()) {
+            prices.push_back({ "Right Side Iron", std::get<2>(rBestPrice.value()) / 2 });
+            screws += std::get<3>(lBestPrice.value());
+        }
+        prices.push_back({ "Side Iron Screws", ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(screws) });
+        prices.push_back({ "Side Iron Nuts", ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>::getExtraPrice()->getPrice<ExtraPriceType::SIDE_IRON_NUTS>(screws) });
+    }
+
+    // Bonded overlaps and sidelap
+
+    {
+        float total = 0;
+        for (std::optional<Drawing::Lap> lap : { drawing->overlap(Drawing::LEFT), drawing->overlap(Drawing::RIGHT) }) {
+            if (!lap.has_value() || lap->attachmentType == LapAttachment::INTEGRAL)
+                continue;
+            float area = ((lap->width + 50) * (drawing->width() - 100) / 1000000) * LOSS_PERCENT;
+            std::tuple<float, float, float, MaterialPricingType> bestPrice(0, 0, std::numeric_limits<float>::max(), MaterialPricingType::RUNNING_M);
+            for (std::tuple<float, float, float, MaterialPricingType> price : lap->material().materialPrices) {
+                if (std::get<2>(price) < std::get<2>(bestPrice) && std::get<0>(price) > lap->width)
+                    bestPrice = price;
+            }
+            total += std::get<2>(bestPrice) * area;
+        }
+        for (std::optional<Drawing::Lap> lap : { drawing->sidelap(Drawing::LEFT), drawing->sidelap(Drawing::RIGHT) }) {
+            if (!lap.has_value() || lap->attachmentType == LapAttachment::INTEGRAL)
+                continue;
+            float area = (((lap->width + 50) * (drawing->width() - 100)) / 1000000) * LOSS_PERCENT;
+            std::tuple<float, float, float, MaterialPricingType> bestPrice(0, 0, std::numeric_limits<float>::max(), MaterialPricingType::RUNNING_M);
+            for (std::tuple<float, float, float, MaterialPricingType> price : lap->material().materialPrices) {
+                if (std::get<2>(price) < std::get<2>(bestPrice) && std::get<0>(price) > lap->width)
+                    bestPrice = price;
+            }
+            if (std::get<2>(bestPrice) != std::numeric_limits<float>::max())
+                total += std::get<2>(bestPrice) * area;
+        }
+        if (total == 0)
+            missing.push_back("Material");
+        else {
+            prices.push_back({ "Bonded Overlaps and Sidelaps", total });
+        }
+    }
+
+    // Deflectors, Divertors and Dam Bars
+
+    ExtraPriceManager<ExtraPriceType::DEFLECTOR>::getExtraPrice()->getPrice<ExtraPriceType::DEFLECTOR>(drawing->numberOfDeflectors());
+
+    ExtraPriceManager<ExtraPriceType::DIVERTOR>::getExtraPrice()->getPrice<ExtraPriceType::DIVERTOR>(drawing->numberOfDivertors());
+
+    ExtraPriceManager<ExtraPriceType::DAM_BAR>::getExtraPrice()->getPrice<ExtraPriceType::DAM_BAR>(drawing->numberOfDamBars());
+
+    // Impact Pads
+    {
+        float total = 0;
+        float glueTotal = 0;
+        for (const Drawing::ImpactPad &pad : drawing->impactPads()) {
+            float area = (pad.length * pad.width) / 1000000 * LOSS_PERCENT;
+            std::tuple<float, float, float, MaterialPricingType> bestPrice = std::tuple<float, float, float, MaterialPricingType>(0, 0, std::numeric_limits<float>::max(), MaterialPricingType::RUNNING_M);
+            for (std::tuple<float, float, float, MaterialPricingType> price : pad.material().materialPrices) {
+                if (std::get<3>(price) == MaterialPricingType::RUNNING_M) {
+                    if (std::get<0>(price) > pad.width && (std::get<1>(price) > pad.length || pad.length == 0) && std::get<2>(price) < std::get<2>(bestPrice))
+                        bestPrice = price;
+                }
+                else {
+                    if (std::get<2>(price) < std::get<2>(bestPrice))
+                        bestPrice = price;
+                }
+            }
+            if (std::get<2>(bestPrice) != std::numeric_limits<float>::max())
+                total += std::get<2>(bestPrice) * area;
+            glueTotal += ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * (pad.material().materialName == "Tacky Back" ? 1.5 : 2);
+        }
+        if (total != 0) {
+            prices.push_back({ "Impact Pad(s)", total });
+            prices.push_back({ "Impact pad glue", glueTotal });
+        }
+    }
+    
+    // Primer
+    
+
+
+    // glue price
     if (drawing->hasBackingStrips()) {
-        prices.push_back({ "Backing Strip Price: ",
-                         std::get<2>(DrawingComponentManager<Material>::findComponentByID(drawing->backingStrip()->materialID).materialPrices[0]) * ((drawing->barWidth(0) * drawing->length()) / 1000 / 1000) * drawing->numberOfBars()});
-        prices.push_back({ "Backing Strip Glue: ",
-                         ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(((drawing->barWidth(0) * drawing->length()) / 1000 / 1000) * drawing->numberOfBars()) });
+        float totalWidth = 0;
+        for (std::vector<float>::const_iterator it = (drawing->allBarWidths().begin() + 1); it < (drawing->allBarWidths().end()-1); it++) {
+            totalWidth += *it;
+        }
+        float area = (totalWidth / 1000)* (drawing->length() / 1000);
+        std::string materialName = DrawingComponentManager<Material>::findComponentByID(drawing->backingStrip()->materialID).materialName;
+        if (materialName == "Rubber Screen Cloth")
+            prices.push_back({ "Tackyback Glue Price: ",
+                ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * 2});
+        else if (materialName == "Tacky Back")
+            prices.push_back({ "Tackyback Glue Price: ",
+                ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * 1.5 });
+        else if (materialName == "Polyurethane")
+            prices.push_back({ "Tackyback Glue Price: ",
+                ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * 2 });
+        else if (materialName == "Moulded Polyurethane")
+            prices.push_back({ "Tackyback Glue Price: ",
+                ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * 2 });
+        else if (materialName == "Rubber x60")
+            prices.push_back({ "Tackyback Glue Price: ",
+                ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(area) * 1.5 });
+    }
+    if (true /*straps*/) {
+
     }
 
-    if (sideIronPrice < std::numeric_limits<float>::max()) {
-        prices.push_back({ "Side Irons Price: ", sideIronPrice });
-        prices.push_back({ "Side Iron Screws Price: ", sideIronScrewsPrice });
-        prices.push_back({ "Side Iron Nuts Price: ", sideIronNutsPrice });
-    }
-    else {
-        missing.push_back("Side Iron");
-    }
-    // Extras
-    // Glue and Labour
-    // prices.push_back({ "Labour: ",
-    //        ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(5.0) });
-    // prices.push_back({ "Tackyback Glue Price: ",
-    //    ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>::getExtraPrice()->getPrice<ExtraPriceType::TACKYBACK_GLUE>(0.0) });
 
     if (missing.size() != 0) {
         QMessageBox* box = new QMessageBox(this);
@@ -307,20 +379,46 @@ void DrawingViewWidget::updateFields() {
         // box->exec();
     }
 
-    QLabel* label = new QLabel(ui->pricesTab);
-    label->setText("Not fully implimented yet.");
-    //QFormLayout* layout = new QFormLayout();
-    //float total = 0;
-    //for (std::pair<std::string, float> priced : prices) {
-    //    QLineEdit* priceTextbox = new QLineEdit(QString::number(priced.second, 'f', 2));
-    //    total += priced.second;
-    //    priceTextbox->setReadOnly(true);
-    //    layout->addRow(priced.first.c_str(), priceTextbox);
-    //}
-    //QLineEdit* priceTextbox = new QLineEdit(QString::number(total, 'f', 2));
-    //priceTextbox->setReadOnly(true);
-    //layout->addRow("Total: ", priceTextbox);
-    //ui->pricesTab->setLayout(layout);
+    //Impact Pads
+
+
+    QVBoxLayout* main = new QVBoxLayout();
+    QHBoxLayout* formLayout = new QHBoxLayout();
+    QFormLayout* leftForm = new QFormLayout();
+    QFormLayout* rightForm = new QFormLayout();
+    QFormLayout* bottomForm = new QFormLayout();
+    main->setMargin(0);
+    main->setSpacing(5);
+    formLayout->setMargin(5);
+
+    main->insertLayout(0, formLayout);
+    main->insertLayout(1, bottomForm);
+
+    formLayout->insertLayout(0, leftForm);
+    formLayout->insertLayout(1, rightForm);
+
+    QWidget* costLabelContainer = new QWidget();
+    QLabel* costLabel = new QLabel("Material costs", costLabelContainer);
+    leftForm->addRow(costLabelContainer);
+    float total = 0;
+    for (std::pair<std::string, float> priced : prices) {
+        QLineEdit* priceTextbox = new QLineEdit(QString::number(priced.second, 'f', 2));
+        total += priced.second;
+        priceTextbox->setReadOnly(true);
+        leftForm->addRow(priced.first.c_str(), priceTextbox);
+    }
+    QLineEdit* priceTextbox = new QLineEdit(QString::number(total, 'f', 2));
+    priceTextbox->setReadOnly(true);
+    leftForm->addRow("Total: ", priceTextbox);
+
+
+    leftForm->addRow(new QLabel("left"));
+    rightForm->addRow(new QLabel("right"));
+
+    QLineEdit* grandTotal = new QLineEdit(QString::number(100, 'f', 2));
+    bottomForm->addRow("Grand Total: ", grandTotal);
+
+    ui->pricesTab->setLayout(main);
 }
 
 void DrawingViewWidget::setChangeDrawingCallback(const std::function<void(AddDrawingPageWidget::AddDrawingMode)> &callback) {

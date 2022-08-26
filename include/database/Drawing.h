@@ -132,7 +132,8 @@ public:
         MISSING_MATERIAL_DETECTED = 0x08,
         INVALID_APERTURE_DETECTED = 0x10,
         INVALID_IMPACT_PAD_DETECTED = 0x20,
-        INVALID_BACKING_STRIP_DETECTED = 0x40
+        INVALID_BACKING_STRIP_DETECTED = 0x40,
+        INVALID_CENTRE_HOLE_DETECTED = 0x80
     };
 
     /// <summary>
@@ -1417,7 +1418,7 @@ public:
     /// margins as well
     /// </summary>
     /// <returns>A vector of a copy of each bar width (and margin) in this drawing.</returns>
-    std::vector<float> allBarWidths() const;
+    const std::vector<float>& allBarWidths() const;
 
     /// <summary>
     /// Getter for each side iron
@@ -1434,6 +1435,13 @@ public:
     bool sideIronInverted(Side side) const;
 
     /// <summary>
+     /// Getter for whether each side iron is cut down or not.
+     /// </summary>
+     /// <param name="side">The side to retrieve the property from.</param>
+     /// <returns>Whether the specified side iron is cut down.</returns>
+    bool sideIronCutDown(Side side) const;
+
+    /// <summary>
     /// Setter for a side iron
     /// </summary>
     /// <param name="side">The side to specify the side iron for.</param>
@@ -1446,6 +1454,13 @@ public:
     /// <param name="side">The side to are specifying for.</param>
     /// <param name="inverted">The value to set the invertedness of the specified side to.</param>
     void setSideIronInverted(Side side, bool inverted);
+
+    /// <summary>
+    /// Setter for whether the side iron is cut down
+    /// </summary>
+    /// <param name="side">The side to are specifying for.</param>
+    /// <param name="cutDown">The value to set the specified side to.</param>
+    void setSideIronCutDown(Side side, bool cutDown);
 
     /// <summary>
     /// Remover for a side iron
@@ -1734,8 +1749,10 @@ private:
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
 
-    unsigned sideIronHandles[2];
+    public: unsigned sideIronHandles[2];
+    private:
     bool sideIronsInverted[2];
+    bool sideIronsCutDown[2];
 
     std::optional<Lap> sidelaps[2], overlaps[2];
 

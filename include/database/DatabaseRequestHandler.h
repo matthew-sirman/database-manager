@@ -113,6 +113,9 @@ private:
 		unsigned shapeID{};
 		// The number of physical copies of this tool which exist
 		unsigned short quantity{};
+
+		bool isNibble;
+		unsigned nibbleApertureId;
 	};
 
 	/// <summary>
@@ -149,8 +152,16 @@ private:
 		typedef ExtraPrice ComponentType;
 
 		ExtraPriceType type;
-		float price, squareMetres;
-		unsigned amount;
+		float price;
+		std::optional<float> squareMetres;
+		std::optional<unsigned> amount;
+	};
+
+	struct LabourTimeData : TableSourceData {
+		typedef LabourTime ComponentType;
+
+		LabourTimeType type;
+		unsigned time;
 	};
 
 	struct SideIronPriceData : TableSourceData {
@@ -316,7 +327,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 	// Finally, once the buffer has been constructed, we send the buffer to the DrawingComponentManager of the correct type.
 	// This is where we use the T::ComponentType which will be the "true" type for each data type above. (e.g. ProductData -> Product)
-	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize);
+	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize + 4);
 }
 
 

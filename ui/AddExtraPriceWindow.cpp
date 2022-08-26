@@ -24,7 +24,7 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
         case (ExtraPriceType::SIDE_IRON_NUTS):
         {
             layout->addRow(new QLabel("Side Iron Nuts"));
-            QLineEdit* sideIronNutsAmount = new QLineEdit(QString::number(extraPrice.amount, 'f', 0));
+            QLineEdit* sideIronNutsAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
             QLineEdit* sideIronNutsPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
             layout->addRow("Amount: ", sideIronNutsAmount);
             layout->addRow("Price: ", sideIronNutsPrice);
@@ -35,7 +35,7 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
         case (ExtraPriceType::SIDE_IRON_SCREWS):
         {
             layout->addRow(new QLabel("Side Iron Screws"));
-            QLineEdit* sideIronScrewsAmount = new QLineEdit(QString::number(extraPrice.amount, 'f', 0));
+            QLineEdit* sideIronScrewsAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
             QLineEdit* sideIronScrewsPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
             layout->addRow("Amount: ", sideIronScrewsAmount);
             layout->addRow("Price: ", sideIronScrewsPrice);
@@ -46,7 +46,7 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
         case (ExtraPriceType::TACKYBACK_GLUE):
         {
             layout->addRow(new QLabel("Tackyback Glue"));
-            QLineEdit* tackybackGlueAmount = new QLineEdit(QString::number(extraPrice.squareMetres, 'f', 2));
+            QLineEdit* tackybackGlueAmount = new QLineEdit(QString::number(extraPrice.squareMetres.value(), 'f', 2));
             QLineEdit* tackybackGluePrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
             layout->addRow("Square Metre Coverage: ", tackybackGlueAmount);
             layout->addRow("Price: ", tackybackGluePrice);
@@ -62,43 +62,73 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
             values.push_back(labourPrice);
             break;
         }
+        case (ExtraPriceType::PRIMER):
+        {
+            layout->addRow(new QLabel("Primer"));
+            QLineEdit* primerAmount = new QLineEdit(QString::number(extraPrice.squareMetres.value(), 'f', 2));
+            QLineEdit* primerPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+            layout->addRow("Square Metre Coverage: ", primerAmount);
+            layout->addRow("Price: ", primerPrice);
+            values.push_back(primerPrice);
+            values.push_back(primerAmount);
+            break;
+        }
+        case (ExtraPriceType::DIVERTOR):
+        {
+            layout->addRow(new QLabel("Divertors"));
+            QLineEdit* divertorsAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
+            QLineEdit* divertorsPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+            layout->addRow("Amount: ", divertorsAmount);
+            layout->addRow("Price: ", divertorsPrice);
+            values.push_back(divertorsPrice);
+            values.push_back(divertorsAmount);
+            break;
+        }
+        case (ExtraPriceType::DEFLECTOR):
+        {
+            layout->addRow(new QLabel("Deflector"));
+            QLineEdit* deflectorAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
+            QLineEdit* deflectorPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+            layout->addRow("Amount: ", deflectorAmount);
+            layout->addRow("Price: ", deflectorPrice);
+            values.push_back(deflectorPrice);
+            values.push_back(deflectorAmount);
+            break;
+        }
+        case (ExtraPriceType::DAM_BAR):
+        {
+            layout->addRow(new QLabel("Dam Bar"));
+            QLineEdit* damBarAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
+            QLineEdit* damBarPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+            layout->addRow("Amount: ", damBarAmount);
+            layout->addRow("Price: ", damBarPrice);
+            values.push_back(damBarPrice);
+            values.push_back(damBarAmount);
+            break;
+        }
         default:
             break;
     }
 
-    connect(this, &QDialog::accepted, [index, extraPrice, client, caller, values]() {
+    connect(this, &QDialog::accepted, [extraPrice, values, client, caller, index]() {
         ComponentInsert insert;
 
         ComponentInsert::ExtraPriceData* priceData = nullptr;
         switch (extraPrice.type) {
-            case (ExtraPriceType::SIDE_IRON_NUTS) :
+            //price then amount
+            case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
                 priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt());
-                //std::get<0>(edited).price = values[0]->text().toFloat();
-                //std::get<1>(edited)[1]->setText(QString::number(values[0]->text().toFloat(), 'f', 2));
-                //std::get<0>(edited).amount = values[1]->text().toInt();
-                //std::get<1>(edited)[0]->setText(QString::number(values[1]->text().toInt(), 'f', 0));
                 break;
-            case (ExtraPriceType::SIDE_IRON_SCREWS):
-                priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt());
-                //std::get<0>(edited).price = values[0]->text().toFloat();
-                //std::get<1>(edited)[1]->setText(QString::number(values[0]->text().toFloat(), 'f', 2));
-                //std::get<0>(edited).amount = values[1]->text().toInt();
-                //std::get<1>(edited)[0]->setText(QString::number(values[1]->text().toInt(), 'f', 0));
-                break;
-            case (ExtraPriceType::TACKYBACK_GLUE):
+            //price then surface area
+            case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
                 priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), values[1]->text().toFloat(), std::nullopt);
-                //std::get<0>(edited).price = values[0]->text().toFloat();
-                //std::get<1>(edited)[1]->setText(QString::number(values[0]->text().toFloat(), 'f', 2));
-                //std::get<0>(edited).squareMetres = values[1]->text().toFloat();
-                //std::get<1>(edited)[0]->setText(QString::number(values[1]->text().toFloat(), 'f', 2));
                 break;
+            //price
             case (ExtraPriceType::LABOUR):
                 priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, std::nullopt);
-                //std::get<0>(edited).price = values[0]->text().toFloat();
-                //std::get<1>(edited)[1]->setText(QString::number(values[0]->text().toFloat(), 'f', 2));
-                //std::get<0>(edited).squareMetres = values[1]->text().toFloat();
-                //std::get<1>(edited)[0]->setText(QString::number(values[1]->text().toFloat(), 'f', 2));
                 break;
+            default:
+                return;
         }
         insert.setComponentData<ComponentInsert::ExtraPriceData>(*priceData);
 

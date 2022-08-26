@@ -11,22 +11,45 @@ AddApertureWindow::AddApertureWindow(Client *client, QWidget *parent)
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
 	DrawingComponentManager<ApertureShape>::addCallback([this]() { apertureShapeSource.updateSource(); });
+	DrawingComponentManager<Aperture>::addCallback([this]() { apertureSource.updateSource(); });
 	apertureShapeSource.updateSource();
+	apertureSource.updateSource();
 
 	ui->apertureShapeInput->setDataSource(apertureShapeSource);
+	ui->nibbleApertureInput->setDataSource(apertureSource);
+
+	ui->nibbleApertureLabel->setActive(false);
+
+	ui->nibbleApertureLabel->addTarget(ui->nibbleApertureInput);
+
 
 	connect(this, &QDialog::finished, [this, client](int result) {
 		switch ((DialogCode)result) {
 			case DialogCode::Accepted: {
 				ComponentInsert insert;
-				insert.setComponentData<ComponentInsert::ApertureData>({ 
-					(float) ui->widthInput->value(), 
-					(float) ui->lengthInput->value(),
-					(unsigned) ui->baseWidthInput->value(),
-					(unsigned) ui->baseLengthInput->value(),
-					(unsigned) ui->quantityInput->value(),
-					DrawingComponentManager<ApertureShape>::getComponentByHandle(ui->apertureShapeInput->currentData().toInt()).componentID()
-				});
+				if (ui->nibbleApertureLabel->active()) {
+					insert.setComponentData<ComponentInsert::ApertureData>({
+						(float)ui->widthInput->value(),
+						(float)ui->lengthInput->value(),
+						(unsigned)ui->baseWidthInput->value(),
+						(unsigned)ui->baseLengthInput->value(),
+						(unsigned)ui->quantityInput->value(),
+						DrawingComponentManager<ApertureShape>::getComponentByHandle(ui->apertureShapeInput->currentData().toInt()).componentID(),
+						(bool)ui->nibbleApertureLabel->active(),
+						(unsigned)DrawingComponentManager<Aperture>::getComponentByHandle(ui->nibbleApertureInput->currentData().toInt()).componentID()
+					});
+				}
+				else {
+					insert.setComponentData<ComponentInsert::ApertureData>({
+	(float)ui->widthInput->value(),
+	(float)ui->lengthInput->value(),
+	(unsigned)ui->baseWidthInput->value(),
+	(unsigned)ui->baseLengthInput->value(),
+	(unsigned)ui->quantityInput->value(),
+	DrawingComponentManager<ApertureShape>::getComponentByHandle(ui->apertureShapeInput->currentData().toInt()).componentID(),
+	(bool)ui->nibbleApertureLabel->active()
+});
+				}
 				unsigned bufferSize = insert.serialisedSize();
 				void *buffer = alloca(bufferSize);
 				insert.serialise(buffer);

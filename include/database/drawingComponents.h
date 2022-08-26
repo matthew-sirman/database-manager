@@ -156,6 +156,8 @@ public:
     unsigned short baseWidth{}, baseLength{};
     unsigned apertureShapeID{};
     unsigned short quantity{};
+    bool isNibble;
+    unsigned nibbleApertureId;
 
     std::string apertureName() const;
 
@@ -191,12 +193,6 @@ public:
     // width, length if exists, price, type
     std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
 
-    void updateMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>&, const std::tuple<float, float, float, MaterialPricingType>&);
-
-    void addMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>&);
-
-    void removeMaterialPrces(const std::tuple<float, float, float, MaterialPricingType>&);
-
     std::string material() const;
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
@@ -214,12 +210,12 @@ struct ExtraPriceTrait {
 
 template<>
 struct ExtraPriceTrait<ExtraPriceType::SIDE_IRON_NUTS> {
-    using numType = int;
+    using numType = unsigned;
 };
 
 template<>
 struct ExtraPriceTrait<ExtraPriceType::SIDE_IRON_SCREWS> {
-    using numType = int;
+    using numType = unsigned;
 };
 
 template<>
@@ -232,13 +228,34 @@ struct ExtraPriceTrait<ExtraPriceType::LABOUR> {
     using numType = float;
 };
 
+template<>
+struct ExtraPriceTrait<ExtraPriceType::PRIMER> {
+    using numType = float;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DIVERTOR> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DEFLECTOR> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DAM_BAR> {
+    using numType = unsigned;
+};
+
 struct ExtraPrice : public DrawingComponent {
     friend class DrawingComponentManager<ExtraPrice>;
 
 public:
     ExtraPriceType type;
-    float price, squareMetres;
-    unsigned amount;
+    float price;
+    std::optional<float> squareMetres;
+    std::optional<unsigned> amount;
 
     std::string extraPrice() const;
 
@@ -252,6 +269,22 @@ private:
     ExtraPrice(unsigned id);
 
     static ExtraPrice* fromSource(unsigned char** buff);
+};
+
+
+struct LabourTime : public DrawingComponent {
+    friend class DrawingComponentManager<LabourTime>;
+
+public:
+    LabourTimeType type;
+    unsigned time;
+
+    std::string labourTime() const;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+private:
+    LabourTime(unsigned id);
+
+    static LabourTime* fromSource(unsigned char** buff);
 };
 
 enum class SideIronType {
@@ -423,7 +456,7 @@ public:
 
     static unsigned maximumHandle();
 
-    static T &findComponentByID(unsigned id);
+    static T& findComponentByID(unsigned id);
 
     static std::vector<T *> allComponentsByID(unsigned id);
 
@@ -490,6 +523,7 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
     RequestType type = *((RequestType *) buff);
     buff += sizeof(RequestType);
 
+
     unsigned elements = *((unsigned *) buff);
     buff += sizeof(unsigned);
 
@@ -550,7 +584,7 @@ T &DrawingComponentManager<T>::findComponentByID(unsigned id) {
             return *componentLookup[handleMap.first];
         }
     }
-    ERROR_RAW("Component was not found. (" + std::to_string(id) + ")", std::cerr)
+        ERROR_RAW("Component was not found. (" + std::to_string(id) + ")", std::cerr)
 }
 
 template<typename T>

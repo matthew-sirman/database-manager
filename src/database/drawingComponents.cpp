@@ -91,6 +91,11 @@ Aperture *Aperture::fromSource(unsigned char** buff) {
     *buff += sizeof(unsigned);
     aperture->quantity = *((unsigned short *) (*buff));
     *buff += sizeof(unsigned short);
+    aperture->isNibble = *(*buff)++;
+    if (aperture->isNibble) {
+        aperture->nibbleApertureId = *((unsigned*)(*buff));
+        *buff += sizeof(unsigned);
+    }
 
     return aperture;
 }
@@ -108,6 +113,10 @@ std::string Aperture::apertureName() const {
         shapeName << "ERROR!";
     } else {
         shapeName << width << shape.shape << length;
+    }
+
+    if (isNibble) {
+        shapeName << " (Nibble using "+ DrawingComponentManager<Aperture>::findComponentByID(nibbleApertureId).apertureName() + ")";
     }
 
     return shapeName.str();
@@ -188,6 +197,14 @@ std::string ExtraPrice::extraPrice() const {
             return "Tackyback Glue";
         case (ExtraPriceType::LABOUR):
             return "Labour";
+        case (ExtraPriceType::PRIMER):
+            return "Primer";
+        case ExtraPriceType::DIVERTOR:
+            return "Divertor";
+        case ExtraPriceType::DEFLECTOR:
+            return "Deflector";
+        case ExtraPriceType::DAM_BAR:
+            return "Dam Bar";
         default:
             return std::string();
     }
@@ -198,32 +215,45 @@ ComboboxDataElement ExtraPrice::toDataElement(unsigned mode) const
     return { extraPrice(), __handle };;
 }
 
-//float ExtraPrice::getPrice(float n) {
-//    if (type == ExtraPriceType::TACKYBACK_GLUE)
-//        return n * (price / squareMetres);
-//    else if (type == ExtraPriceType::LABOUR)
-//        return n * (price / 60.0);
-//    return n * (price / amount);
-//}
-
 template<>
 float ExtraPrice::getPrice<ExtraPriceType::SIDE_IRON_NUTS>(typename ExtraPriceTrait<ExtraPriceType::SIDE_IRON_NUTS>::numType n) {
-    return n * (price / amount);
+    return n * (price / amount.value());
 }
 
 template<>
 float ExtraPrice::getPrice<ExtraPriceType::SIDE_IRON_SCREWS>(typename ExtraPriceTrait<ExtraPriceType::SIDE_IRON_SCREWS>::numType n) {
-    return n * (price / amount);
+    return n * (price / amount.value());
 }
 
 template<>
-float ExtraPrice::getPrice<ExtraPriceType::TACKYBACK_GLUE>(typename ExtraPriceTrait<ExtraPriceType::TACKYBACK_GLUE>::numType n) {
-    return n * (price / squareMetres);
+float ExtraPrice::getPrice<ExtraPriceType::TACKYBACK_GLUE>(typename ExtraPriceTrait<ExtraPriceType::TACKYBACK_GLUE>::numType surfaceArea) {
+    return surfaceArea * (price / squareMetres.value());
 }
 
 template<>
 float ExtraPrice::getPrice<ExtraPriceType::LABOUR>(typename ExtraPriceTrait<ExtraPriceType::LABOUR>::numType n) {
     return n * (price / 60);
+}
+
+//TODO: fix all these
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::PRIMER>(typename ExtraPriceTrait<ExtraPriceType::PRIMER>::numType n) {
+    return n * (price / squareMetres.value());
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::DIVERTOR>(typename ExtraPriceTrait<ExtraPriceType::DIVERTOR>::numType n) {
+    return n * (price / amount.value());
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::DEFLECTOR>(typename ExtraPriceTrait<ExtraPriceType::DEFLECTOR>::numType n) {
+    return n * (price / amount.value());
+}
+
+template<>
+float ExtraPrice::getPrice<ExtraPriceType::DAM_BAR>(typename ExtraPriceTrait<ExtraPriceType::DAM_BAR>::numType n) {
+    return n * (price / amount.value());
 }
 
 ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
@@ -240,20 +270,17 @@ ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
     *buff += sizeof(float);
 
     switch (extraPrice->type) {
-        case (ExtraPriceType::SIDE_IRON_NUTS):
+        case (ExtraPriceType::SIDE_IRON_NUTS): case (ExtraPriceType::SIDE_IRON_SCREWS): case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
             extraPrice->amount = *((unsigned*)(*buff));
+            extraPrice->squareMetres = std::nullopt;
             *buff += sizeof(unsigned);
             break;
-        case (ExtraPriceType::SIDE_IRON_SCREWS):
-            extraPrice->amount = *((unsigned*)(*buff));
-            *buff += sizeof(unsigned);
-            break;
-        case (ExtraPriceType::TACKYBACK_GLUE):
+        case (ExtraPriceType::TACKYBACK_GLUE): case (ExtraPriceType::PRIMER):
+            extraPrice->amount = std::nullopt;
             extraPrice->squareMetres = *((float*)(*buff));
             *buff += sizeof(float);
             break;
         case (ExtraPriceType::LABOUR):
-
             break;
     }
     switch (type) {
@@ -269,12 +296,67 @@ ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
         case ExtraPriceType::LABOUR :
             ExtraPriceManager<ExtraPriceType::LABOUR>::setExtraPrice(extraPrice);
             break;
+        case ExtraPriceType::PRIMER:
+            ExtraPriceManager<ExtraPriceType::PRIMER>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::DEFLECTOR:
+            ExtraPriceManager<ExtraPriceType::DEFLECTOR>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::DIVERTOR:
+            ExtraPriceManager<ExtraPriceType::DIVERTOR>::setExtraPrice(extraPrice);
+            break;
+        case ExtraPriceType::DAM_BAR:
+            ExtraPriceManager<ExtraPriceType::DAM_BAR>::setExtraPrice(extraPrice);
+            break;
         default:
             break;
     }
     return extraPrice;
 
 }
+
+std::string LabourTime::labourTime() const {
+    switch (this->type) {
+        case LabourTimeType::CUTTING_AMOUNT:
+            return "Cutting Amount";
+        case LabourTimeType::TIME_TO_PUNCH:
+            return "Time to Punch";
+        case LabourTimeType::TIME_TO_SHOD:
+            return "Time to Shod";
+        case LabourTimeType::TIME_TO_REBATE:
+            return "Time to Rebate";
+        case LabourTimeType::BACKING_STRIPS:
+            return "Backing Strips";
+        case LabourTimeType::COVER_STRAPS:
+            return "Cover Straps";
+        case LabourTimeType::BONDED_OVERLAP:
+            return "Bonded Overlap";
+        case LabourTimeType::CUTTING_TO_SIZE:
+            return "Cutting to size";
+        default:
+            return "";
+    }
+}
+
+ComboboxDataElement LabourTime::toDataElement(unsigned mode) const {
+    return { labourTime(), __handle };
+}
+
+LabourTime* LabourTime::fromSource(unsigned char** buff) {
+
+    LabourTime* data = new LabourTime(*((unsigned*)*buff));
+    *buff += sizeof(unsigned);
+
+    data->type = *((LabourTimeType*)(*buff));
+    *buff += sizeof(LabourTimeType);
+
+    data->time = *((unsigned*)(*buff));
+
+    *buff += sizeof(unsigned);
+    return data;
+}
+
+LabourTime::LabourTime(unsigned id) : DrawingComponent(id) {}
 
 std::string Material::material() const {
     std::stringstream name;
@@ -286,27 +368,6 @@ std::string Material::material() const {
 
 ComboboxDataElement Material::toDataElement(unsigned mode) const {
     return { material(), __handle };
-}
-
-void Material::updateMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>& prev, const std::tuple<float, float, float, MaterialPricingType> &value) {
-    for (std::tuple<float, float, float, MaterialPricingType>& tuple : materialPrices) {
-        if (std::get<0>(tuple) == std::get<0>(prev) && std::get<1>(tuple) == std::get<1>(prev)) {
-            tuple = value;
-        }
-    }
-}
-
-void Material::addMaterialPrice(const std::tuple<float, float, float, MaterialPricingType>& tuple) {
-    materialPrices.push_back(tuple);
-}
-
-void Material::removeMaterialPrces(const std::tuple<float, float, float, MaterialPricingType> &tuple) {
-    for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator it = materialPrices.begin(); it < materialPrices.end(); it++) {
-        if (*it == tuple) {
-            materialPrices.erase(it);
-            return;
-        }
-    };
 }
 
 SideIron::SideIron(unsigned id) : DrawingComponent(id) {

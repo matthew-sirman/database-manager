@@ -55,7 +55,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
-		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(format(query.toSQLQueryString(), database)).execute());
+		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(Format::format(query.toSQLQueryString(), database)).execute());
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
@@ -173,7 +173,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setLoadWarning(Drawing::LoadWarning::INVALID_BACKING_STRIP_DETECTED);
 		}
 		// Get the side irons associated with this drawing
-		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted")
+		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted", "cut_down")
 			.where("mat_id=:matID").orderBy("side_iron_index ASC").bind("matID", query.matID).execute();
 
 		// Get the left (first) side iron
@@ -188,6 +188,8 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				DrawingComponentManager<SideIron>::findComponentByID(leftSideIron[0]));
 			// Set whether this side iron is inverted
 			drawing->setSideIronInverted(Drawing::LEFT, leftSideIron[2].get<bool>());
+			// Set whether this side iron is cut down
+			drawing->setSideIronCutDown(Drawing::LEFT, leftSideIron[3].get<bool>());
 
 			// Get the right (second) side iron
 			mysqlx::Row rightSideIron = sideIrons.fetchOne();
@@ -328,7 +330,8 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			Drawing::ImpactPad pad;
 			pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[0]));
 
-			Aperture matchingApertures = DrawingComponentManager<Aperture>::findComponentByID(row[1]);
+			Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[1]);
+			pad.setAperture(matchingAperture);
 
 			pad.width = row[2].get<float>();
 			pad.length = row[3].get<float>();
@@ -396,7 +399,13 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			Drawing::CentreHole hole;
 			hole.pos.x = row[0].get<float>();
 			hole.pos.y = row[1].get<float>();
-			hole.apertureID = row[2].get<unsigned>();
+			try {
+				hole.apertureID = row[2].get<unsigned>();
+			}
+			catch (mysqlx::Error& e) {
+				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_CENTRE_HOLE_DETECTED);
+				continue;
+			}
 
 			drawing->addCentreHole(hole);
 		}
@@ -517,7 +526,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		// Each insertion query is constructed as an SQL query by the insert object.
 
 		// Next, we check if the machine template is in the database already
-		mysqlx::Row existingTemplate = sess.sql(format(insert.testMachineTemplateQuery(), database)).execute().fetchOne();
+		mysqlx::Row existingTemplate = sess.sql(Format::format(insert.testMachineTemplateQuery(), database)).execute().fetchOne();
 
 		unsigned templateID;
 
@@ -527,7 +536,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			templateID = existingTemplate[0];
 		} else {
 			// Otherwise, we add the template
-			sess.sql(format(insert.machineTemplateInsertQuery(), database)).execute();
+			sess.sql(Format::format(insert.machineTemplateInsertQuery(), database)).execute();
 			// "SELECT @@identity" returns the most recently added ID from this session, and so
 			// there should be no race condition issue here.
 			templateID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
@@ -535,7 +544,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// Next, we insert the drawing itself into the database and retrieve its ID. The rest of the
 		// inserts all depend on the matID, in order to link to this specific drawing.
-		sess.sql(format(insert.drawingInsertQuery(templateID), database)).execute();
+		sess.sql(Format::format(insert.drawingInsertQuery(templateID), database)).execute();
 		unsigned matID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
 
 		// Get the query string for the bars. If this is empty, this indicates that there are none
@@ -543,19 +552,19 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		std::string barInsertQuery = insert.barSpacingInsertQuery(matID);
 
 		if (!barInsertQuery.empty()) {
-			sess.sql(format(barInsertQuery, database)).execute();
+			sess.sql(Format::format(barInsertQuery, database)).execute();
 		}
 
 		// Insert the aperture
-		sess.sql(format(insert.apertureInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.apertureInsertQuery(matID), database)).execute();
 		// Insert the backing strips
 		std::string backingStripInsert = insert.backingStripInsertQuery(matID);
 		if (backingStripInsert != "")
-			sess.sql(format(backingStripInsert, database)).execute();
+			sess.sql(Format::format(backingStripInsert, database)).execute();
 		// Insert the side irons
-		sess.sql(format(insert.sideIronInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.sideIronInsertQuery(matID), database)).execute();
 		// Insert the materials
-		sess.sql(format(insert.thicknessInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.thicknessInsertQuery(matID), database)).execute();
 
 		// Get the query strings for the overlaps and sidelaps. If they are empty, this indicates that there are none
 		// to insert, so we just ignore them.
@@ -563,11 +572,11 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have overlaps to insert, execute the overlap insert query
 		if (!overlapInsert.empty()) {
-			sess.sql(format(overlapInsert, database)).execute();
+			sess.sql(Format::format(overlapInsert, database)).execute();
 		}
 		// If we have sidelaps to insert, execute the sidelap insert query
 		if (!sidelapInsert.empty()) {
-			sess.sql(format(sidelapInsert, database)).execute();
+			sess.sql(Format::format(sidelapInsert, database)).execute();
 		}
 
 		// Get the punch program insert query. Most of the time, there are none to insert, 
@@ -576,7 +585,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have punch program PDFs to insert, execute the insert query
 		if (!punchProgramInsert.empty()) {
-			sess.sql(format(punchProgramInsert, database)).execute();
+			sess.sql(Format::format(punchProgramInsert, database)).execute();
 		}
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
@@ -584,25 +593,25 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), extraApertureInsert = insert.extraApertureInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
 
 		if (!impactPadsInsert.empty()) {
-			sess.sql(format(impactPadsInsert, database)).execute();
+			sess.sql(Format::format(impactPadsInsert, database)).execute();
 		}
 		if (!extraApertureInsert.empty()) {
-			sess.sql(format(extraApertureInsert, database)).execute();
+			sess.sql(Format::format(extraApertureInsert, database)).execute();
 		}
 		if (!blankSpaceInsert.empty()) {
-			sess.sql(format(blankSpaceInsert, database)).execute();
+			sess.sql(Format::format(blankSpaceInsert, database)).execute();
 		}
 		if (!damBarInsert.empty()) {
-			sess.sql(format(damBarInsert, database)).execute();
+			sess.sql(Format::format(damBarInsert, database)).execute();
 		}
 		if (!centreHolesInsert.empty()) {
-			sess.sql(format(centreHolesInsert, database)).execute();
+			sess.sql(Format::format(centreHolesInsert, database)).execute();
 		}
 		if (!deflectorsInsert.empty()) {
-			sess.sql(format(deflectorsInsert, database)).execute();
+			sess.sql(Format::format(deflectorsInsert, database)).execute();
 		}
 		if (!divertorsInsert.empty()) {
-			sess.sql(format(divertorsInsert, database)).execute();
+			sess.sql(Format::format(divertorsInsert, database)).execute();
 		}
 
 		// Finally, if all insertions were successful, we commit and return that the drawing insert was successful.
@@ -645,7 +654,7 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 
 		// If there is a query string to execute, execute it
 		if (!insertString.empty()) {
-			sess.sql(format(insertString, database)).execute();
+			sess.sql(Format::format(insertString, database)).execute();
 		} else {
 			// Return that the insertion failed - there was nothing to insert for some reason
 			return false;
