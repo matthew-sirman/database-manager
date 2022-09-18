@@ -7,7 +7,9 @@
 #include <utility>
 
 DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0, 0) {
-
+    pricingMap.insert({"running_m", MaterialPricingType::RUNNING_M });
+    pricingMap.insert({ "square_m", MaterialPricingType::SQUARE_M });
+    pricingMap.insert({ "sheet", MaterialPricingType::SHEET });
 }
 
 void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message,
@@ -128,6 +130,21 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
             break;
         }
+        case RequestType::SOURCE_BACKING_STRIPS_TABLE:
+        {
+            if (DrawingComponentManager<BackingStrip>::dirty()) {
+                if (DrawingComponentManager<Material>::dirty()) {
+                    createSourceData<MaterialData>(caller.databaseManager().sourceMultipleTable("material_prices", "materials", "material_id"));
+                }
+
+                createSourceData<BackingStripData>(caller.databaseManager().sourceTable("backing_strips"));
+            }
+
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<BackingStrip>::rawSourceData(),
+                                         DrawingComponentManager<BackingStrip>::rawSourceDataSize());
+
+            break;
+        }
         case RequestType::SOURCE_APERTURE_TABLE: {
             if (DrawingComponentManager<Aperture>::dirty()) {
                 if (DrawingComponentManager<ApertureShape>::dirty()) {
@@ -154,12 +171,38 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
         }
         case RequestType::SOURCE_MATERIAL_TABLE: {
             if (DrawingComponentManager<Material>::dirty()) {
-                createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
+                createSourceData<MaterialData>(caller.databaseManager().sourceMultipleTable("material_prices", "materials", "material_id"));
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<Material>::rawSourceData(),
                                          DrawingComponentManager<Material>::rawSourceDataSize());
 
+            break;
+        }
+        case RequestType::SOURCE_EXTRA_PRICES_TABLE: {
+            if (DrawingComponentManager<ExtraPrice>::dirty()) {
+                createSourceData<ExtraPriceData>(caller.databaseManager().sourceTable("extra_prices"));
+            }
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<ExtraPrice>::rawSourceData(),
+                                            DrawingComponentManager<ExtraPrice>::rawSourceDataSize());
+            break;
+        }
+        case RequestType::SOURCE_LABOUR_TIMES:
+        {
+            if (DrawingComponentManager<LabourTime>::dirty()) {
+                createSourceData<LabourTimeData>(caller.databaseManager().sourceTable("labour_times"));
+            }
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<LabourTime>::rawSourceData,
+                DrawingComponentManager<LabourTime>::rawSourceDataSize());
+                break;
+        }
+        case RequestType::SOURCE_SIDE_IRON_PRICES_TABLE: {
+            if (DrawingComponentManager<SideIronPrice>::dirty()) {
+                createSourceData<SideIronPriceData>(caller.databaseManager().sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
+            }
+
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIronPrice>::rawSourceData(),
+                DrawingComponentManager<SideIronPrice>::rawSourceDataSize());
             break;
         }
         case RequestType::SOURCE_SIDE_IRON_TABLE: {
@@ -220,12 +263,13 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
             unsigned bufferSize = request.serialisedSize();
 
-            void *responseBuffer = alloca(bufferSize);
+            void *responseBuffer = malloc(bufferSize);
             request.serialise(responseBuffer);
 
             caller.addMessageToSendQueue(clientHandle, responseBuffer, bufferSize);
 
-            delete returnedDrawing;
+
+            delete returnedDrawing, responseBuffer;
 
             break;
         }
@@ -253,7 +297,8 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             unsigned sourceDataBufferSize;
 
             switch (insert.getSourceTableCode()) {
-                case RequestType::SOURCE_APERTURE_TABLE: {
+                case RequestType::SOURCE_APERTURE_TABLE:
+                {
                     if (DrawingComponentManager<ApertureShape>::dirty()) {
                         createSourceData<ApertureShapeData>(caller.databaseManager().sourceTable("aperture_shapes"));
                     }
@@ -261,6 +306,16 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
 
                     sourceData = DrawingComponentManager<Aperture>::rawSourceData();
                     sourceDataBufferSize = DrawingComponentManager<Aperture>::rawSourceDataSize();
+
+                    caller.changelogMessage(clientHandle, "Added a new aperture");
+                    break;
+                }
+                case RequestType::SOURCE_BACKING_STRIPS_TABLE:
+                {
+                    createSourceData<BackingStripData>(caller.databaseManager().sourceTable("apertures"));
+
+                    sourceData = DrawingComponentManager<BackingStrip>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<BackingStrip>::rawSourceDataSize();
 
                     caller.changelogMessage(clientHandle, "Added a new aperture");
                     break;
@@ -299,9 +354,31 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     break;
                 }
                 case RequestType::SOURCE_MATERIAL_TABLE: {
-                    createSourceData<MaterialData>(caller.databaseManager().sourceTable("materials"));
+                    createSourceData<MaterialData>(caller.databaseManager().sourceMultipleTable("material_prices", "materials", "material_id"));
                     sourceData = DrawingComponentManager<Material>::rawSourceData();
                     sourceDataBufferSize = DrawingComponentManager<Material>::rawSourceDataSize();
+
+                    caller.changelogMessage(clientHandle, "Added a new material");
+                    break;
+                }
+                case RequestType::SOURCE_EXTRA_PRICES_TABLE: {
+                    createSourceData<ExtraPriceData>(caller.databaseManager().sourceTable("extra_prices"));
+                    sourceData = DrawingComponentManager<ExtraPrice>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<ExtraPrice>::rawSourceDataSize();
+
+                    caller.changelogMessage(clientHandle, "Added a new Extra Price");
+                    break;
+                }
+                case RequestType::SOURCE_LABOUR_TIMES:
+                {
+                    createSourceData<LabourTimeData>(caller.databaseManager().sourceTable("labour_times"));
+                    sourceData = DrawingComponentManager<LabourTime>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<LabourTime>::rawSourceDataSize();
+                }
+                case RequestType::SOURCE_SIDE_IRON_PRICES_TABLE: {
+                    createSourceData<SideIronPriceData>(caller.databaseManager().sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
+                    sourceData = DrawingComponentManager<SideIronPrice>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<SideIronPrice>::rawSourceDataSize();
 
                     caller.changelogMessage(clientHandle, "Added a new material");
                     break;
@@ -386,8 +463,12 @@ DrawingSummaryCompressionSchema DatabaseRequestHandler::compressionSchema(Databa
 		}
 
 		if (DrawingComponentManager<Material>::dirty()) {
-			createSourceData<MaterialData>(dbManager->sourceTable("materials"));
+			createSourceData<MaterialData>(dbManager->sourceMultipleTable("material_prices", "materials", "material_id"));
 		}
+
+        if (DrawingComponentManager<SideIronPrice>::dirty()) {
+            createSourceData<SideIronPriceData>(dbManager->sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
+        }
 
 		unsigned maxMatID, maxThicknessHandle, maxApertureHandle;
 		float maxWidth, maxLength, maxLapSize;
@@ -415,17 +496,21 @@ void DatabaseRequestHandler::setCompressionSchemaDirty() {
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &productRow, unsigned &handle,
+void DatabaseRequestHandler::constructDataElements(
+	mysqlx::RowResult &productRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::ProductData> &elements, unsigned &sizeValue
 ) const {
-	ProductData data;
-	data.handle = handle++;
-	data.id = productRow[0];
-	data.name = productRow[1].get<std::string>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.name.size();
+    for (mysqlx::Row row : productRow) {
+        if (!row.isNull()) {
+            ProductData data;
+            data.handle = handle++;
+            data.id = row.get(0).get<unsigned int>();
+            data.name = row.get(1).get<std::string>();
+            sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.name.size();
 
-	elements.push_back(data);
+            elements.push_back(data);
+        }
+    }
 }
 
 template<>
@@ -445,55 +530,33 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::Produ
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &apertureRow, unsigned &handle,
+void DatabaseRequestHandler::constructDataElements(
+	mysqlx::RowResult &apertureRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::ApertureData> &elements, unsigned &sizeValue
 ) const {
-	if (apertureRow[6].isNull()) {
-		ERROR_RAW_SAFE("Aperture with missing shape ID detected.", std::cerr);
-		return;
-	}
+    for (mysqlx::Row row : apertureRow) {
+        if (row[6].isNull()) {
+            ERROR_RAW_SAFE("Aperture with missing shape ID detected.", std::cerr);
+            return;
+        }
+        ApertureData data;
+        data.handle = handle++;
+        data.id = row[0];
+        data.width = row[1].isNull() ? 0 : row[1].get<float>();
+        data.length = row[2].isNull() ? 0 : row[2].get<float>();
+        data.baseWidth = row[3].isNull() ? 0 : row[3].get<unsigned>();
+        data.baseLength = row[4].isNull() ? 0 : row[4].get<unsigned>();
+        data.quantity = row[5].isNull() ? 0 : row[5].get<unsigned>();
+        data.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(row[6]).handle();
+        data.isNibble = row[7].get<bool>();
+        if (data.isNibble) {
+            data.nibbleApertureId = row[8].get<unsigned>();
+        }
 
-	if (apertureRow[6].get<unsigned>() == DrawingComponentManager<ApertureShape>::findComponentByID(5).handle()) {
-		ApertureData slData, stData;
-		slData.handle = handle++;
-		slData.id = apertureRow[0];
-		slData.width = apertureRow[1].get<float>();
-		slData.length = apertureRow[2].get<float>();
-		slData.baseWidth = apertureRow[3].get<unsigned>();
-		slData.baseLength = apertureRow[4].get<unsigned>();
-		slData.quantity = apertureRow[5].get<unsigned>();
-		slData.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(3).handle();
+        sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned) + sizeof(bool) + (data.isNibble ? sizeof(unsigned) : 0);
 
-		stData.handle = handle++;
-		stData.id = apertureRow[0];
-		stData.width = apertureRow[1].get<float>();
-		stData.length = apertureRow[2].get<float>();
-		stData.baseWidth = apertureRow[3].get<unsigned>();
-		stData.baseLength= apertureRow[4].get<unsigned>();
-		stData.quantity = apertureRow[5].get<unsigned>();
-		stData.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(4).handle();
-
-		sizeValue += (sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned)) * 2;
-
-		elements.push_back(slData);
-		elements.push_back(stData);
-	}
-	else {
-		ApertureData data;
-		data.handle = handle++;
-		data.id = apertureRow[0];
-		data.width = apertureRow[1].isNull() ? 0 : apertureRow[1].get<float>();
-		data.length = apertureRow[2].isNull() ? 0 : apertureRow[2].get<float>();
-		data.baseWidth = apertureRow[3].isNull() ? 0 : apertureRow[3].get<unsigned>();
-		data.baseLength = apertureRow[4].isNull() ? 0 : apertureRow[4].get<unsigned>();
-		data.quantity = apertureRow[5].isNull() ? 0 : apertureRow[5].get<unsigned>();
-		data.shapeID = DrawingComponentManager<ApertureShape>::findComponentByID(apertureRow[6]).handle();
-
-		sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned);
-
-		elements.push_back(data);
-	}
+        elements.push_back(data);
+    }
 }
 
 template<>
@@ -512,8 +575,12 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
 	buff += sizeof(unsigned);
 	*((unsigned short *)buff) = element.quantity;
 	buff += sizeof(unsigned short);
+    *buff++ = element.isNibble;
+    if (element.isNibble) {
+        *((unsigned*)buff) = element.nibbleApertureId;
+    }
 
-	sizeValue += sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned);
+	sizeValue += sizeof(float) * 2 + sizeof(unsigned short) * 3 + sizeof(unsigned) + sizeof(bool) + (element.isNibble ? sizeof(unsigned) : 0);
 }
 
 template<>
@@ -522,17 +589,200 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::Apert
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &apertureShapeRow, unsigned &handle,
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& stripRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::BackingStripData>& elements, unsigned& sizeValue
+) const {
+    for (mysqlx::Row row : stripRow) {
+        BackingStripData strip;
+        strip.handle = handle++;
+        strip.id = row[0];
+        strip.materialID = row[1];
+
+        sizeValue += sizeof(unsigned) * 3;
+
+        elements.push_back(strip);
+    }
+}
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::BackingStripData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buffer;
+
+    *((unsigned*)buff) = element.materialID;
+    buff += sizeof(unsigned);
+
+    sizeValue += sizeof(unsigned);
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::BackingStripData>() const {
+    return RequestType::SOURCE_BACKING_STRIPS_TABLE;
+}
+
+template<>
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& extraPriceRow, unsigned& handle, std::vector<DatabaseRequestHandler::ExtraPriceData>& elements, unsigned& sizeValue
+) const {
+    ExtraPriceData data;
+    for (mysqlx::Row row : extraPriceRow) {
+        data = *(new ExtraPriceData);
+
+        data.handle = handle++;
+        data.id = row.get(0).get<unsigned int>();
+
+        if (row[1].get<std::string>() == "side_iron_nuts") {
+            data.type = ExtraPriceType::SIDE_IRON_NUTS;
+            data.amount = row[3].get<unsigned>();
+            data.squareMetres = std::nullopt;
+            sizeValue += sizeof(unsigned);
+        }
+        else if (row[1].get<std::string>() == "side_iron_screws") {
+            data.type = ExtraPriceType::SIDE_IRON_SCREWS;
+            data.amount = row[3].get<unsigned>();
+            data.squareMetres = std::nullopt;
+            sizeValue += sizeof(unsigned);
+        }
+        else if (row[1].get<std::string>() == "glue") {
+            data.type = ExtraPriceType::TACKYBACK_GLUE;
+            data.amount = std::nullopt;
+            data.squareMetres = row[4].get<float>();
+            sizeValue += sizeof(float);
+        }
+        else if (row[1].get<std::string>() == "labour") {
+            data.type = ExtraPriceType::LABOUR;
+            data.amount = std::nullopt;
+            data.squareMetres= std::nullopt;
+        }
+        else if (row[1].get<std::string>() == "primer") {
+            data.type = ExtraPriceType::PRIMER;
+            data.amount = std::nullopt;
+            data.squareMetres = row[4].get<float>();
+            sizeValue += sizeof(float);
+        }
+        else if (row[1].get<std::string>() == "divertor") {
+            data.type = ExtraPriceType::DIVERTOR;
+            data.amount = row[3].get<unsigned>();
+            data.squareMetres = std::nullopt;
+            sizeValue += sizeof(float);
+        }
+        else if (row[1].get<std::string>() == "deflector") {
+            data.type = ExtraPriceType::DEFLECTOR;
+            data.amount = row[3].get<unsigned>();
+            data.squareMetres = std::nullopt;
+            sizeValue += sizeof(float);
+        }
+        else if (row[1].get<std::string>() == "dam_bar") {
+            data.type = ExtraPriceType::DAM_BAR;
+            data.amount = row[3].get<unsigned>();
+            data.squareMetres = std::nullopt;
+            sizeValue += sizeof(float);
+        }
+        data.price = row[2];
+        sizeValue += sizeof(ExtraPriceType) + sizeof(float) + sizeof(unsigned) * 2;
+
+        elements.push_back(data);
+    }
+}
+
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::ExtraPriceData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buffer;
+
+    *((ExtraPriceType*)buff) = element.type;
+    buff += sizeof(ExtraPriceType);
+
+    *((float*)buff) = element.price;
+    buff += sizeof(float);
+
+    if (element.amount.has_value()) {
+        *((unsigned*)buff) = element.amount.value();
+        buff += sizeof(unsigned);
+        sizeValue += sizeof(unsigned);
+    }
+    if (element.squareMetres.has_value()) {
+        *((float*)buff) = element.squareMetres.value();
+        buff += sizeof(float);
+        sizeValue += sizeof(unsigned);
+    }
+
+
+    sizeValue += sizeof(ExtraPriceType) + sizeof(float);
+
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::ExtraPriceData>() const {
+    return RequestType::SOURCE_EXTRA_PRICES_TABLE;
+}
+
+template<>
+void DatabaseRequestHandler::constructDataElements(mysqlx::RowResult& labourTimeRow, unsigned& handle,
+                                                   std::vector<DatabaseRequestHandler::LabourTimeData>& elements, unsigned& sizeValue) const {
+
+    for (mysqlx::Row row : labourTimeRow) {
+        LabourTimeData data;
+
+        data.handle = handle++;
+        data.id = row.get(0).get<unsigned int>();
+        if (row[1].get<std::string>() == "Cutting Amount")
+            data.type = LabourTimeType::CUTTING_AMOUNT;
+        else if (row[1].get<std::string>() == "Time to Punch")
+            data.type = LabourTimeType::TIME_TO_PUNCH;
+        else if (row[1].get<std::string>() == "Time to Shod")
+            data.type = LabourTimeType::TIME_TO_SHOD;
+        else if (row[1].get<std::string>() == "Time to Rebate")
+            data.type = LabourTimeType::TIME_TO_REBATE;
+        else if (row[1].get<std::string>() == "Backing Strips")
+            data.type = LabourTimeType::BACKING_STRIPS;
+        else if (row[1].get<std::string>() == "Cover Straps")
+            data.type = LabourTimeType::COVER_STRAPS;
+        else if (row[1].get<std::string>() == "Bonded overlap")
+            data.type = LabourTimeType::BONDED_OVERLAP;
+        else if (row[1].get<std::string>() == "Cutting to Size")
+            data.type = LabourTimeType::CUTTING_TO_SIZE;
+        data.time = row[2].get<unsigned>();
+        sizeValue += sizeof(unsigned) * 3 + sizeof(LabourTimeType);
+
+        elements.push_back(data);
+    }
+}
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::LabourTimeData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buff;
+
+    *((LabourTimeType*)buff) = element.type;
+    buff += sizeof(LabourTimeType);
+
+    *((unsigned*)buff) = element.time;
+    buff += sizeof(unsigned);
+
+    sizeValue += sizeof(LabourTimeType) + sizeof(unsigned);
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::LabourTimeData>() const {
+    return RequestType::SOURCE_LABOUR_TIMES;
+}
+
+template<>
+void DatabaseRequestHandler::constructDataElements(
+	mysqlx::RowResult &apertureShapeRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::ApertureShapeData> &elements, unsigned &sizeValue
 ) const {
-	ApertureShapeData data;
-	data.handle = handle++;
-	data.id = apertureShapeRow[0];
-	data.shape = apertureShapeRow[1].get<std::string>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.shape.size();
+    for (mysqlx::Row row : apertureShapeRow) {
+        if (!row[0].isNull() && !row[1].isNull()) {
+            ApertureShapeData data;
+            data.handle = handle++;
+            data.id = row[0];
+            data.shape = row[1].get<std::string>();
+            sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.shape.size();
 
-	elements.push_back(data);
+            elements.push_back(data);
+        }
+    }
 }
 
 template<>
@@ -552,19 +802,34 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::Apert
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &materialRow, unsigned &handle,
+void DatabaseRequestHandler::constructDataElements(
+	mysqlx::RowResult &materialRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::MaterialData> &elements, unsigned &sizeValue
 ) const {
-	MaterialData data;
-	data.handle = handle++;
-	data.id = materialRow[0];
-	data.name = materialRow[1].get<std::string>();
-	data.hardness = materialRow[2].get<unsigned>();
-	data.thickness = materialRow[3].get<unsigned>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned short) * 2 + sizeof(unsigned char) + data.name.size();
-
-	elements.push_back(data);
+    std::map<unsigned, DatabaseRequestHandler::MaterialData> material_ids;
+    for (mysqlx::Row row : materialRow) {
+        if (material_ids.find(row[6]) == material_ids.end()) {
+            DatabaseRequestHandler::MaterialData data;
+            data.handle = handle++;
+            data.id = row[6];
+            data.name = row[7].get<std::string>();
+            data.hardness = row[8].get<unsigned>();
+            data.thickness = row[9].get<unsigned>();
+            sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned short) * 2 + sizeof(unsigned char) + data.name.size() + sizeof(unsigned char);
+            material_ids.insert({ row[6], data });
+            if (!row[2].isNull()) {
+                sizeValue += sizeof(float) * 3 + sizeof(MaterialPricingType);
+                material_ids[row[6]].materialPrices.push_back({ row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>())});
+            }
+        }
+        else {
+            sizeValue += sizeof(float) * 3 + sizeof(MaterialPricingType);
+            material_ids[row[6]].materialPrices.push_back({ row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>())});
+        }
+    }
+    for (const std::pair<unsigned, MaterialData>& key : material_ids) {
+        elements.push_back(key.second);
+    }
 }
 
 template<>
@@ -573,14 +838,33 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
 
 	*((unsigned short *)buff) = element.hardness;
 	buff += sizeof(unsigned short);
+
 	*((unsigned short *)buff) = element.thickness;
 	buff += sizeof(unsigned short);
+
 	unsigned char nameSize = element.name.size();
 	*buff++ = nameSize;
 	memcpy(buff, element.name.c_str(), nameSize);
+    buff += nameSize;
 
-	sizeValue += sizeof(unsigned short) * 2 + sizeof(unsigned char) + nameSize;
+    unsigned char priceElements = element.materialPrices.size();
+    *buff++ = priceElements;
+
+    for (std::tuple<float, float, float, MaterialPricingType> tuple : element.materialPrices) {
+        *((float*)buff) = std::get<0>(tuple);
+        buff += sizeof(float);
+        *((float*)buff) = std::get<1>(tuple);
+        buff += sizeof(float);
+        *((float*)buff) = std::get<2>(tuple);
+        buff += sizeof(float);
+        *((MaterialPricingType*)buff) = std::get<3>(tuple);
+        buff += sizeof(MaterialPricingType);
+    }
+    
+
+	sizeValue += sizeof(unsigned short) * 2 + sizeof(unsigned char) + nameSize + sizeof(unsigned char) + priceElements * (sizeof(float) * 3 + sizeof(MaterialPricingType));
 }
+
 
 template<>
 RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::MaterialData>() const {
@@ -588,31 +872,95 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::Mater
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &sideIronRow, unsigned &handle,
+void DatabaseRequestHandler::constructDataElements(mysqlx::RowResult& sideIronPriceRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::SideIronPriceData>& elements, unsigned& sizeValue
+) const {
+    std::map<SideIronType, DatabaseRequestHandler::SideIronPriceData&> typeToPrice;
+    for (mysqlx::Row row : sideIronPriceRow) {
+        if (!row.get(6).isNull() && typeToPrice.find((SideIronType)row[6].get<unsigned>()) == typeToPrice.end()) {
+            SideIronPriceData* data = new SideIronPriceData;
+            data->handle = handle++;
+            data->id = row[6];
+            data->type = (SideIronType)row[6].get<unsigned>();
+            typeToPrice.insert({ (SideIronType)row[6].get<unsigned>(), *data });
+            sizeValue += sizeof(unsigned) * 2 + sizeof(SideIronType) + sizeof(unsigned char);
+            if (!row[2].isNull()) {
+                data->prices.push_back({ row[0], row[2], row[3], row[4], (bool)(row[5].get<int>() - 1) });
+                sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool);
+            }
+        }
+        else if (!row.get(1).isNull()) {
+            typeToPrice.at((SideIronType)row[6].get<unsigned>()).prices.push_back({ row[0], row[2], row[3], row[4], (bool)(row[5].get<int>() - 1) });;
+            sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool);
+        }         
+    }
+    for (std::pair<SideIronType, SideIronPriceData> it : typeToPrice) {
+        elements.push_back(it.second);
+    }
+};
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::SideIronPriceData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buffer;
+
+    *((SideIronType*)buff) = element.type;
+    buff += sizeof(SideIronType);
+
+    *buff++ = element.prices.size();
+
+    for (std::tuple<unsigned, float, float, unsigned, bool> price : element.prices) {
+        *((unsigned*)buff) = std::get<0>(price);
+        buff += sizeof(unsigned);
+
+        *((float*)buff) = std::get<1>(price);
+        buff += sizeof(float);
+
+        *((float*)buff) = std::get<2>(price);
+        buff += sizeof(float);
+
+        *((unsigned*)buff) = std::get<3>(price);
+        buff += sizeof(unsigned);
+
+        *((bool*)buff) = std::get<4>(price);
+        buff += sizeof(bool);
+    }
+
+    sizeValue += sizeof(SideIronType) + sizeof(unsigned char) + element.prices.size() * (sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool));
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::SideIronPriceData>() const {
+    return RequestType::SOURCE_SIDE_IRON_PRICES_TABLE;
+}
+
+template<>
+void DatabaseRequestHandler::constructDataElements(
+	mysqlx::RowResult &sideIronRow, unsigned &handle,
 	std::vector<DatabaseRequestHandler::SideIronData> &elements, unsigned &sizeValue
 ) const {
-	SideIronData data;
-	data.handle = handle++;
-	data.id = sideIronRow[0];
-	if (!sideIronRow[1].isNull()) {
-		data.type = sideIronRow[1].get<unsigned>();
-	}
-	else {
-		data.type = 0;
-	}
-	if (!sideIronRow[2].isNull()) {
-		data.length = sideIronRow[2].get<unsigned>();
-	}
-	else {
-		data.length = 0;
-	}
-	data.drawingNumber = sideIronRow[3].get<std::string>();
-	data.hyperlink = sideIronRow[4].get<std::string>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) +
-		data.drawingNumber.size() + sizeof(unsigned char) + data.hyperlink.size();
+    for (mysqlx::Row row : sideIronRow) {
+        SideIronData data;
+        data.handle = handle++;
+        data.id = row[0];
+        if (!row[1].isNull()) {
+            data.type = row[1].get<unsigned>();
+        }
+        else {
+            data.type = 0;
+        }
+        if (!row[2].isNull()) {
+            data.length = row[2].get<unsigned>();
+        }
+        else {
+            data.length = 0;
+        }
+        data.drawingNumber = row[3].get<std::string>();
+        data.hyperlink = row[4].get<std::string>();
+        sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) +
+            data.drawingNumber.size() + sizeof(unsigned char) + data.hyperlink.size();
 
-	elements.push_back(data);
+        elements.push_back(data);
+    }
 }
 
 template<>
@@ -639,19 +987,21 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::SideI
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &machineRow, unsigned &handle,
-	std::vector<DatabaseRequestHandler::MachineData> &elements, unsigned &sizeValue
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& machineRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::MachineData>& elements, unsigned& sizeValue
 ) const {
-	MachineData data;
-	data.handle = handle++;
-	data.id = machineRow[0];
-	data.manufacturer = machineRow[1].get<std::string>();
-	data.model = machineRow[2].get<std::string>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.manufacturer.size() +
-		sizeof(unsigned char) + data.model.size();
+    for (mysqlx::Row row : machineRow) {
+        MachineData data;
+        data.handle = handle++;
+        data.id = row[0];
+        data.manufacturer = row[1].get<std::string>();
+        data.model = row[2].get<std::string>();
+        sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.manufacturer.size() +
+            sizeof(unsigned char) + data.model.size();
 
-	elements.push_back(data);
+        elements.push_back(data);
+    }
 }
 
 template<>
@@ -676,17 +1026,19 @@ RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::Machi
 }
 
 template<>
-void DatabaseRequestHandler::constructDataElement(
-	const mysqlx::Row &machineDeckRow, unsigned &handle,
-	std::vector<DatabaseRequestHandler::MachineDeckData> &elements, unsigned &sizeValue
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& machineDeckRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::MachineDeckData>& elements, unsigned& sizeValue
 ) const {
-	MachineDeckData data;
-	data.handle = handle++;
-	data.id = machineDeckRow[0];
-	data.deck = machineDeckRow[1].get<std::string>();
-	sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.deck.size();
+    for (mysqlx::Row row : machineDeckRow) {
+        MachineDeckData data;
+        data.handle = handle++;
+        data.id = row[0];
+        data.deck = row[1].get<std::string>();
+        sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + data.deck.size();
 
-	elements.push_back(data);
+        elements.push_back(data);
+    }
 }
 
 template<>

@@ -3,7 +3,6 @@
 //
 
 #include "../../include/database/DatabaseQuery.h"
-
 // Default constructor for the DatabaseQuery object
 DatabaseQuery::DatabaseQuery() = default;
 
@@ -559,7 +558,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     // First, we specify every value we wish to select. This includes two aggregated fields, namely for the thicknesses
     // and the laps, which are returned as JSON arrays. Otherwise, every selection is a standard SQL selection.
     sql << "SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, "
-           "mal.aperture_id AS aperture_id, mal.direction AS direction, "
+           "mal.aperture_id AS aperture_id, "
            "(SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM {0}.thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, "
            "d.tension_type AS tension_type, "
            "COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) "
@@ -580,6 +579,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     std::vector<std::string> conditions;
     std::stringstream condition;
 
+    // SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, mal.aperture_id AS aperture_id, (SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, d.tension_type AS tension_type, COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM sidelaps UNION SELECT mat_id, 'O' AS type, width, mat_side FROM overlaps) AS l WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps, COALESCE((SELECT JSON_ARRAYAGG(bs.bar_spacing) FROM bar_spacings AS bs WHERE bs.mat_id=d.mat_id), JSON_ARRAY()) AS spacings.FROM drawings AS d.INNER JOIN mat_aperture_link AS malON d.mat_id=mal.mat_id
     // For each of these simpler queries, we simply check if the parameter is present, 
     // and if it is, we create a conditional string matching the field in the database
     // to whatever was passed into the query.
@@ -614,23 +614,6 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         condition.str(std::string());
         condition << "mal.aperture_id=" << aperture->componentID();
         conditions.push_back(condition.str());
-        
-        // Find out the component ID of the aperture shape, so if it is a longitudinal or transverse aperture,
-        // we impose this added restriction.
-        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(aperture->apertureShapeID).componentID()) {
-            case 3:
-                condition.str(std::string());
-                condition << "mal.direction='Longitudinal'";
-                conditions.push_back(condition.str());
-                break;
-            case 4:
-                condition.str(std::string());
-                condition << "mal.direction='Transverse'";
-                conditions.push_back(condition.str());
-                break;
-            default:
-                break;
-        }
     }
     if (topThickness.has_value()) {
         condition.str(std::string());
@@ -842,7 +825,7 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
 }
 
 // Translates a list of query result rows into a list of DrawingSummary objects
-std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult &resultSet) {
+std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult resultSet) {
     // Declare the target array
     std::vector<DrawingSummary> summaries;
 
@@ -858,39 +841,8 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
 
         // It may be the case that this mat uses a bidirectional aperture, in which case we return
         // all matching apertures and choose the correct one, based upon the aperture direction
-        std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(row[4]);
-
-        if (matchingApertures.size() == 1) {
-            // If there is just one matching aperture, we simply use this.
-            summary.apertureHandle = matchingApertures.front()->handle();
-        } else {
-            // If there are multiple matching apertures, we start by getting the direction string 
-            std::string apertureDirectionString = row[5].get<std::string>();
-
-            // By default we set the aperture handle to 0. This indicates that there was no matching aperture
-            // and as such there was an error with this drawing. If there is a correct aperture found, then
-            // the handle will be overwritten with the correct value.
-            summary.apertureHandle = 0;
-
-            // Depending on which direction the aperture faces, we loop through the aperture list to find whichever has
-            // the correct "shape". Note that these matchingApertures lists should have at maximum a length of 2, so 
-            // this operation should not be slow.
-            if (apertureDirectionString == "Longitudinal") {
-                for (const Aperture *ap : matchingApertures) {
-                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
-                        summary.apertureHandle = ap->handle();
-                        break;
-                    }
-                }
-            } else if (apertureDirectionString == "Transverse") {
-                for (const Aperture *ap : matchingApertures) {
-                    if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
-                        summary.apertureHandle = ap->handle();
-                        break;
-                    }
-                }
-            }
-        }
+        Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[4]);
+        summary.apertureHandle = matchingAperture.handle();
 
         // We nullify the thickness handles and lap sizes to clear any residual memory which might
         // be accidentally written
@@ -901,12 +853,12 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
 
         // We then loop through each returned element in the thicknesses returned and set the corresponding thickness
         // handle in the summary object
-        for (unsigned thicknessSlot = 0; thicknessSlot < row[6].elementCount(); thicknessSlot++) {
-            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[6][thicknessSlot]).handle();
+        for (unsigned thicknessSlot = 0; thicknessSlot < row[5].elementCount(); thicknessSlot++) {
+            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[5][thicknessSlot]).handle();
         }
 
         // Then we deal with any laps there may be in the drawing
-        for (const mysqlx::Value &lap : row[8]) {
+        for (const mysqlx::Value &lap : row[7]) {
             // If we encounter a "damaged" lap, we just skip it to avoid a possible
             // error
             if (lap[2].isNull()) {
@@ -918,7 +870,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             // 0 if inequal, so if lap[2] == "Right", then the index will be 1 to start with, otherwise 0.
             // This means we can easily calculate the index associated with this lap value.
             unsigned index = (lap[2].get<std::string>() == "Right");
-            if (row[7].get<std::string>() == "Side") {
+            if (row[6].get<std::string>() == "Side") {
                 index += 2 * (lap[0].get<std::string>() == "O");
             }
             else {
@@ -928,7 +880,7 @@ std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx:
             summary.setLapSize(index, lap[1].get<double>());
         }
 
-        for (double spacing : row[9]) {
+        for (double spacing : row[8]) {
             summary.addSpacing(spacing);
         }
 
@@ -1116,7 +1068,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
     // First we specify the columns we are inserting
     insert << "INSERT INTO {0}.drawings" << std::endl;
     insert << "(drawing_number, product_id, template_id, width, length, tension_type, drawing_date, no_of_bars, "
-              "rebated, backing_strips, hyperlink, notes)" << std::endl;
+              "rebated, hyperlink, notes)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Next we add the simple values from the drawingData object
@@ -1136,7 +1088,7 @@ std::string DrawingInsert::drawingInsertQuery(unsigned templateID) const {
 
     // Finally we add the rest of the details
     insert << ", '" << drawingData->date().toMySQLDateString() << "', " << drawingData->numberOfBars() << ", " <<
-        drawingData->rebated() << ", " << drawingData->hasBackingStrips() << ", '" << drawingData->hyperlink().generic_string() <<
+        drawingData->rebated() << ", '" << drawingData->hyperlink().generic_string() <<
         "', '" << drawingData->notes() << "')" << std::endl;
 
     // Returns the constructed query string
@@ -1218,26 +1170,32 @@ std::string DrawingInsert::apertureInsertQuery(unsigned matID) const {
 
     // First specify the columns to insert
     insert << "INSERT INTO {0}.mat_aperture_link" << std::endl;
-    insert << "(mat_id, aperture_id, direction)" << std::endl;
+    insert << "(mat_id, aperture_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Add the basic data to the query
-    insert << "(" << matID << ", " << drawingData->aperture().componentID() << ", '";
+    insert << "(" << matID << ", " << drawingData->aperture().componentID() << ")" << std::endl;
 
-    // Depending on what direction the aperture was in, we insert a direction parameter
-    switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(drawingData->aperture().apertureShapeID).componentID()) {
-        case 3:
-            insert << "Longitudinal";
-            break;
-        case 4:
-            insert << "Transverse";
-            break;
-        default:
-            insert << "Nondirectional";
-            break;
+    // Return the constructed MySQL string
+    return insert.str();
+}
+
+// Creates a MySQL query string for inserting the aperture into the mat_backing_strip_link table
+std::string DrawingInsert::backingStripInsertQuery(unsigned matID) const {
+    if (drawingData->backingStrip() == std::nullopt) {
+        return "";
     }
+    std::stringstream insert;
 
-    insert << "')" << std::endl;
+    // First specify the columns to insert
+    insert << "INSERT INTO {0}.mat_backing_strip_link" << std::endl;
+    insert << "(mat_id, backing_strip_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    // Add the basic data to the query
+    insert << "(" << matID << ", " << drawingData->backingStrip()->componentID();
+
+    insert << ")" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();
@@ -1249,14 +1207,14 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
 
     // First specify the columns to insert
     insert << "INSERT INTO {0}.mat_side_iron_link" << std::endl;
-    insert << "(mat_id, side_iron_id, bar_width, inverted, side_iron_index)" << std::endl;
+    insert << "(mat_id, side_iron_id, bar_width, inverted, cut_down, side_iron_index)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Then add the data to insert for both of the side iron side. We specify which is which by the final index parameter.
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::LEFT) << ", 0), " << std::endl;
+           drawingData->sideIronInverted(Drawing::LEFT) << ", " << drawingData->sideIronCutDown(Drawing::LEFT) << ", 0), " << std::endl;
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::RIGHT) << ", 1)" << std::endl;
+           drawingData->sideIronInverted(Drawing::RIGHT) << ", " << drawingData->sideIronCutDown(Drawing::RIGHT) << ", 1)" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();
@@ -1455,7 +1413,7 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     insert << "INSERT INTO {0}.impact_pads" << std::endl;
-    insert << "(mat_id, material_id, aperture_id, aperture_direction, width, length, x_coord, y_coord)" << std::endl;
+    insert << "(mat_id, material_id, aperture_id, width, length, x_coord, y_coord)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::ImpactPad>::const_iterator it = impactPads.begin(); it != impactPads.end(); it++) {
@@ -1463,23 +1421,93 @@ std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
 
         Aperture &ap = pad.aperture();
 
-        insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", '";
+        insert << "(" << matID << ", " << pad.material().componentID() << ", " << ap.componentID() << ", ";
 
-        switch (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap.apertureShapeID).componentID()) {
-            case 3:
-                insert << "Longitudinal";
-                break;
-            case 4:
-                insert << "Transverse";
-                break;
-            default:
-                insert << "Nondirectional";
-                break;
-        }
-
-        insert << "', " << pad.width << ", " << pad.length << ", " << pad.pos.x << ", " << pad.pos.y << ")";
+        insert << pad.width << ", " << pad.length << ", " << pad.pos.x << ", " << pad.pos.y << ")";
 
         if (it != impactPads.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
+    std::vector<Drawing::DamBar> damBars = drawingData->damBars();
+
+    if (damBars.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.dam_bars" << std::endl;
+    insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
+        Drawing::DamBar bar = *it;
+
+
+        insert << "', " << bar.width << ", " << bar.length << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+
+        if (it != damBars.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::blankSpaceInsertQuery(unsigned matID) const {
+    std::vector<Drawing::BlankSpace> blankSpaces = drawingData->blankSpaces();
+
+    if (blankSpaces.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.blank_spaces" << std::endl;
+    insert << "(mat_id, width, length, x_coord, y_coord)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::BlankSpace>::const_iterator it = blankSpaces.begin(); it != blankSpaces.end(); it++) {
+        Drawing::BlankSpace space = *it;
+
+        insert << "(" << matID << ", " << space.width << ", " << space.length << ", " << space.pos.x << ", " << space.pos.y << ")";
+
+        if (it != blankSpaces.end() - 1) {
+            insert << ", ";
+        }
+        insert << std::endl;
+    }
+
+    return insert.str();
+}
+
+std::string DrawingInsert::extraApertureInsertQuery(unsigned matID) const {
+    std::vector<Drawing::ExtraAperture> extraApertures = drawingData->extraApertures();
+
+    if (extraApertures.empty()) {
+        return std::string();
+    }
+
+    std::stringstream insert;
+
+    insert << "INSERT INTO {0}.extra_apertures" << std::endl;
+    insert << "(mat_id, width, length, x_coord, y_coord, aperture_id)" << std::endl;
+    insert << "VALUES" << std::endl;
+
+    for (std::vector<Drawing::ExtraAperture>::const_iterator it = extraApertures.begin(); it != extraApertures.end(); it++) {
+        Drawing::ExtraAperture aperture = *it;
+
+        insert << "(" << matID << ", " << aperture.width << ", " << aperture.length << ", " << aperture.pos.x << ", " << aperture.pos.y << ", " << aperture.apertureID <<")";
+
+        if (it != extraApertures.end() - 1) {
             insert << ", ";
         }
         insert << std::endl;
@@ -1498,14 +1526,13 @@ std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     insert << "INSERT INTO {0}.centre_holes" << std::endl;
-    insert << "(mat_id, x_coord, y_coord, shape_width, shape_length, rounded)" << std::endl;
+    insert << "(mat_id, x_coord, y_coord, aperture_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::CentreHole>::const_iterator it = centreHoles.begin(); it != centreHoles.end(); it++) {
         Drawing::CentreHole hole = *it;
 
-        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.centreHoleShape.width << "," <<
-            hole.centreHoleShape.length << ", " << hole.centreHoleShape.rounded << ")";
+        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.apertureID << ")";
 
         if (it != centreHoles.end() - 1) {
             insert << ", ";
@@ -1590,6 +1617,8 @@ ComponentInsert::ComponentInsert() {
     machineData = std::nullopt;
     sideIronData = std::nullopt;
     materialData = std::nullopt;
+    materialPriceData = std::nullopt;
+    extraPriceData = std::nullopt;
 }
 
 void ComponentInsert::serialise(void *target) const {
@@ -1620,6 +1649,10 @@ void ComponentInsert::serialise(void *target) const {
             buff += sizeof(unsigned);
             *((unsigned *)buff) = apertureData->shapeID;
             buff += sizeof(unsigned);
+            *buff++ = apertureData->isNibble;
+            if (apertureData->isNibble) {
+                *((unsigned*)buff) = apertureData->nibbleApertureId;
+            }
             break;
         case InsertType::MACHINE: {
             unsigned char manufacturerSize = machineData->manufacturer.size(),
@@ -1633,9 +1666,9 @@ void ComponentInsert::serialise(void *target) const {
             break;
         }
         case InsertType::SIDE_IRON: {
-            *((SideIronType *)buff) = sideIronData->type;
+            *((SideIronType*)buff) = sideIronData->type;
             buff += sizeof(SideIronType);
-            *((unsigned *)buff) = sideIronData->length;
+            *((unsigned*)buff) = sideIronData->length;
             buff += sizeof(unsigned);
             unsigned char drawingNumberSize = sideIronData->drawingNumber.size(),
                 hyperlinkSize = sideIronData->hyperlink.generic_string().size();
@@ -1645,6 +1678,30 @@ void ComponentInsert::serialise(void *target) const {
             *buff++ = hyperlinkSize;
             memcpy(buff, sideIronData->hyperlink.generic_string().c_str(), hyperlinkSize);
             buff += hyperlinkSize;
+            break;
+        }
+        case InsertType::SIDE_IRON_PRICE: {
+            *((SideIronType*)buff) = sideIronPriceData->type;
+            buff += sizeof(SideIronType);
+
+            *((bool*)buff) = sideIronPriceData->extraflex;
+            buff += sizeof(bool);
+
+            *((float*)buff) = sideIronPriceData->length;
+            buff += sizeof(float);
+
+            *((float*)buff) = sideIronPriceData->price;
+            buff += sizeof(float);
+
+            *((PriceMode*)buff) = sideIronPriceData->priceMode;
+            buff += sizeof(PriceMode);
+
+            *((unsigned*)buff) = sideIronPriceData->screws;
+            buff += sizeof(unsigned);
+
+            *((unsigned*)buff) = sideIronPriceData->sideIronPriceId;
+            buff += sizeof(unsigned);
+
             break;
         }
         case InsertType::MATERIAL: {
@@ -1658,6 +1715,49 @@ void ComponentInsert::serialise(void *target) const {
             buff += sizeof(unsigned);
             break;
         }
+        case InsertType::MATERIAL_PRICE: {
+            *((unsigned *)buff) = materialPriceData->material_id;;
+            buff += sizeof(unsigned);
+            *((float*)buff) = materialPriceData->length;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->width;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->price;
+            buff += sizeof(float);
+            *((MaterialPricingType*)buff) = materialPriceData->pricingType;
+            buff += sizeof(MaterialPricingType);
+            *((PriceMode*)buff) = materialPriceData->priceMode;
+            buff += sizeof(PriceMode);
+            *((float*)buff) = materialPriceData->oldWidth;
+            buff += sizeof(float);
+            *((float*)buff) = materialPriceData->oldLength;
+            buff += sizeof(float);
+
+            break;
+        }
+        case (InsertType::EXTRA_PRICE): {
+            *((unsigned*)buff) = extraPriceData->priceId;
+            buff += sizeof(unsigned);
+            *((ExtraPriceType*)buff) = extraPriceData->type;
+            buff += sizeof(ExtraPriceType);
+            *((float*)buff) = extraPriceData->price;
+            buff += sizeof(float);
+            switch (extraPriceData->type) {
+                case (ExtraPriceType::SIDE_IRON_NUTS):case (ExtraPriceType::SIDE_IRON_SCREWS):case (ExtraPriceType::DIVERTOR):case (ExtraPriceType::DEFLECTOR):case (ExtraPriceType::DAM_BAR):
+                    *((unsigned*)buff) = extraPriceData->amount;
+                    buff += sizeof(unsigned);
+                    break;
+                case (ExtraPriceType::TACKYBACK_GLUE): case (ExtraPriceType::PRIMER):
+                    *((float*)buff) = extraPriceData->squareMetres;
+                    buff += sizeof(float);
+                    break;
+                case (ExtraPriceType::LABOUR):
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
     }
 }
 
@@ -1669,8 +1769,16 @@ unsigned int ComponentInsert::serialisedSize() const {
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + machineData->serialisedSize();
         case InsertType::SIDE_IRON:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + sideIronData->serialisedSize();
+        case InsertType::SIDE_IRON_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + sideIronPriceData->serialisedSize();
         case InsertType::MATERIAL:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + materialData->serialisedSize();
+        case InsertType::MATERIAL_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + materialPriceData->serialisedSize();
+        case InsertType::EXTRA_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + extraPriceData->serialisedSize();
+        case InsertType::LABOUR_TIMES:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + labourTimeData->serialisedSize();
         case InsertType::NONE:
         default:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse);
@@ -1691,63 +1799,167 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
     switch (insert->insertType) {
         case InsertType::NONE:
             break;
-        case InsertType::APERTURE: {
+        case InsertType::APERTURE:
+        {
             ApertureData data;
-            data.width = *((float *)buff);
+            data.width = *((float*)buff);
             buff += sizeof(float);
-            data.length = *((float *)buff);
+            data.length = *((float*)buff);
             buff += sizeof(float);
-            data.baseWidth = *((unsigned *)buff);
+            data.baseWidth = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.baseLength = *((unsigned *)buff);
+            data.baseLength = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.quantity = *((unsigned *)buff);
+            data.quantity = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.shapeID = *((unsigned *)buff);
+            data.shapeID = *((unsigned*)buff);
             buff += sizeof(unsigned);
+            data.isNibble = *buff++;
+            if (data.isNibble) {
+                data.nibbleApertureId = *((unsigned*)buff);
+                buff += sizeof(unsigned);
+            }
 
             insert->apertureData = data;
             break;
         }
-        case InsertType::MACHINE: {
+        case InsertType::MACHINE:
+        {
             MachineData data;
             unsigned char manufacturerSize = *buff++;
-            data.manufacturer = std::string((const char *)buff, manufacturerSize);
+            data.manufacturer = std::string((const char*)buff, manufacturerSize);
             buff += manufacturerSize;
             unsigned char modelSize = *buff++;
-            data.model = std::string((const char *)buff, modelSize);
+            data.model = std::string((const char*)buff, modelSize);
             buff += modelSize;
 
             insert->machineData = data;
             break;
         }
-        case InsertType::SIDE_IRON: {
+        case InsertType::SIDE_IRON:
+        {
             SideIronData data;
-            data.type = *((SideIronType *)buff);
+            data.type = *((SideIronType*)buff);
             buff += sizeof(SideIronType);
-            data.length = *((unsigned *)buff);
+            data.length = *((unsigned*)buff);
             buff += sizeof(unsigned);
             unsigned char drawingNumberSize = *buff++;
-            data.drawingNumber = std::string((const char *)buff, drawingNumberSize);
+            data.drawingNumber = std::string((const char*)buff, drawingNumberSize);
             buff += drawingNumberSize;
             unsigned char hyperlinkSize = *buff++;
-            data.hyperlink = std::string((const char *)buff, hyperlinkSize);
+            data.hyperlink = std::string((const char*)buff, hyperlinkSize);
             buff += hyperlinkSize;
 
             insert->sideIronData = data;
             break;
         }
-        case InsertType::MATERIAL: {
+        case InsertType::SIDE_IRON_PRICE:
+        {
+            SideIronPriceData data;
+
+            data.type = *((SideIronType*)buff);
+            buff += sizeof(SideIronType);
+
+            data.extraflex = *((bool*)buff);
+            buff += sizeof(bool);
+
+            data.length = *((float*)buff);
+            buff += sizeof(float);
+
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+
+            data.priceMode = *((PriceMode*)buff);
+            buff += sizeof(PriceMode);
+
+            data.screws = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            data.sideIronPriceId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            insert->sideIronPriceData = data;
+            break;
+        }
+        case InsertType::MATERIAL:
+        {
             MaterialData data;
             unsigned char nameSize = *buff++;
-            data.materialName = std::string((const char *)buff, nameSize);
+            data.materialName = std::string((const char*)buff, nameSize);
             buff += nameSize;
-            data.hardness = *((unsigned *)buff);
+            data.hardness = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.thickness = *((unsigned *)buff);
+            data.thickness = *((unsigned*)buff);
             buff += sizeof(unsigned);
 
             insert->materialData = data;
+            break;
+        }
+        case InsertType::MATERIAL_PRICE:
+        {
+            MaterialPriceData data;
+            data.material_id = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.length = *((float*)buff);
+            buff += sizeof(float);
+            data.width = *((float*)buff);
+            buff += sizeof(float);
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+            data.pricingType = *((MaterialPricingType*)buff);
+            buff += sizeof(MaterialPricingType);
+            data.priceMode = *((PriceMode*)buff);
+            buff += sizeof(PriceMode);
+            data.oldWidth = *((float*)buff);
+            buff += sizeof(float);
+            data.oldLength = *((float*)buff);
+            buff += sizeof(float);
+
+            insert->materialPriceData = data;
+            break;
+        }
+        case InsertType::EXTRA_PRICE:
+        {
+            ExtraPriceData data;
+
+            data.priceId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            data.type = *((ExtraPriceType*)buff);
+            buff += sizeof(ExtraPriceType);
+
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+
+            switch (data.type) {
+                case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
+                    data.amount = *((unsigned*)buff);
+                    buff += sizeof(unsigned);
+                    break;
+                case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
+                    data.squareMetres = *((float*)buff);
+                    buff += sizeof(float);
+                    break;
+                case ExtraPriceType::LABOUR:
+                    break;
+                default:
+                    break;
+            }
+            insert->extraPriceData = data;
+            break;
+        }
+        case InsertType::LABOUR_TIMES:
+        {
+            LabourTimeData data;
+
+            data.labourId = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.type = *((LabourTimeType*)buff);
+            buff += sizeof(ExtraPriceType);
+            data.time = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            insert->labourTimeData = data;
             break;
         }
     }
@@ -1780,11 +1992,44 @@ void ComponentInsert::setComponentData(const SideIronData &data) {
 }
 
 template<>
-void ComponentInsert::setComponentData(const MaterialData &data) {
+void ComponentInsert::setComponentData(const SideIronPriceData& data) {
+    insertType = InsertType::SIDE_IRON_PRICE;
+
+    responseCode = ComponentInsertResponse::NONE;
+
+    sideIronPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const MaterialData& data) {
     insertType = InsertType::MATERIAL;
     responseCode = ComponentInsertResponse::NONE;
 
     materialData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const MaterialPriceData& data) {
+    insertType = InsertType::MATERIAL_PRICE;
+    responseCode = ComponentInsertResponse::NONE;
+
+    materialPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const ExtraPriceData& data) {
+    insertType = InsertType::EXTRA_PRICE;
+    responseCode = ComponentInsertResponse::NONE;
+
+    extraPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const LabourTimeData& data) {
+    insertType = InsertType::LABOUR_TIMES;
+    responseCode = ComponentInsertResponse::NONE;
+
+    labourTimeData = data;
 }
 
 std::string ComponentInsert::toSQLQueryString() const {
@@ -1792,10 +2037,11 @@ std::string ComponentInsert::toSQLQueryString() const {
 
     switch (insertType) {
         case InsertType::APERTURE:
-            insert << "INSERT INTO {0}.apertures (width, length, base_width, base_length, quantity, shape_id)" << std::endl;
+            insert << "INSERT INTO {0}.apertures (width, length, base_width, base_length, quantity, shape_id, nibble, nibble_aperture_id)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << apertureData->width << ", " << apertureData->length << ", " << apertureData->baseWidth << ", "
-                << apertureData->baseLength << ", " << apertureData->quantity << ", " << apertureData->shapeID << ")" << std::endl;
+                << apertureData->baseLength << ", " << apertureData->quantity << ", " << apertureData->shapeID << ", " << 
+                apertureData->isNibble << "," << (apertureData->isNibble ? std::to_string(apertureData->nibbleApertureId) : "NULL") << ")" << std::endl;
             break;
         case InsertType::MACHINE:
             insert << "INSERT INTO {0}.machines (manufacturer, model)" << std::endl;
@@ -1808,11 +2054,123 @@ std::string ComponentInsert::toSQLQueryString() const {
             insert << "(" << (unsigned)sideIronData->type << ", " << sideIronData->length << ", '" << sideIronData->drawingNumber << "', '"
                 << sideIronData->hyperlink.generic_string() << "')" << std::endl;
             break;
+        case InsertType::SIDE_IRON_PRICE:
+            switch (sideIronPriceData->priceMode) {
+                case PriceMode::ADD:
+                    insert << "INSERT INTO {0}.side_iron_prices (type, length, price, screws, product_id)" << std::endl;
+                    insert << "VALUES" << std::endl;
+                    insert << "(" << (unsigned)sideIronPriceData->type << ", " << sideIronPriceData->length << ", " << sideIronPriceData->price << ", " << sideIronPriceData->screws << ", " << (int)sideIronPriceData->extraflex + 1 << ")" << std::endl;
+                    break;
+                case PriceMode::UPDATE:
+                    insert << "UPDATE {0}.side_iron_prices SET" << std::endl;
+                    insert << "length = " << sideIronPriceData->length << ", price = " << sideIronPriceData->price << ", product_id="  << (int)sideIronPriceData->extraflex + 1 << std::endl;
+                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    break;
+                case PriceMode::REMOVE:
+                    insert << "DELETE FROM {0}.side_iron_prices" << std::endl;
+                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    break;
+                default:
+                    break;
+            }
+            break;
         case InsertType::MATERIAL:
             insert << "INSERT INTO {0}.materials (material, hardness, thickness)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "('" << materialData->materialName << "', " << materialData->hardness << ", " << materialData->thickness << ")" << std::endl;
             break;
+        case InsertType::MATERIAL_PRICE:
+            switch (materialPriceData->priceMode) {
+                case (PriceMode::ADD): 
+                    insert << "INSERT INTO {0}.material_prices (material_id, width, length, price, pricing)" << std::endl;
+                    insert << "VALUES" << std::endl;
+                    if (materialPriceData->pricingType == MaterialPricingType::RUNNING_M) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'running_m')" << std::endl;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SQUARE_M) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'square_m')" << std::endl;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SHEET) {
+                        insert << "(" << materialPriceData->material_id << ", " << materialPriceData->width << ", " << materialPriceData->length << ", " << materialPriceData->price << ", 'sheet')" << std::endl;
+                    }
+                    break;
+
+                case (PriceMode::UPDATE):
+                    if (materialPriceData->pricingType == MaterialPricingType::RUNNING_M) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'running_m'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SQUARE_M) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'square_m'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    else if (materialPriceData->pricingType == MaterialPricingType::SHEET) {
+                        insert << "UPDATE {0}.material_prices SET" << std::endl;
+                        insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'sheet'" << std::endl;
+                        insert << "WHERE " << std::endl;
+                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                    }
+                    break;
+                case (PriceMode::REMOVE):
+                    insert << "DELETE FROM {0}.material_prices" << std::endl;
+                    insert << "WHERE material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->width << " AND length = " << materialPriceData->length;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case InsertType::EXTRA_PRICE:
+            switch (extraPriceData->type) {
+                case ExtraPriceType::SIDE_IRON_NUTS:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", amount = " << extraPriceData->amount << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'side_iron_nuts'" << std::endl;
+                    break;
+                case ExtraPriceType::SIDE_IRON_SCREWS:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", amount = " << extraPriceData->amount << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'side_iron_screws'" << std::endl;
+                    break;
+                case ExtraPriceType::TACKYBACK_GLUE:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", square_metres = " << extraPriceData->squareMetres << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'glue'" << std::endl;
+                    break;
+                case ExtraPriceType::LABOUR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'labour'" << std::endl;
+                    break;
+                case ExtraPriceType::PRIMER:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'primer'" << std::endl;
+                    break;
+                case ExtraPriceType::DEFLECTOR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'deflector'" << std::endl;
+                    break;
+                case ExtraPriceType::DIVERTOR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'divertor'" << std::endl;
+                    break;
+                case ExtraPriceType::DAM_BAR:
+                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
+                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'dam_bar'" << std::endl;
+                    break;
+            }
+            break;
+        case InsertType::LABOUR_TIMES:
+            insert << "UPDATE {0}.labour_times set" << std::endl;
+            insert << "time = " << labourTimeData->time << " WHERE" << std::endl;
+            insert << "labour_id = " << labourTimeData->labourId;
         default:
             break;
     }
@@ -1828,8 +2186,16 @@ RequestType ComponentInsert::getSourceTableCode() const {
             return RequestType::SOURCE_MACHINE_TABLE;
         case InsertType::SIDE_IRON:
             return RequestType::SOURCE_SIDE_IRON_TABLE;
+        case InsertType::SIDE_IRON_PRICE:
+            return RequestType::SOURCE_SIDE_IRON_PRICES_TABLE;
         case InsertType::MATERIAL:
             return RequestType::SOURCE_MATERIAL_TABLE;
+        case InsertType::MATERIAL_PRICE:
+            return RequestType::SOURCE_MATERIAL_TABLE;
+        case InsertType::EXTRA_PRICE:
+            return RequestType::SOURCE_EXTRA_PRICES_TABLE;
+        case InsertType::LABOUR_TIMES:
+            return RequestType::SOURCE_LABOUR_TIMES;
         default:
             return (RequestType)(-1);
     }

@@ -1,7 +1,10 @@
+// #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+
 #include <iostream>
 //#include <unistd.h>
 #include <filesystem>
 #include <regex>
+#include <Windows.h>
 
 #include <QApplication>
 
@@ -130,7 +133,6 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
 
     // Hash the password to use as an AES key to secure the two keys
     uint256 pwHash = getPasswordHash("Enter a root password to secure the encryption keys under: ");
-
     std::filesystem::create_directory(keyPath / "server");
     std::filesystem::create_directory(keyPath / "signature");
 
@@ -259,7 +261,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath, con
     }
 }
 
-void runServer(std::filesystem::path metaFilePath, const std::string &user) {
+void runServer(std::filesystem::path metaFilePath, const std::string &user, bool dev) {
     metaFilePath = metaFilePath / "serverMeta.json";
     if (!std::filesystem::exists(metaFilePath)) {
         std::cerr << "Meta file path " << metaFilePath << " does not exist." << std::endl;
@@ -313,6 +315,13 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
         return;
     }
 
+    if (!dev) {
+        std::cout << "Live Mode" << std::endl;
+    }
+    else {
+        std::cout << "DEV MODE" << std::endl;
+    }
+
     // Create the prompt
     std::stringstream prompt;
     prompt << "Enter the password for " << user << ": ";
@@ -364,7 +373,13 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user) {
     std::string dbPassword;
     dbPasswordFile >> dbPassword;*/
 
-    s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword);
+    if (!dev) {
+        s.connectToDatabaseServer("screen_mat_database", "db-server-user", databasePassword, "scs.local");
+    }
+    else {
+        std::string databasePassword_dev = getPassword("Dev Password: ");
+        s.connectToDatabaseServer("screen_mat_database_dev", "dev", databasePassword_dev, "scs.local");
+    }
 
     s.setRequestHandler(handler);
 
@@ -394,7 +409,9 @@ void printHelpMessage() {
     std::cout << "Database Manager Help" << std::endl;
     std::cout << "Flags: " << std::endl;
     std::cout << "  --server            - run the server." << std::endl;
+    std::cout << "  --dev               - run the server on the dev database" << std::endl;
     std::cout << "  --client            - run a client instance." << std::endl;
+    std::cout << "  --console           - runs client with console" << std::endl;
     std::cout << "  --setup             - set the server keys up and save them in key files." << std::endl;
     std::cout << "                        NOTE: This will not start the server." << std::endl;
     std::cout << "  --add-user [USER]   - add a new admin user and password. This user will be able to" << std::endl;
@@ -419,6 +436,10 @@ int main(int argc, char *argv[]) {
 
     // The mode to run in. This changes depending on the arguments provided
     RunMode mode = NO_MODE;
+    // Whether it is in normal or dev mode
+    bool dev = false;
+    // Whether to run with console
+    bool console = false;
     // The user to start the server on
     std::string user = "root";
     // The new user if they are running in add user mode
@@ -456,6 +477,11 @@ int main(int argc, char *argv[]) {
                     goto error;
                 }
             }
+            
+            // If they used the flag "--dev" they want to run the server in dev mode.
+            if (strcmp(argv[i], "--dev") == 0) {
+                dev = true;
+            }
 
             // If they used the flag "--client" they want to run a client
             if (strcmp(argv[i], "--client") == 0) {
@@ -466,6 +492,10 @@ int main(int argc, char *argv[]) {
                     std::cerr << "ERROR: You can only use one more at a time." << std::endl;
                     goto error;
                 }
+            }
+
+            if (strcmp(argv[i], "--console") == 0) {
+                console = true;
             }
 
             if (strcmp(argv[i], "--add-user") == 0) {
@@ -494,10 +524,20 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    if (!console && mode != SERVER && mode != SETUP && mode != HELP) {
+        FreeConsole();
+        PostMessage(GetConsoleWindow(), WM_CLOSE, 0, 0);
+    }
+
+    if (dev && mode != SERVER) {
+        std::cout << "Invalid arguments. Use --help for more information." << std::endl;
+        std::cerr << "Only the server can be in dev mode." << std::endl;
+        goto error;
+    }
 
     switch (mode) {
         case SERVER:
-            runServer(metaFilePath, user);
+            runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
             return runClient(metaFilePath, argc, argv);

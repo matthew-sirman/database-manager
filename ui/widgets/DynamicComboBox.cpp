@@ -3,6 +3,7 @@
 //
 
 #include "DynamicComboBox.h"
+#include <iostream>
 
 DynamicComboBox::DynamicComboBox(QWidget *parent) : QComboBox(parent) {
 
@@ -77,6 +78,15 @@ void DynamicComboBox::updateSourceList() {
 
         sourceState = source->state();
     }
+
+    if (currentIndex() == 0 && setManualIndex != nullptr) {
+        setManualIndex(this);
+        setManualIndex = nullptr;
+    }
+}
+
+void DynamicComboBox::setManualIndexFunc(std::function<void(DynamicComboBox*)> func) {
+    setManualIndex = func;
 }
 
 void DynamicComboBox::focusInEvent(QFocusEvent *e) {

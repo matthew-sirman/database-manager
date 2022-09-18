@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>
+#include <set>
 
 #include "RequestType.h"
 #include "../networking/NetworkMessage.h"
@@ -124,7 +125,23 @@ private:
     /// <param name="elementSize">A reference to an element size variable which will be set to
     /// the number of bytes used to represent the product in the buffer.</param>
     /// <returns></returns>
-    static Product * fromSource(void *buffer, unsigned &elementSize);
+    static Product * fromSource(unsigned char** buff);
+};
+
+struct BackingStrip : public DrawingComponent {
+    friend class DrawingComponentManager<BackingStrip>;
+
+public:
+    unsigned materialID{};
+
+    std::string backingStripName() const;
+
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+private:
+    BackingStrip(unsigned id);
+
+    static BackingStrip* fromSource(unsigned char** buff);
 };
 
 /// <summary>
@@ -139,6 +156,8 @@ public:
     unsigned short baseWidth{}, baseLength{};
     unsigned apertureShapeID{};
     unsigned short quantity{};
+    bool isNibble;
+    unsigned nibbleApertureId;
 
     std::string apertureName() const;
 
@@ -147,7 +166,7 @@ public:
 private:
     Aperture(unsigned id);
 
-    static Aperture * fromSource(void *buffer, unsigned &elementSize);
+    static Aperture * fromSource(unsigned char** buff);
 };
 
 struct ApertureShape : public DrawingComponent {
@@ -161,7 +180,7 @@ public:
 private:
     ApertureShape(unsigned id);
 
-    static ApertureShape * fromSource(void *buffer, unsigned &elementSize);
+    static ApertureShape* fromSource(unsigned char** buff);
 };
 
 struct Material : public DrawingComponent {
@@ -171,6 +190,9 @@ public:
     std::string materialName;
     unsigned short hardness{}, thickness{};
 
+    // width, length if exists, price, type
+    std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
+
     std::string material() const;
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
@@ -178,7 +200,91 @@ public:
 private:
     Material(unsigned id);
 
-    static Material * fromSource(void *buffer, unsigned &elementSize);
+    static Material* fromSource(unsigned char** buff);
+};
+
+template<ExtraPriceType T>
+struct ExtraPriceTrait {
+
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::SIDE_IRON_NUTS> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::SIDE_IRON_SCREWS> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::TACKYBACK_GLUE> {
+    using numType = float;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::LABOUR> {
+    using numType = float;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::PRIMER> {
+    using numType = float;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DIVERTOR> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DEFLECTOR> {
+    using numType = unsigned;
+};
+
+template<>
+struct ExtraPriceTrait<ExtraPriceType::DAM_BAR> {
+    using numType = unsigned;
+};
+
+struct ExtraPrice : public DrawingComponent {
+    friend class DrawingComponentManager<ExtraPrice>;
+
+public:
+    ExtraPriceType type;
+    float price;
+    std::optional<float> squareMetres;
+    std::optional<unsigned> amount;
+
+    std::string extraPrice() const;
+
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+    template<ExtraPriceType T>
+    float getPrice(typename ExtraPriceTrait<T>::numType n);
+    //float getPrice(float n);
+
+private:
+    ExtraPrice(unsigned id);
+
+    static ExtraPrice* fromSource(unsigned char** buff);
+};
+
+
+struct LabourTime : public DrawingComponent {
+    friend class DrawingComponentManager<LabourTime>;
+
+public:
+    LabourTimeType type;
+    unsigned time;
+
+    std::string labourTime() const;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+private:
+    LabourTime(unsigned id);
+
+    static LabourTime* fromSource(unsigned char** buff);
 };
 
 enum class SideIronType {
@@ -206,7 +312,23 @@ public:
 private:
     SideIron(unsigned id);
 
-    static SideIron *fromSource(void *buffer, unsigned &elementSize);
+    static SideIron* fromSource(unsigned char** buff);
+};
+
+struct SideIronPrice : DrawingComponent {
+    friend class DrawingComponentManager<SideIronPrice>;
+
+    SideIronType type;
+    std::vector<std::tuple<unsigned, float, float, unsigned, bool>> prices;
+
+    std::string sideIronPriceStr() const;
+
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+private:
+    SideIronPrice(unsigned id);
+
+    static SideIronPrice* fromSource(unsigned char** buff);
 };
 
 enum class LapSetting {
@@ -233,7 +355,7 @@ public:
 private:
     Machine(unsigned id);
 
-    static Machine *fromSource(void *buffer, unsigned &elementSize);
+    static Machine* fromSource(unsigned char** buff);
 };
 
 struct MachineDeck : public DrawingComponent {
@@ -247,7 +369,7 @@ public:
 private:
     MachineDeck(unsigned id);
 
-    static MachineDeck *fromSource(void *buffer, unsigned &elementSize);
+    static MachineDeck* fromSource(unsigned char** buff);
 };
 
 template<typename T>
@@ -263,6 +385,7 @@ public:
 
     void setMode(unsigned mode);
 
+    bool empty() const;
 private:
     void setAdapter(const std::function<ComboboxDataElement(std::vector<unsigned>::const_iterator)> &adapter) override {}
 
@@ -314,6 +437,10 @@ void ComboboxComponentDataSource<T>::setMode(unsigned mode) {
 }
 
 template<typename T>
+bool ComboboxComponentDataSource<T>::empty() const {
+    return handleSet.empty();
+}
+template<typename T>
 class DrawingComponentManager {
     static_assert(std::is_base_of<DrawingComponent, T>::value, "DrawingComponentManager can only be used with types deriving from DrawingComponent.");
 public:
@@ -323,11 +450,13 @@ public:
 
     static void setDirty();
 
+    static void refreshTable();
+
     static T &getComponentByHandle(unsigned handle);
 
     static unsigned maximumHandle();
 
-    static T &findComponentByID(unsigned id);
+    static T& findComponentByID(unsigned id);
 
     static std::vector<T *> allComponentsByID(unsigned id);
 
@@ -394,6 +523,7 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
     RequestType type = *((RequestType *) buff);
     buff += sizeof(RequestType);
 
+
     unsigned elements = *((unsigned *) buff);
     buff += sizeof(unsigned);
 
@@ -401,14 +531,11 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
         unsigned handle = *((unsigned *)buff);
         buff += sizeof(unsigned);
 
-        unsigned elementSize;
-        T *element = T::fromSource(buff, elementSize);
+        T *element = T::fromSource(&buff);
         element->__handle = handle;
         componentLookup[handle] = element;
         handleToIDMap[handle] = element->__componentID;
         indexSet.push_back(handle);
-
-        buff += elementSize;
     }
 
     free(sourceData);
@@ -432,6 +559,11 @@ void DrawingComponentManager<T>::setDirty() {
 }
 
 template<typename T>
+void DrawingComponentManager<T>::refreshTable() {
+
+}
+
+template<typename T>
 T &DrawingComponentManager<T>::getComponentByHandle(unsigned handle) {
     if (!validComponentHandle(handle)) {
         ERROR_RAW("Invalid component lookup handle.", std::cerr)
@@ -452,7 +584,7 @@ T &DrawingComponentManager<T>::findComponentByID(unsigned id) {
             return *componentLookup[handleMap.first];
         }
     }
-    ERROR_RAW("Component was not found. (" + to_str(id) + ")", std::cerr)
+        ERROR_RAW("Component was not found. (" + std::to_string(id) + ")", std::cerr)
 }
 
 template<typename T>
@@ -469,7 +601,7 @@ std::vector<T *> DrawingComponentManager<T>::allComponentsByID(unsigned id) {
 template<typename T>
 bool DrawingComponentManager<T>::validComponentID(unsigned int id) {
     for (const std::pair<unsigned, T *> component : componentLookup) {
-        if (component.second->componentID == id) {
+        if (component.second->componentID() == id) {
             return true;
         }
     }

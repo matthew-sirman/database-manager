@@ -55,8 +55,7 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
-
-		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(format(query.toSQLQueryString(), database)).execute());
+		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(Format::format(query.toSQLQueryString(), database)).execute());
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
@@ -82,11 +81,11 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			<< std::endl;
 		queryString << "d.length AS length, d.tension_type AS tension_type, UNIX_TIMESTAMP(d.drawing_date) AS drawing_date, "
 			<< std::endl;
-		queryString << "d.rebated, d.backing_strips, d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
+		queryString << "d.rebated, d.hyperlink AS hyperlink, d.notes AS notes, " << std::endl;
 		queryString << "mt.machine_id AS machine_id, mt.quantity_on_deck AS quantity_on_deck, mt.position AS position, "
 			<< std::endl;
 		queryString << "mt.deck_id AS deck_id, " << std::endl;
-		queryString << "mal.aperture_id AS aperture_id, mal.direction AS aperture_direction" << std::endl;
+		queryString << "mal.aperture_id AS aperture_id" << std::endl;
 		queryString << "FROM " << database << ".drawings AS d " << std::endl;
 		queryString << "INNER JOIN " << database << ".machine_templates AS mt ON d.template_id=mt.template_id" << std::endl;
 		queryString << "INNER JOIN " << database << ".mat_aperture_link AS mal ON d.mat_id=mal.mat_id" << std::endl;
@@ -106,59 +105,18 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setTensionType((drawingResults[4].get<std::string>() == "Side") ? Drawing::SIDE : Drawing::END);
 			drawing->setDate(Date::parse(drawingResults[5].get<int>()));
 			drawing->setRebated(drawingResults[6].get<bool>());
-			drawing->setHasBackingStrips(drawingResults[7].get<bool>());
-			drawing->setHyperlink(drawingResults[8].get<std::string>());
-			drawing->setNotes(drawingResults[9].get<std::string>());
-			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[10]));
-			drawing->setQuantityOnDeck(drawingResults[11].get<int>());
-			drawing->setMachinePosition(drawingResults[12].get<std::string>());
-			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[13]));
+			drawing->setHyperlink(drawingResults[7].get<std::string>());
+			drawing->setNotes(drawingResults[8].get<std::string>());
+			drawing->setMachine(DrawingComponentManager<Machine>::findComponentByID(drawingResults[9]));
+			drawing->setQuantityOnDeck(drawingResults[10].get<int>());
+			drawing->setMachinePosition(drawingResults[11].get<std::string>());
+			drawing->setMachineDeck(DrawingComponentManager<MachineDeck>::findComponentByID(drawingResults[12]));
 
 			// It may be the case that the physical aperture is able to be rotated. This is internally represented in the manager
 			// as two separate Aperture objects, both with the same componentID. For this reason, we must search for all apertures
 			// with the matching component ID to select the correct one.
-			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(drawingResults[14]);
-
-			if (matchingApertures.size() == 1) {
-				// If there was just a single aperture which matched, this must be the correct aperture, so
-				// just set the drawing's aperture to be this.
-				drawing->setAperture(*matchingApertures.front());
-			} else {
-				// If there were multiple matches, we must get the direction this aperture was stored to be facing.
-				std::string apertureDirectionString = drawingResults[15].get<std::string>();
-
-				// Boolean value to determine if we found an aperture. If we didn't there is an error with this
-				// drawing.
-				bool found = false;
-
-				if (apertureDirectionString == "Longitudinal") {
-					// If it was a longitudinal aperture, we look through the set of possibilities and find the one
-					// which is set to be longitudinal.
-					for (const Aperture *ap : matchingApertures) {
-						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
-							drawing->setAperture(*ap);
-							found = true;
-							break;
-						}
-					}
-				} else if (apertureDirectionString == "Transverse") {
-					// Otherwise look for which one was transvers.
-					for (const Aperture *ap : matchingApertures) {
-						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
-							drawing->setAperture(*ap);
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found) {
-					// If apertures are broken for this drawing, print a safe error to the console and set a load warning on
-					// the drawing
-					ERROR_RAW_SAFE("Invalid aperture detected for: " + drawing->drawingNumber(), *errStream);
-					drawing->setLoadWarning(Drawing::LoadWarning::INVALID_APERTURE_DETECTED);
-				}
-			}
+			Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(drawingResults[13]);
+			drawing->setAperture(matchingAperture);
 		} else {
 			// If the drawing we read from the database was null, print a safe error to the console and set a load warning
 			// on the drawing, indicating that we failed to load the drawing.
@@ -204,8 +162,18 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			barWidths.push_back(row[1]);
 		}
 
+		// get the backing strip
+		mysqlx::RowResult backingStrips = sess.getSchema(database).getTable("mat_backing_strip_link").select("backing_strip_id")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+		mysqlx::Row backingStrip = backingStrips.fetchOne();
+		if (!backingStrip.isNull()) {
+			drawing->setBackingStrip(DrawingComponentManager<BackingStrip>::findComponentByID(backingStrip[0]));
+		}
+		else {
+			drawing->setLoadWarning(Drawing::LoadWarning::INVALID_BACKING_STRIP_DETECTED);
+		}
 		// Get the side irons associated with this drawing
-		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted")
+		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted", "cut_down")
 			.where("mat_id=:matID").orderBy("side_iron_index ASC").bind("matID", query.matID).execute();
 
 		// Get the left (first) side iron
@@ -220,6 +188,8 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 				DrawingComponentManager<SideIron>::findComponentByID(leftSideIron[0]));
 			// Set whether this side iron is inverted
 			drawing->setSideIronInverted(Drawing::LEFT, leftSideIron[2].get<bool>());
+			// Set whether this side iron is cut down
+			drawing->setSideIronCutDown(Drawing::LEFT, leftSideIron[3].get<bool>());
 
 			// Get the right (second) side iron
 			mysqlx::Row rightSideIron = sideIrons.fetchOne();
@@ -353,76 +323,89 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 
 		// Impact Pads
 		mysqlx::RowResult impactPadResults = sess.getSchema(database).getTable("impact_pads")
-			.select("material_id", "aperture_id", "aperture_direction", "width", "length", "x_coord", "y_coord")
+			.select("material_id", "aperture_id", "width", "length", "x_coord", "y_coord")
 			.where("mat_id=:matID").bind("matID", query.matID).execute();
 
 		for (const mysqlx::Row &row : impactPadResults) {
 			Drawing::ImpactPad pad;
 			pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[0]));
 
-			std::vector<Aperture *> matchingApertures = DrawingComponentManager<Aperture>::allComponentsByID(row[1]);
+			Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[1]);
+			pad.setAperture(matchingAperture);
 
-			if (matchingApertures.size() == 1) {
-				// If there was just a single aperture which matched, this must be the correct aperture, so
-				// just set the drawing's aperture to be this.
-				pad.setAperture(*matchingApertures.front());
-			} else {
-				// If there were multiple matches, we must get the direction this aperture was stored to be facing.
-				std::string apertureDirectionString = row[2].get<std::string>();
-
-				// Boolean value to determine if we found an aperture. If we didn't there is an error with this
-				// drawing.
-				bool found = false;
-
-				if (apertureDirectionString == "Longitudinal") {
-					// If it was a longitudinal aperture, we look through the set of possibilities and find the one
-					// which is set to be longitudinal.
-					for (const Aperture *ap : matchingApertures) {
-						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 3) {
-							pad.setAperture(*ap);
-							found = true;
-							break;
-						}
-					}
-				} else if (apertureDirectionString == "Transverse") {
-					// Otherwise look for which one was transverse.
-					for (const Aperture *ap : matchingApertures) {
-						if (DrawingComponentManager<ApertureShape>::getComponentByHandle(ap->apertureShapeID).componentID() == 4) {
-							pad.setAperture(*ap);
-							found = true;
-							break;
-						}
-					}
-				}
-
-				if (!found) {
-					// If apertures are broken for this drawing, print a safe error to the console and set a load warning on
-					// the drawing
-					ERROR_RAW_SAFE("Invalid impact pad detected for: " + drawing->drawingNumber(), *errStream);
-					drawing->setLoadWarning(Drawing::LoadWarning::INVALID_IMPACT_PAD_DETECTED);
-				}
-			}
-
-			pad.width = row[3].get<float>();
-			pad.length = row[4].get<float>();
-			pad.pos.x = row[5].get<float>();
-			pad.pos.y = row[6].get<float>();
+			pad.width = row[2].get<float>();
+			pad.length = row[3].get<float>();
+			pad.pos.x = row[4].get<float>();
+			pad.pos.y = row[5].get<float>();
 
 			drawing->addImpactPad(pad);
 		}
 
+		// Blank Spaces
+		mysqlx::RowResult blankSpaceResults = sess.getSchema(database).getTable("blank_spaces")
+			.select("width", "length", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : blankSpaceResults) {
+			Drawing::BlankSpace space;
+
+			space.width = row[0].get<float>();
+			space.length = row[1].get<float>();
+			space.pos.x = row[2].get<float>();
+			space.pos.y = row[3].get<float>();
+
+			drawing->addBlankSpace(space);
+		}
+
+		// Extra Apertures
+		mysqlx::RowResult extraApertureResult = sess.getSchema(database).getTable("extra_apertures")
+			.select("width", "length", "x_coord", "y_coord", "aperture_id")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : extraApertureResult) {
+			Drawing::ExtraAperture aperture;
+
+			aperture.width = row[0].get<float>();
+			aperture.length = row[1].get<float>();
+			aperture.pos.x = row[2].get<float>();
+			aperture.pos.y = row[3].get<float>();
+			aperture.apertureID = row[4].get<unsigned>();
+
+			drawing->addExtraAperture(aperture);
+		}
+
+		// Dam Bars
+		mysqlx::RowResult damBarResults = sess.getSchema(database).getTable("dam_bars")
+			.select("width", "length", "x_coord", "y_coord")
+			.where("mat_id=:matID").bind("matID", query.matID).execute();
+
+		for (const mysqlx::Row& row : damBarResults) {
+			Drawing::DamBar bar;
+
+			bar.width = row[0].get<float>();
+			bar.length = row[1].get<float>();
+			bar.pos.x = row[2].get<float>();
+			bar.pos.y = row[3].get<float>();
+
+			drawing->addDamBar(bar);
+		}
+
 		// Center Holes
 		mysqlx::RowResult centreHoleResults = sess.getSchema(database).getTable("centre_holes")
-			.select("x_coord", "y_coord", "shape_width", "shape_length", "rounded")
+			.select("x_coord", "y_coord", "aperture_id")
 			.where("mat_id=:matID").bind("matID", query.matID).execute();
 
 		for (const mysqlx::Row &row : centreHoleResults) {
 			Drawing::CentreHole hole;
 			hole.pos.x = row[0].get<float>();
 			hole.pos.y = row[1].get<float>();
-			hole.centreHoleShape.width = row[2].get<float>();
-			hole.centreHoleShape.length = row[3].get<float>();
-			hole.centreHoleShape.rounded = row[4].get<bool>();
+			try {
+				hole.apertureID = row[2].get<unsigned>();
+			}
+			catch (mysqlx::Error& e) {
+				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_CENTRE_HOLE_DETECTED);
+				continue;
+			}
 
 			drawing->addCentreHole(hole);
 		}
@@ -484,6 +467,27 @@ mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName, con
 	}
 }
 
+mysqlx::RowResult DatabaseManager::sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy) {
+	// Wrapped in a try statement to catch any MySQL errors.
+	try {
+		std::stringstream ss;
+		ss << "SELECT * FROM " << database << "." << leftTable << " RIGHT JOIN " << database << "." << rightTable << " ON ";
+		ss << database << "." << leftTable << "." << std::get<0>(commons) << " = " << database << "." << rightTable << "." << std::get<1>(commons) << (orderBy.empty() ? "" : " ORDER BY " + orderBy) << std::endl;
+		return sess.sql(ss.str()).execute();
+	}
+	catch (mysqlx::Error& e) {
+		// If there was an error, print it to the console.
+		// This is not considered a fatal error; if there was an error we just return an empty row set
+		logError(e, __LINE__);
+		return mysqlx::RowResult();
+	}
+}
+
+mysqlx::RowResult DatabaseManager::sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy) {
+	return sourceMultipleTable(leftTable, rightTable, { common, common });
+
+}
+
 bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
@@ -522,7 +526,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		// Each insertion query is constructed as an SQL query by the insert object.
 
 		// Next, we check if the machine template is in the database already
-		mysqlx::Row existingTemplate = sess.sql(format(insert.testMachineTemplateQuery(), database)).execute().fetchOne();
+		mysqlx::Row existingTemplate = sess.sql(Format::format(insert.testMachineTemplateQuery(), database)).execute().fetchOne();
 
 		unsigned templateID;
 
@@ -532,7 +536,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 			templateID = existingTemplate[0];
 		} else {
 			// Otherwise, we add the template
-			sess.sql(format(insert.machineTemplateInsertQuery(), database)).execute();
+			sess.sql(Format::format(insert.machineTemplateInsertQuery(), database)).execute();
 			// "SELECT @@identity" returns the most recently added ID from this session, and so
 			// there should be no race condition issue here.
 			templateID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
@@ -540,7 +544,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// Next, we insert the drawing itself into the database and retrieve its ID. The rest of the
 		// inserts all depend on the matID, in order to link to this specific drawing.
-		sess.sql(format(insert.drawingInsertQuery(templateID), database)).execute();
+		sess.sql(Format::format(insert.drawingInsertQuery(templateID), database)).execute();
 		unsigned matID = sess.sql("SELECT @@identity").execute().fetchOne()[0];
 
 		// Get the query string for the bars. If this is empty, this indicates that there are none
@@ -548,15 +552,19 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 		std::string barInsertQuery = insert.barSpacingInsertQuery(matID);
 
 		if (!barInsertQuery.empty()) {
-			sess.sql(format(barInsertQuery, database)).execute();
+			sess.sql(Format::format(barInsertQuery, database)).execute();
 		}
 
 		// Insert the aperture
-		sess.sql(format(insert.apertureInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.apertureInsertQuery(matID), database)).execute();
+		// Insert the backing strips
+		std::string backingStripInsert = insert.backingStripInsertQuery(matID);
+		if (backingStripInsert != "")
+			sess.sql(Format::format(backingStripInsert, database)).execute();
 		// Insert the side irons
-		sess.sql(format(insert.sideIronInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.sideIronInsertQuery(matID), database)).execute();
 		// Insert the materials
-		sess.sql(format(insert.thicknessInsertQuery(matID), database)).execute();
+		sess.sql(Format::format(insert.thicknessInsertQuery(matID), database)).execute();
 
 		// Get the query strings for the overlaps and sidelaps. If they are empty, this indicates that there are none
 		// to insert, so we just ignore them.
@@ -564,11 +572,11 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have overlaps to insert, execute the overlap insert query
 		if (!overlapInsert.empty()) {
-			sess.sql(format(overlapInsert, database)).execute();
+			sess.sql(Format::format(overlapInsert, database)).execute();
 		}
 		// If we have sidelaps to insert, execute the sidelap insert query
 		if (!sidelapInsert.empty()) {
-			sess.sql(format(sidelapInsert, database)).execute();
+			sess.sql(Format::format(sidelapInsert, database)).execute();
 		}
 
 		// Get the punch program insert query. Most of the time, there are none to insert, 
@@ -577,23 +585,33 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 
 		// If we have punch program PDFs to insert, execute the insert query
 		if (!punchProgramInsert.empty()) {
-			sess.sql(format(punchProgramInsert, database)).execute();
+			sess.sql(Format::format(punchProgramInsert, database)).execute();
 		}
 
 		std::string impactPadsInsert = insert.impactPadsInsertQuery(matID), centreHolesInsert = insert.centreHolesInsertQuery(matID),
-			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID);
+			deflectorsInsert = insert.deflectorsInsertQuery(matID), divertorsInsert = insert.divertorsInsertQuery(matID),
+			blankSpaceInsert = insert.blankSpaceInsertQuery(matID), extraApertureInsert = insert.extraApertureInsertQuery(matID), damBarInsert = insert.damBarInsertQuery(matID);
 
 		if (!impactPadsInsert.empty()) {
-			sess.sql(format(impactPadsInsert, database)).execute();
+			sess.sql(Format::format(impactPadsInsert, database)).execute();
+		}
+		if (!extraApertureInsert.empty()) {
+			sess.sql(Format::format(extraApertureInsert, database)).execute();
+		}
+		if (!blankSpaceInsert.empty()) {
+			sess.sql(Format::format(blankSpaceInsert, database)).execute();
+		}
+		if (!damBarInsert.empty()) {
+			sess.sql(Format::format(damBarInsert, database)).execute();
 		}
 		if (!centreHolesInsert.empty()) {
-			sess.sql(format(centreHolesInsert, database)).execute();
+			sess.sql(Format::format(centreHolesInsert, database)).execute();
 		}
 		if (!deflectorsInsert.empty()) {
-			sess.sql(format(deflectorsInsert, database)).execute();
+			sess.sql(Format::format(deflectorsInsert, database)).execute();
 		}
 		if (!divertorsInsert.empty()) {
-			sess.sql(format(divertorsInsert, database)).execute();
+			sess.sql(Format::format(divertorsInsert, database)).execute();
 		}
 
 		// Finally, if all insertions were successful, we commit and return that the drawing insert was successful.
@@ -636,7 +654,7 @@ bool DatabaseManager::insertComponent(const ComponentInsert &insert) {
 
 		// If there is a query string to execute, execute it
 		if (!insertString.empty()) {
-			sess.sql(format(insertString, database)).execute();
+			sess.sql(Format::format(insertString, database)).execute();
 		} else {
 			// Return that the insertion failed - there was nothing to insert for some reason
 			return false;

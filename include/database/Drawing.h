@@ -17,7 +17,8 @@
 // Macro to find the minimum number of bytes required to cover a given number of bits (e.g. 15 bits -> 2 bytes, 17 bits -> 3 bytes)
 #define MIN_COVERING_BYTES(x) (((x) / 8) + ((x) % 8 != 0))
 // Macro to find the minimum number of bites required to represent a given value (e.g. 513 = 512 + 1 = 2^9 + 2^0 -> 9 bits required)
-#define MIN_COVERING_BITS(x) (32u - __builtin_clz(x))
+#define MIN_COVERING_BITS(x) (32u - 0)//__builtin_clz(x)) 
+//TODO: fix this
 
 // Typedef a byte type representing a single byte of data
 typedef unsigned char byte;
@@ -130,7 +131,9 @@ public:
         MISSING_SIDE_IRONS_DETECTED = 0x04,
         MISSING_MATERIAL_DETECTED = 0x08,
         INVALID_APERTURE_DETECTED = 0x10,
-        INVALID_IMPACT_PAD_DETECTED = 0x20
+        INVALID_IMPACT_PAD_DETECTED = 0x20,
+        INVALID_BACKING_STRIP_DETECTED = 0x40,
+        INVALID_CENTRE_HOLE_DETECTED = 0x80
     };
 
     /// <summary>
@@ -545,6 +548,263 @@ public:
         unsigned apertureHandle;
     };
 
+    struct DamBar {
+        // Friend the drawing structure
+        friend struct Drawing;
+
+        // The coordinate position of the top left corner of this impact pad (in mat coordinates)
+        Coordinate pos;
+        // The width and length of this impact pad (in mat coordinates)
+        float width, length;
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        inline DamBar() = default;
+
+        /// <summary>
+        /// Copy constructor
+        /// </summary>
+        inline DamBar(const DamBar& bar) {
+            this->pos.x = bar.pos.x;
+            this->pos.y = bar.pos.y;
+            this->width = bar.width;
+            this->length = bar.length;
+        }
+
+        /// <summary>
+        /// Default destructor
+        /// </summary>
+        inline ~DamBar() = default;
+
+        /// <summary>
+        /// Equality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered equal.</returns>
+        inline bool operator==(const DamBar& other) {
+            // Two impact pads are considered equal if and only if their top left corners, width, length, material and
+            // aperture are all equal.
+            return pos == other.pos && width == other.width && length == other.length;
+        }
+
+        /// <summary>
+        /// Inequality operator
+        /// </summary>
+        /// <param name="other">A reference to another impact pad object to compare to.</param>
+        /// <returns>Whether or not the impact pads are considered inequal.</returns>
+        inline bool operator!=(const DamBar& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // A dam bar is specified by 4 float values for the X, Y, W, H, T of the rectangle, and 
+            // two unsigned integer handles representing the material and aperture handles.
+            return sizeof(float) * 5;
+        }
+
+        /// <summary>
+        /// Serialises the dam bar data into (the start of) a target data buffer
+        /// </summary>
+        /// <param name="target">The data buffer to write to.</param>
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+        }
+
+        /// <summary>
+        /// Deserialises an dam bar from (the start of) a data buffer
+        /// </summary>
+        /// <param name="buffer">The data buffer to interpret as an dam bar.</param>
+        /// <returns>A newly constructed impact pad object specified by the data from the buffer.</returns>
+        inline static DamBar& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new ImpactPad object for returning (hence on the heap)
+            DamBar* bar = new DamBar();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
+            bar->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            bar->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            bar->width = *((float*)buff);
+            buff += sizeof(float);
+            bar->length = *((float*)buff);
+            buff += sizeof(float);
+
+            // Return the impact pad object we constructed
+            return *bar;
+        }
+    };
+
+    struct BlankSpace {
+
+        friend struct Drawing;
+
+        Coordinate pos;
+
+        float width, length;
+
+        inline BlankSpace() = default;
+
+        inline BlankSpace(const BlankSpace &space) {
+            this->pos.x = space.pos.x;
+            this->pos.y = space.pos.y;
+            this->width = space.width;
+            this->length = space.length;
+        }
+
+        inline ~BlankSpace() = default;
+
+        inline bool operator==(const BlankSpace& other) {
+            // Two Blank Spaces are considered equal if and only if their top left corners, width, and length are the same
+            return pos == other.pos && width == other.width && length == other.length;
+        }
+
+        inline bool operator!=(const BlankSpace& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // An BlankSpace is specified by 4 float values for the X, Y, W, H of the rectangle.
+            return sizeof(float) * 4;
+        }
+
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+        }
+
+        inline static BlankSpace& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new BlankSpace object for returning (hence on the heap)
+            BlankSpace* pad = new BlankSpace();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the pad itself.
+            pad->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            pad->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            pad->width = *((float*)buff);
+            buff += sizeof(float);
+            pad->length = *((float*)buff);
+            buff += sizeof(float);
+
+            // Return the BlankSpace object we constructed
+            return *pad;
+        }
+    };
+
+    struct ExtraAperture {
+
+        friend struct Drawing;
+
+        Coordinate pos;
+
+        float width, length;
+
+        unsigned apertureID;
+
+        inline ExtraAperture() = default;
+
+        inline ExtraAperture(const ExtraAperture& aperture) {
+            this->pos.x = aperture.pos.x;
+            this->pos.y = aperture.pos.y;
+            this->width = aperture.width;
+            this->length = aperture.length;
+            this->apertureID = aperture.apertureID;
+        }
+
+        inline ~ExtraAperture() = default;
+
+        inline bool operator==(const ExtraAperture& other) {
+            // Two aperture are considered equal if and only if their top left corners, width, and length and shape are the same
+            return pos == other.pos && width == other.width && length == other.length && apertureID == other.apertureID;
+        }
+
+        inline bool operator!=(const ExtraAperture& other) {
+            // Return the boolean NOT of whether the mats are considered equal
+            return !(*this == other);
+        }
+
+        inline unsigned serialisedSize() const {
+            // An aperture is specified by 4 float values for the X, Y, W, H of the rectangle and unsigned for shape ID.
+            return sizeof(float) * 4 + sizeof(unsigned);
+        }
+
+        inline void serialise(void* target) const {
+            // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)target;
+
+            // Write each value to the buffer in turn, each time incrementing the buffer pointer
+            // by the size of the object added
+            *((float*)buff) = pos.x;
+            buff += sizeof(float);
+            *((float*)buff) = pos.y;
+            buff += sizeof(float);
+            *((float*)buff) = width;
+            buff += sizeof(float);
+            *((float*)buff) = length;
+            buff += sizeof(float);
+            *((unsigned*)buff) = apertureID;
+            buff += sizeof(unsigned);
+        }
+
+        inline static ExtraAperture& deserialise(void* buffer) {
+            // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
+            unsigned char* buff = (unsigned char*)buffer;
+
+            // Construct a new aperture object for returning (hence on the heap)
+            ExtraAperture* aperture = new ExtraAperture();
+
+            // Read each value in turn in the same sequence as specified by the serialise function
+            // and write to each property in the aperture itself.
+            aperture->pos.x = *((float*)buff);
+            buff += sizeof(float);
+            aperture->pos.y = *((float*)buff);
+            buff += sizeof(float);
+            aperture->width = *((float*)buff);
+            buff += sizeof(float);
+            aperture->length = *((float*)buff);
+            buff += sizeof(float);
+            aperture->apertureID = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            // Return the aperture object we constructed
+            return *aperture;
+        }
+    };
+
     /// <summary>
     /// CentreHole
     /// A data structure containing the information needed to represent a single centre hole on a drawing.
@@ -557,7 +817,8 @@ public:
         /// Shape
         /// Internal Shape grouping structure for the shape of a centre hole
         /// </summary>
-        struct Shape {
+        unsigned apertureID;
+        /*struct Shape {
             // The width and length of the shape which is cut out of the mat
             float width, length;
             // Whether or not the shape is cut from a rounded tool
@@ -582,7 +843,7 @@ public:
                 // Return the boolean NOT of whether the two shapes are considered equal.
                 return !(*this == other);
             }
-        } centreHoleShape; // The shame of this particular centre hole
+        } centreHoleShape;*/ // The shame of this particular centre hole
 
         // The position of the centre of the where the centre hole is punched
         Coordinate pos;
@@ -598,9 +859,7 @@ public:
         inline CentreHole(const CentreHole &pad) {
             this->pos.x = pad.pos.x;
             this->pos.y = pad.pos.y;
-            this->centreHoleShape.width = pad.centreHoleShape.width;
-            this->centreHoleShape.length = pad.centreHoleShape.length;
-            this->centreHoleShape.rounded = pad.centreHoleShape.rounded;
+            this->apertureID = pad.apertureID;
         }
 
         /// <summary>
@@ -616,7 +875,7 @@ public:
         inline bool operator==(const CentreHole &other) {
             // We consider two centre holes to be equal if and only if their shapes are equal and their positions are
             // equal.
-            return centreHoleShape == other.centreHoleShape && pos == other.pos;
+            return apertureID == other.apertureID && pos == other.pos;
         }
 
         /// <summary>
@@ -652,11 +911,8 @@ public:
             buff += sizeof(float);
             *((float *) buff) = pos.y;
             buff += sizeof(float);
-            *((float *) buff) = centreHoleShape.width;
-            buff += sizeof(float);
-            *((float *) buff) = centreHoleShape.length;
-            buff += sizeof(float);
-            *buff++ = centreHoleShape.rounded;
+            *((unsigned*)buff) = apertureID;
+            buff += sizeof(unsigned);
         }
 
         /// <summary>
@@ -672,11 +928,8 @@ public:
             buff += sizeof(float);
             hole->pos.y = *((float *) buff);
             buff += sizeof(float);
-            hole->centreHoleShape.width = *((float *) buff);
-            buff += sizeof(float);
-            hole->centreHoleShape.length = *((float *) buff);
-            buff += sizeof(float);
-            hole->centreHoleShape.rounded = *buff++;
+            hole->apertureID = *((unsigned *) buff);
+            buff += sizeof(unsigned);
 
             return *hole;
         }
@@ -906,6 +1159,7 @@ public:
         unsigned materialHandle;
     };
 
+
     /// <summary>
     /// Default constructor for a Drawing object
     /// </summary>
@@ -1062,6 +1316,14 @@ public:
     /// <param name="ap">The Aperture to set this drawing to.</param>
     void setAperture(const Aperture &ap);
 
+    std::optional<BackingStrip> backingStrip() const;
+
+    void setBackingStrip(const BackingStrip& strip);
+
+    void removeBackingStrip();
+
+    bool hasBackingStrips() const;
+
     /// <summary>
     /// Getter for the tension type
     /// </summary>
@@ -1085,18 +1347,6 @@ public:
     /// </summary>
     /// <param name="isRebated">Value to set the rebated property to.</param>
     void setRebated(bool isRebated);
-
-    /// <summary>
-    /// Getter for the has backing strips property
-    /// </summary>
-    /// <returns>Whether this drawing has backing strips or not.</returns>
-    bool hasBackingStrips() const;
-
-    /// <summary>
-    /// Setter for the has backing strips property
-    /// </summary>
-    /// <param name="backingStrips">Value to set the has backing strips property to.</param>
-    void setHasBackingStrips(bool backingStrips);
 
     /// <summary>
     /// Getter for the product
@@ -1168,7 +1418,7 @@ public:
     /// margins as well
     /// </summary>
     /// <returns>A vector of a copy of each bar width (and margin) in this drawing.</returns>
-    std::vector<float> allBarWidths() const;
+    const std::vector<float>& allBarWidths() const;
 
     /// <summary>
     /// Getter for each side iron
@@ -1185,6 +1435,13 @@ public:
     bool sideIronInverted(Side side) const;
 
     /// <summary>
+     /// Getter for whether each side iron is cut down or not.
+     /// </summary>
+     /// <param name="side">The side to retrieve the property from.</param>
+     /// <returns>Whether the specified side iron is cut down.</returns>
+    bool sideIronCutDown(Side side) const;
+
+    /// <summary>
     /// Setter for a side iron
     /// </summary>
     /// <param name="side">The side to specify the side iron for.</param>
@@ -1197,6 +1454,13 @@ public:
     /// <param name="side">The side to are specifying for.</param>
     /// <param name="inverted">The value to set the invertedness of the specified side to.</param>
     void setSideIronInverted(Side side, bool inverted);
+
+    /// <summary>
+    /// Setter for whether the side iron is cut down
+    /// </summary>
+    /// <param name="side">The side to are specifying for.</param>
+    /// <param name="cutDown">The value to set the specified side to.</param>
+    void setSideIronCutDown(Side side, bool cutDown);
 
     /// <summary>
     /// Remover for a side iron
@@ -1298,6 +1562,36 @@ public:
     /// </summary>
     /// <returns>The size of the impact pads vector.</returns>
     unsigned numberOfImpactPads() const;
+
+    void addDamBar(const DamBar& bar);
+
+    std::vector<DamBar> damBars() const;
+
+    DamBar& damBar(unsigned index);
+
+    void removeDamBar(const DamBar& bar);
+
+    unsigned numberOfDamBars() const;
+
+    void addBlankSpace(const BlankSpace& blankSpace);
+
+    std::vector<BlankSpace> blankSpaces() const;
+
+    BlankSpace& blankSpace(unsigned index);
+
+    void removeBlankSpace(const BlankSpace& space);
+
+    unsigned numberOfBlankSpaces() const;
+
+    void addExtraAperture(const ExtraAperture& extraAperture);
+
+    std::vector<ExtraAperture> extraApertures() const;
+
+    ExtraAperture& extraAperture(unsigned index);
+
+    void removeExtraAperture(const ExtraAperture& aperture);
+
+    unsigned numberOfExtraApertures() const;
 
     /// <summary>
     /// Adds a centre hole to the drawing
@@ -1437,25 +1731,28 @@ private:
     std::string __drawingNumber;
     Date __date;
     float __width, __length;
+    SideIronType __sideIronType = SideIronType::None;
     std::filesystem::path __hyperlink;
     std::string __notes;
     MachineTemplate __machineTemplate;
 
     unsigned productHandle;
     unsigned apertureHandle;
+    std::optional<unsigned> backingStripHandle;
 
     TensionType __tensionType;
 
     bool __rebated;
-    bool __hasBackingStrips;
 
     std::vector<std::filesystem::path> __pressDrawingHyperlinks;
 
     std::vector<float> barSpacings;
     std::vector<float> barWidths;
 
-    unsigned sideIronHandles[2];
+    public: unsigned sideIronHandles[2];
+    private:
     bool sideIronsInverted[2];
+    bool sideIronsCutDown[2];
 
     std::optional<Lap> sidelaps[2], overlaps[2];
 
@@ -1463,6 +1760,9 @@ private:
     std::optional<unsigned> bottomLayerThicknessHandle;
 
     std::vector<ImpactPad> __impactPads;
+    std::vector<BlankSpace> __blankSpaces;
+    std::vector<ExtraAperture> __extraApertures;
+    std::vector<DamBar> __damBars;
     std::vector<CentreHole> __centreHoles;
     std::vector<Deflector> __deflectors;
     std::vector<Divertor> __divertors;

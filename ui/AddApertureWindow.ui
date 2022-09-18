@@ -36,6 +36,19 @@
     <layout class="QFormLayout" name="addApertureFormLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="widthLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Width</string>
        </property>
@@ -53,6 +66,19 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="lengthLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Length</string>
        </property>
@@ -70,6 +96,19 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="baseWidthLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Base Width</string>
        </property>
@@ -84,6 +123,19 @@
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="baseLengthLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Base Length</string>
        </property>
@@ -98,6 +150,19 @@
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="quantityLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Quantity</string>
        </property>
@@ -112,6 +177,19 @@
      </item>
      <item row="5" column="0">
       <widget class="QLabel" name="shapeLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
        <property name="text">
         <string>Shape</string>
        </property>
@@ -119,6 +197,29 @@
      </item>
      <item row="5" column="1">
       <widget class="DynamicComboBox" name="apertureShapeInput"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="ActivatorLabel" name="nibbleApertureLabel">
+       <property name="styleSheet">
+        <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+       </property>
+       <property name="text">
+        <string>Nibble Aperture</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="DynamicComboBox" name="nibbleApertureInput"/>
      </item>
     </layout>
    </item>
@@ -139,6 +240,11 @@
    <class>DynamicComboBox</class>
    <extends>QComboBox</extends>
    <header>widgets/DynamicComboBox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ActivatorLabel</class>
+   <extends>QLabel</extends>
+   <header>widgets/ActivatorLabel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

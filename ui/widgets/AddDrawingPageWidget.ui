@@ -30,15 +30,17 @@
        <item row="0" column="0">
         <widget class="QLabel" name="drawingNumberLabel">
          <property name="styleSheet">
-          <string notr="true">QLabel {
-	padding: 3px;
-}
+          <string notr="true">
+                      QLabel {
+                      padding: 3px;
+                      }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                      QLabel[hovering=true] {
+                      padding: 3px;
+                      background-color: #d9d9d9;
+                      border-radius: 5px;
+                      }
+                    </string>
          </property>
          <property name="text">
           <string>Drawing Number</string>
@@ -64,15 +66,17 @@ QLabel[hovering=true] {
        <item row="1" column="0">
         <widget class="QLabel" name="productLabel">
          <property name="styleSheet">
-          <string notr="true">QLabel {
-	padding: 3px;
-}
+          <string notr="true">
+                      QLabel {
+                      padding: 3px;
+                      }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                      QLabel[hovering=true] {
+                      padding: 3px;
+                      background-color: #d9d9d9;
+                      border-radius: 5px;
+                      }
+                    </string>
          </property>
          <property name="text">
           <string>Product</string>
@@ -104,15 +108,17 @@ QLabel[hovering=true] {
        <item row="2" column="0">
         <widget class="QLabel" name="dateLabel">
          <property name="styleSheet">
-          <string notr="true">QLabel {
-	padding: 3px;
-}
+          <string notr="true">
+                      QLabel {
+                      padding: 3px;
+                      }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                      QLabel[hovering=true] {
+                      padding: 3px;
+                      background-color: #d9d9d9;
+                      border-radius: 5px;
+                      }
+                    </string>
          </property>
          <property name="text">
           <string>Date</string>
@@ -181,15 +187,17 @@ QLabel[hovering=true] {
            <item row="0" column="0">
             <widget class="QLabel" name="widthLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Width</string>
@@ -224,15 +232,17 @@ QLabel[hovering=true] {
            <item row="1" column="0">
             <widget class="QLabel" name="lengthLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Length</string>
@@ -261,15 +271,17 @@ QLabel[hovering=true] {
            <item row="2" column="0">
             <widget class="QLabel" name="topMaterialLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Thickness</string>
@@ -295,15 +307,17 @@ QLabel[hovering=true] {
            <item row="3" column="0">
             <widget class="ActivatorLabel" name="bottomMaterialLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Backing Thickness</string>
@@ -329,15 +343,17 @@ QLabel[hovering=true] {
            <item row="4" column="0">
             <widget class="QLabel" name="apertureLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Aperture</string>
@@ -363,15 +379,17 @@ QLabel[hovering=true] {
            <item row="5" column="0">
             <widget class="QLabel" name="numberOfBarsLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Number of Bars</string>
@@ -394,15 +412,17 @@ QLabel[hovering=true] {
            <item row="6" column="0">
             <widget class="QLabel" name="tensionTypeLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Tension</string>
@@ -435,121 +455,81 @@ QLabel[hovering=true] {
              </item>
             </widget>
            </item>
-           <item row="7" column="0">
+           <item row="8" column="0">
             <widget class="QLabel" name="rebatedLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Rebated</string>
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
+           <item row="8" column="1">
             <widget class="QCheckBox" name="rebatedInput">
              <property name="text">
               <string/>
              </property>
             </widget>
            </item>
-           <item row="11" column="0">
-            <widget class="QLabel" name="notesLabel">
-             <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
-
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
-             </property>
-             <property name="text">
-              <string>Notes</string>
-             </property>
-            </widget>
-           </item>
-           <item row="11" column="1">
-            <widget class="QTextEdit" name="notesInput"/>
-           </item>
-           <item row="8" column="1">
-            <widget class="QCheckBox" name="backingStripsInput">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
-            <widget class="QLabel" name="backingStripsLabel">
-             <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
-
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
-             </property>
-             <property name="text">
-              <string>Backing Strips</string>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="0">
+           <item row="10" column="0">
             <widget class="QLabel" name="rubberCoverStrapsLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Rubber Cover Straps</string>
              </property>
             </widget>
            </item>
-           <item row="9" column="1">
+           <item row="10" column="1">
             <widget class="QPushButton" name="rubberCoverStrapsAddNoteButton">
              <property name="text">
               <string>Add Note</string>
              </property>
             </widget>
            </item>
-           <item row="10" column="0">
+           <item row="11" column="0">
             <widget class="QLabel" name="wtlStrapLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>WTL Strap</string>
              </property>
             </widget>
            </item>
-           <item row="10" column="1">
+           <item row="11" column="1">
             <layout class="QHBoxLayout" name="wearTileLinerNotesHorizonalLayout">
              <item>
               <widget class="QPushButton" name="addDrawingWTLStrapNoteButton">
@@ -566,6 +546,59 @@ QLabel[hovering=true] {
               </widget>
              </item>
             </layout>
+           </item>
+           <item row="12" column="0">
+            <widget class="QLabel" name="notesLabel">
+             <property name="styleSheet">
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+             </property>
+             <property name="text">
+              <string>Notes</string>
+             </property>
+            </widget>
+           </item>
+           <item row="12" column="1">
+            <widget class="QTextEdit" name="notesInput"/>
+           </item>
+           <item row="7" column="0">
+            <widget class="ActivatorLabel" name="backingStripsLabel">
+             <property name="styleSheet">
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
+
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
+             </property>
+             <property name="text">
+              <string>Backing Strips</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="DynamicComboBox" name="backingStripsInput">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -592,15 +625,17 @@ QLabel[hovering=true] {
               </font>
              </property>
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Side Irons</string>
@@ -615,15 +650,17 @@ QLabel[hovering=true] {
              <item row="0" column="0">
               <widget class="QLabel" name="leftSideIronTypeLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Side Iron Type</string>
@@ -671,15 +708,17 @@ QLabel[hovering=true] {
              <item row="1" column="0">
               <widget class="QLabel" name="leftSideIronLengthLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Length</string>
@@ -702,15 +741,17 @@ QLabel[hovering=true] {
              <item row="2" column="0">
               <widget class="QLabel" name="leftSideIronDrawingLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Drawing</string>
@@ -733,15 +774,17 @@ QLabel[hovering=true] {
              <item row="3" column="0">
               <widget class="QLabel" name="leftSideIronInvertedLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Inverted</string>
@@ -752,6 +795,33 @@ QLabel[hovering=true] {
               <widget class="QCheckBox" name="leftSideIronInvertedInput">
                <property name="text">
                 <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="leftSideIronCutDownInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="leftSideIronCutDownLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Cut Down</string>
                </property>
               </widget>
              </item>
@@ -771,15 +841,17 @@ QLabel[hovering=true] {
               </font>
              </property>
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Different Side Irons</string>
@@ -794,15 +866,17 @@ QLabel[hovering=true] {
              <item row="0" column="0">
               <widget class="QLabel" name="rightSideIronTypeLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Side Iron Type</string>
@@ -850,15 +924,17 @@ QLabel[hovering=true] {
              <item row="1" column="0">
               <widget class="QLabel" name="rightSideIronLengthLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Length</string>
@@ -881,15 +957,17 @@ QLabel[hovering=true] {
              <item row="2" column="0">
               <widget class="QLabel" name="rightSideIronDrawingLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Drawing</string>
@@ -912,15 +990,17 @@ QLabel[hovering=true] {
              <item row="3" column="0">
               <widget class="QLabel" name="rightSideIronInvertedLabel">
                <property name="styleSheet">
-                <string notr="true">QLabel {
-	padding: 3px;
-}
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
                </property>
                <property name="text">
                 <string>Inverted</string>
@@ -931,6 +1011,33 @@ QLabel[hovering=true] {
               <widget class="QCheckBox" name="rightSideIronInvertedInput">
                <property name="text">
                 <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="rightSideIronCutDownInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="rightSideIronCutDownLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Cut Down</string>
                </property>
               </widget>
              </item>
@@ -964,17 +1071,19 @@ QLabel[hovering=true] {
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
            </property>
            <item row="0" column="0">
-            <widget class="QLabel" name="manufacturerLabel">
+            <widget class="ActivatorLabel" name="manufacturerLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Manufacturer</string>
@@ -1000,15 +1109,17 @@ QLabel[hovering=true] {
            <item row="2" column="0">
             <widget class="QLabel" name="quantityOnDeckLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Quantity On Deck</string>
@@ -1028,15 +1139,17 @@ QLabel[hovering=true] {
            <item row="3" column="0">
             <widget class="QLabel" name="machinePositionLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Position</string>
@@ -1056,15 +1169,17 @@ QLabel[hovering=true] {
            <item row="4" column="0">
             <widget class="QLabel" name="machineDeckLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Deck</string>
@@ -1085,17 +1200,19 @@ QLabel[hovering=true] {
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="ActivatorLabel" name="modelLabel">
+            <widget class="QLabel" name="modelLabel">
              <property name="styleSheet">
-              <string notr="true">QLabel {
-	padding: 3px;
-}
+              <string notr="true">
+                              QLabel {
+                              padding: 3px;
+                              }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                              QLabel[hovering=true] {
+                              padding: 3px;
+                              background-color: #d9d9d9;
+                              border-radius: 5px;
+                              }
+                            </string>
              </property>
              <property name="text">
               <string>Model</string>
@@ -1124,15 +1241,17 @@ QLabel[hovering=true] {
          <item row="0" column="0">
           <widget class="QLabel" name="hyperlinkLabel">
            <property name="styleSheet">
-            <string notr="true">QLabel {
-	padding: 3px;
-}
+            <string notr="true">
+                          QLabel {
+                          padding: 3px;
+                          }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                          QLabel[hovering=true] {
+                          padding: 3px;
+                          background-color: #d9d9d9;
+                          border-radius: 5px;
+                          }
+                        </string>
            </property>
            <property name="text">
             <string>Hyperlink</string>
@@ -1174,15 +1293,17 @@ QLabel[hovering=true] {
          <item row="1" column="0">
           <widget class="QLabel" name="pressDrawingHyperlinksLabel">
            <property name="styleSheet">
-            <string notr="true">QLabel {
-	padding: 3px;
-}
+            <string notr="true">
+                          QLabel {
+                          padding: 3px;
+                          }
 
-QLabel[hovering=true] {
-	padding: 3px;
-	background-color: #d9d9d9;
-	border-radius: 5px;
-}</string>
+                          QLabel[hovering=true] {
+                          padding: 3px;
+                          background-color: #d9d9d9;
+                          border-radius: 5px;
+                          }
+                        </string>
            </property>
            <property name="text">
             <string>Press Drawing Hyperlinks</string>
@@ -1333,7 +1454,6 @@ QLabel[hovering=true] {
   <tabstop>confirmDrawingButton</tabstop>
   <tabstop>drawingFormTabs</tabstop>
   <tabstop>rebatedInput</tabstop>
-  <tabstop>backingStripsInput</tabstop>
   <tabstop>rubberCoverStrapsAddNoteButton</tabstop>
   <tabstop>addDrawingWTLStrapNoteButton</tabstop>
   <tabstop>addSideIronWTLStrapNoteButton</tabstop>

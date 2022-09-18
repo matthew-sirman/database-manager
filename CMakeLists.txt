@@ -8,19 +8,24 @@ set(CMAKE_CXX_FLAGS)
 else()
 set(CMAKE_CXX_FLAGS -pthread)
 endif()
-
-message(STATUS ${Qt5_DIR})
-
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Svg)
-find_package(Qt5Pdf)
-find_package(Qt5PdfWidgets)
+find_package(Qt5Pdf HINTS "C:\\Libraries\\Qt\\5.15.0\\modules\\qtpdf\\lib\\cmake\\Qt5Pdf")
+find_package(Qt5PdfWidgets HINTS "C:\\Libraries\\Qt\\5.15.0\\modules\\qtpdf\\lib\\cmake\\Qt5PdfWidgets")
+
+set(MYSQL_INCLUDE_DIRS "C:/Libraries/mysql-connector-cpp/x64-Debug/include")
+set(MYSQL_LIBRARY "C:/Libraries/mysql-connector-cpp/x64-Debug/lib64/vs14/debug/mysqlcppconn8.lib")
+set(JSON_INCLUDE_DIRS "C:/Libraries/json/include")
+set(CURL_INCLUDE_DIRS "C:/Libraries/curl/x64-Debug/include")
+set(CURL_LIBRARY "C:/Libraries/curl/x64-Debug/lib/libcurl_a_debug.lib")
+set(QT_PLUGIN_PATH "C:/Libraries/Qt/5.15.0/msvc2019_64/plugins")
+
 
 if (WIN32)
 
 include_directories(
     ${CURL_INCLUDE_DIRS}
     ${JSON_INCLUDE_DIRS}
-    $ENV{MYSQL_INCLUDE_DIRS}
+    ${MYSQL_INCLUDE_DIRS}
     ${BOOST_INCLUDE_DIRS}
 )
 
@@ -36,15 +41,17 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 set(PROJECT_UI ui/MainMenu.ui ui/MainMenu.cpp ui/MainMenu.h)
-set(WIDGETS ui/widgets/DynamicComboBox.cpp ui/widgets/DynamicComboBox.h ui/widgets/ActivatorLabel.cpp ui/widgets/ActivatorLabel.h ui/widgets/AddDrawingPageWidget.ui ui/widgets/AddDrawingPageWidget.cpp ui/widgets/AddDrawingPageWidget.h ui/widgets/DrawingViewWidget.ui ui/widgets/DrawingViewWidget.cpp ui/widgets/DrawingViewWidget.h ui/widgets/DrawingView.cpp ui/widgets/DrawingView.h ui/widgets/DimensionLine.cpp ui/widgets/DimensionLine.h ui/widgets/AddLapWidget.cpp ui/widgets/AddLapWidget.h "ui/widgets/addons/ImpactPadGraphicsItem.h" "ui/widgets/addons/ImpactPadGraphicsItem.cpp" "ui/widgets/ExpandingWidget.h" "ui/widgets/ExpandingWidget.cpp" "ui/widgets/Inspector.h" "ui/widgets/Inspector.cpp" "ui/widgets/addons/CentreHoleSetGraphicsItem.h" "ui/widgets/addons/CentreHoleSetGraphicsItem.cpp" "ui/widgets/addons/DeflectorSetGraphicsItem.h" "ui/widgets/addons/DeflectorSetGraphicsItem.cpp" "ui/widgets/addons/DivertorSetGraphicsItem.h" "ui/widgets/addons/DivertorSetGraphicsItem.cpp")
-set(COMPONENT_WINDOWS ui/AddApertureWindow.ui ui/AddApertureWindow.cpp ui/AddApertureWindow.h ui/AddSideIronWindow.ui ui/AddSideIronWindow.cpp ui/AddSideIronWindow.h ui/AddMaterialWindow.ui ui/AddMaterialWindow.cpp ui/AddMaterialWindow.h ui/AddMachineWindow.ui ui/AddMachineWindow.cpp ui/AddMachineWindow.h)
+set(WIDGETS ui/widgets/DynamicComboBox.cpp ui/widgets/DynamicComboBox.h ui/widgets/ActivatorLabel.cpp ui/widgets/ActivatorLabel.h ui/widgets/AddDrawingPageWidget.ui ui/widgets/AddDrawingPageWidget.cpp ui/widgets/AddDrawingPageWidget.h ui/widgets/DrawingViewWidget.ui ui/widgets/DrawingViewWidget.cpp ui/widgets/DrawingViewWidget.h ui/widgets/DrawingView.cpp ui/widgets/DrawingView.h ui/widgets/DimensionLine.cpp ui/widgets/DimensionLine.h ui/widgets/AddLapWidget.cpp ui/widgets/AddLapWidget.h "ui/widgets/addons/ImpactPadGraphicsItem.h" "ui/widgets/addons/ImpactPadGraphicsItem.cpp"  "ui/widgets/addons/BlankSpaceGraphicsItem.h" "ui/widgets/addons/BlankSpaceGraphicsItem.cpp" "ui/widgets/addons/ExtraApertureGraphicsItem.h" "ui/widgets/addons/ExtraApertureGraphicsItem.cpp" "ui/widgets/ExpandingWidget.h" "ui/widgets/ExpandingWidget.cpp" "ui/widgets/Inspector.h" "ui/widgets/Inspector.cpp" "ui/widgets/addons/CentreHoleSetGraphicsItem.h" "ui/widgets/addons/CentreHoleSetGraphicsItem.cpp" "ui/widgets/addons/DeflectorSetGraphicsItem.h" "ui/widgets/addons/DeflectorSetGraphicsItem.cpp" "ui/widgets/addons/DivertorSetGraphicsItem.h" "ui/widgets/addons/DivertorSetGraphicsItem.cpp" "ui/widgets/addons/DamBarGraphicsItem.h" "ui/widgets/addons/DamBarGraphicsItem.cpp")
+set(COMPONENT_WINDOWS ui/AddApertureWindow.ui ui/AddApertureWindow.cpp ui/AddApertureWindow.h ui/AddSideIronWindow.ui ui/AddSideIronWindow.cpp ui/AddSideIronWindow.h ui/AddMaterialWindow.ui ui/AddMaterialWindow.cpp ui/AddMaterialWindow.h ui/AddMachineWindow.ui ui/AddMachineWindow.cpp ui/AddMachineWindow.h ui/MaterialPricingWindow.ui ui/MaterialPricingWindow.h ui/MaterialPricingWindow.cpp ui/SideIronPricingWindow.ui ui/SideIronPricingWindow.h ui/SideIronPricingWindow.cpp ui/AddMaterialPriceWindow.ui ui/AddMaterialPriceWindow.h ui/AddMaterialPriceWindow.cpp ui/AddSideIronPriceWindow.ui ui/AddSideIronPriceWindow.h ui/AddSideIronPriceWindow.cpp ui/ExtraPricingWindow.ui ui/ExtraPricingWindow.h ui/ExtraPricingWindow.cpp ui/AddExtraPriceWindow.ui ui/AddExtraPriceWindow.h ui/AddExtraPriceWindow.cpp)
 set(QT_RESOURCES res/qtresources.qrc)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/../encrypt encrypt-build)
 
-add_executable(${PROJECT_NAME} ${EXTRA_ADD_EXECUTABLE_ARGS} ${COMPONENT_WINDOWS} ${WIDGETS} ${PROJECT_UI} ${QT_RESOURCES} main.cpp src/networking/Server.cpp include/networking/Server.h src/networking/Client.cpp include/networking/Client.h guard.h src/networking/NetworkMessage.cpp include/networking/NetworkMessage.h src/networking/TCPSocket.cpp include/networking/TCPSocket.h src/database/DatabaseManager.cpp include/database/DatabaseManager.h src/database/Drawing.cpp include/database/Drawing.h src/database/DatabaseRequestHandler.cpp include/database/DatabaseRequestHandler.h src/database/DatabaseQuery.cpp include/database/DatabaseQuery.h src/database/drawingComponents.cpp include/database/drawingComponents.h include/database/RequestType.h src/database/DatabaseResponseHandler.cpp include/database/DatabaseResponseHandler.h include/database/ComboboxDataSource.h src/database/ComboboxDataSource.cpp include/database/DataSource.h src/database/DrawingSearchResultsModel.cpp include/database/DrawingSearchResultsModel.h packer.h include/database/DrawingPDFWriter.h src/database/DrawingPDFWriter.cpp   "include/database/componentFilters.h" "src/database/componentFilters.cpp" "include/util/format.h" include/util/DataSerialiser.h)
+add_executable(${PROJECT_NAME} ${EXTRA_ADD_EXECUTABLE_ARGS} ${COMPONENT_WINDOWS} ${WIDGETS} ${PROJECT_UI} ${QT_RESOURCES} main.cpp src/networking/Server.cpp include/networking/Server.h src/networking/Client.cpp include/networking/Client.h guard.h src/networking/NetworkMessage.cpp include/networking/NetworkMessage.h src/networking/TCPSocket.cpp include/networking/TCPSocket.h src/database/DatabaseManager.cpp include/database/DatabaseManager.h src/database/Drawing.cpp include/database/Drawing.h src/database/DatabaseRequestHandler.cpp include/database/DatabaseRequestHandler.h src/database/DatabaseQuery.cpp include/database/DatabaseQuery.h src/database/drawingComponents.cpp include/database/drawingComponents.h include/database/RequestType.h src/database/DatabaseResponseHandler.cpp include/database/DatabaseResponseHandler.h include/database/ComboboxDataSource.h src/database/ComboboxDataSource.cpp include/database/DataSource.h src/database/DrawingSearchResultsModel.cpp include/database/DrawingSearchResultsModel.h packer.h include/database/DrawingPDFWriter.h src/database/DrawingPDFWriter.cpp   "include/database/componentFilters.h" "src/database/componentFilters.cpp" "include/util/format.h" include/util/DataSerialiser.h "ui/widgets/addons/EventTracker.h" "ui/widgets/addons/EventTracker.cpp")
 
-include_directories(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/../encrypt/include)
+include_directories(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/../encrypt/include ${MYSQL_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
+
+
 
 if (MSVC)
 
@@ -55,11 +62,20 @@ add_compile_options(
     "/std:c++17"
     "/wd4068"
 )
-target_link_libraries(${PROJECT_NAME} encrypt Dnsapi $ENV{MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets Qt5::Svg)
+target_link_libraries(${PROJECT_NAME} encrypt Dnsapi ${MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets Qt5::Svg ${ZLIB_LIBRARIES})
 
 else()
 
-target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(${PROJECT_NAME} encrypt mysqlcppconn Qt5::Core Qt5::Gui Qt5::Widgets ${ZLIB_LIBRARIES})
 
 endif ()
 
+option(ASAN_ENABLED "Build this target with AddressSanitizer" ON)
+
+if(ASAN_ENABLED)
+    if(MSVC)
+        target_link_options(${PROJECT_NAME} PUBLIC /NODEFAULTLIB:libcmt.lib)
+    else()
+
+    endif()
+endif()

@@ -10,6 +10,41 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     ui(new Ui::MainMenu) {
     ui->setupUi(this);
 
+    QShortcut* closeTab = new QShortcut(ui->mainTabs);
+    closeTab->setKey(Qt::CTRL + Qt::Key_W);
+    connect(closeTab, &QShortcut::activated, [this]() {
+        if (ui->mainTabs->currentIndex() > 0) {
+            ui->mainTabs->widget(ui->mainTabs->currentIndex())->close();
+            ui->mainTabs->removeTab(ui->mainTabs->currentIndex());
+        }
+    });
+    
+    for (int i = 0; i < 10; i++) {
+        QShortcut* changeTab = new QShortcut(ui->mainTabs);
+        changeTab->setKey((Qt::CTRL + Qt::Key_0 + i));
+        connect(changeTab, &QShortcut::activated, [this, i]() {
+            int j = i;
+            if (j == 0) {
+                j = 10;
+            }
+            j--;
+            if (j < ui->mainTabs->count())
+                ui->mainTabs->setCurrentIndex(j);
+        });
+    }
+
+    //std::cout << Qt::Key_1 + 1 << " " << Qt::Key_2 << " " << (Qt::Key_1 + 1 == Qt::Key_2) << std::endl;
+    //for (unsigned i = 0; i < 9; i++) {
+    //    QShortcut* changeTab = new QShortcut(ui->mainTabs);
+    //    changeTab->setKey(QKeySequence(Qt::CTRL + Qt::Key_1));
+    //    connect(closeTab, &QShortcut::activated, [this, i]() {
+    //        std::cout << "here" << std::endl;
+    //        if (ui->mainTabs->count() >= i-1) {
+    //            ui->mainTabs->setCurrentIndex(i);
+    //        }
+    //    });
+    //}
+
     std::ifstream clientMetaFile;
     clientMetaFile.open(clientMetaFilePath / "clientMeta.json");
 
@@ -186,7 +221,15 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->drawingMenu_addDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::AUTOMATIC); });
     connect(ui->drawingMenu_addManualDrawingAction, &QAction::triggered, [this]() { openAddDrawingTab(NextDrawing::DrawingType::MANUAL); });
     connect(this, SIGNAL(itemAddedToDrawingQueue()), this, SLOT(processDrawings()));
-
+    connect(ui->pricingMenu_materialPricesAction, &QAction::triggered, [this]() {
+        (new MaterialPricingWindow(client))->show();
+    });
+    connect(ui->pricingMenu_sideIronPricesAction, &QAction::triggered, [this]() {
+        (new SideIronPricingWindow(client))->show();
+        });
+    connect(ui->pricingMenu_extraPricesAction, &QAction::triggered, [this]() {
+        (new ExtraPricingWindow(client))->show();
+    });
     connect(ui->componentsMenu_addApertureAction, &QAction::triggered, [this]() {
         (new AddApertureWindow(client))->show();
     });
@@ -252,9 +295,13 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     });
 
     handler->setNextDrawingNumberCallback([this](const NextDrawing &nextDrawing) {
+        std::basic_regex rx("^[a-zA-Z]{2}[0-9]$");
         switch (nextDrawing.drawingType) {
             case NextDrawing::DrawingType::AUTOMATIC:
                 nextAutomaticDrawingNumber = nextDrawing.drawingNumber.value();
+                if (std::regex_match(nextAutomaticDrawingNumber, rx)) {
+                    nextAutomaticDrawingNumber = nextAutomaticDrawingNumber.insert(2, "0");
+                }
                 break;
             case NextDrawing::DrawingType::MANUAL:
                 nextManualDrawingNumber = nextDrawing.drawingNumber.value();
@@ -292,8 +339,11 @@ void MainMenu::sendSourceTableRequests() const {
     sourceTable(RequestType::SOURCE_APERTURE_SHAPE_TABLE);
     sourceTable(RequestType::SOURCE_MATERIAL_TABLE);
     sourceTable(RequestType::SOURCE_SIDE_IRON_TABLE);
+    sourceTable(RequestType::SOURCE_SIDE_IRON_PRICES_TABLE);
     sourceTable(RequestType::SOURCE_MACHINE_TABLE);
     sourceTable(RequestType::SOURCE_MACHINE_DECK_TABLE);
+    sourceTable(RequestType::SOURCE_EXTRA_PRICES_TABLE);
+    sourceTable(RequestType::SOURCE_BACKING_STRIPS_TABLE);
 }
 
 void MainMenu::sourceTable(RequestType requestType) const {
@@ -316,11 +366,16 @@ void MainMenu::setupComboboxSources() {
         return a.width < b.width;
     };
 
+    std::function<bool(const SideIron&, const SideIron&)> sideIronComparator = [](const SideIron& a, const SideIron& b) {return a.length < b.length; };
+
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
     DrawingComponentManager<Aperture>::addCallback([this]() { apertureSource.updateSource(); });
     DrawingComponentManager<ApertureShape>::addCallback([this]() { apertureShapeSource.updateSource(); });
     DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); bottomMaterialSource.updateSource(); });
-    DrawingComponentManager<SideIron>::addCallback([this]() { sideIronSource.updateSource(); });
+    DrawingComponentManager<SideIron>::addCallback([this, sideIronComparator]() {
+        sideIronSource.updateSource();
+        sideIronSource.sort(sideIronComparator);
+    });
     DrawingComponentManager<Machine>::addCallback([this]() {
         machineManufacturerSource.updateSource();
         machineManufacturerSource.makeDistinct();
@@ -780,17 +835,17 @@ void MainMenu::openAddDrawingTab(NextDrawing::DrawingType type) {
             return;
     }
     addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
-        DrawingInsert insert;
-        insert.drawingData = drawing;
+        std::unique_ptr<DrawingInsert> insert(new DrawingInsert);
+        insert->drawingData = drawing;
 
-        insert.setForce(force);
+        insert->setForce(force);
 
-        insert.responseEchoCode = getValidInsertCode();
-        drawingInserts[insert.responseEchoCode] = &drawing;
+        insert->responseEchoCode = getValidInsertCode();
+        drawingInserts[insert->responseEchoCode] = &drawing;
 
-        unsigned bufferSize = insert.serialisedSize();
-        void *buffer = alloca(bufferSize);
-        insert.serialise(buffer);
+        unsigned bufferSize = insert->serialisedSize() + 1;
+        void *buffer = malloc(bufferSize);
+        insert->serialise(buffer);
 
         client->addMessageToSendQueue(buffer, bufferSize);
     });
@@ -825,19 +880,20 @@ void MainMenu::processDrawings() {
                         AddDrawingPageWidget *addDrawingPage = new AddDrawingPageWidget(drawing, mode, ui->mainTabs);
                         addDrawingPage->setUserEmail(clientEmailAddress);
                         addDrawingPage->setConfirmationCallback([this](const Drawing &drawing, bool force) {
-                            DrawingInsert insert;
-                            insert.drawingData = drawing;
+                            std::unique_ptr<DrawingInsert>insert(new DrawingInsert());
+                            insert->drawingData = drawing;
 
-                            insert.setForce(force);
+                            insert->setForce(force);
 
-                            insert.responseEchoCode = getValidInsertCode();
-                            drawingInserts[insert.responseEchoCode] = &drawing;
+                            insert->responseEchoCode = getValidInsertCode();
+                            drawingInserts[insert->responseEchoCode] = &drawing;
 
-                            unsigned bufferSize = insert.serialisedSize();
-                            void *buffer = alloca(bufferSize);
-                            insert.serialise(buffer);
+                            unsigned bufferSize = insert->serialisedSize() + 1;
+                            void *buffer = malloc(bufferSize);
+                            insert->serialise(buffer);
 
                             client->addMessageToSendQueue(buffer, bufferSize);
+                            free(buffer);
                         });
                         switch (mode) {
                             case AddDrawingPageWidget::CLONE_DRAWING:
@@ -880,18 +936,18 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
             QMessageBox::StandardButton questionResponse = QMessageBox::question(this, "Insert Drawing", "This drawing already exists in the database. Would you like "
                                                                                                          "to update it?");
             if (questionResponse == QMessageBox::Yes) {
-                DrawingInsert insert;
-                insert.responseEchoCode = responseCode;
-                insert.insertResponseCode = DrawingInsert::NONE;
-                insert.drawingData = *drawingInserts[responseCode];
-                insert.setForce(true);
+                std::unique_ptr<DrawingInsert> insert(new DrawingInsert);
+                insert->responseEchoCode = responseCode;
+                insert->insertResponseCode = DrawingInsert::NONE;
+                insert->drawingData = *drawingInserts[responseCode];
+                insert->setForce(true);
 
-                unsigned bufferSize = insert.serialisedSize();
-                void *buffer = alloca(bufferSize);
-                insert.serialise(buffer);
+                unsigned bufferSize = insert->serialisedSize() + 1;
+                void *buffer = malloc(bufferSize);
+                insert->serialise(buffer);
 
                 client->addMessageToSendQueue(buffer, bufferSize);
-
+                free(buffer);
             }
             break;
     }

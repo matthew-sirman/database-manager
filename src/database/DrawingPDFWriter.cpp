@@ -178,7 +178,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     std::stringstream sideIronText;
     SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
-
+    sideIronText << leftSideIron.length << "mm ";
     switch (leftSideIron.type) {
         case SideIronType::A:
             sideIronText << "Type A ";
@@ -199,12 +199,22 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             sideIronText << "None";
             break;
     }
+
+    if (drawing.sideIronInverted(Drawing::LEFT)) {
+        sideIronText << "Inverted ";
+    }
+
+    if (drawing.sideIronCutDown(Drawing::LEFT)) {
+        sideIronText << "Cut Down ";
+    }
+
     if (leftSideIron.type != SideIronType::None) {
-        sideIronText << "(" << leftSideIron.drawingNumber << ")";
+        sideIronText << leftSideIron.drawingNumber << " ";
     }
 
     if (leftSideIron.handle() != rightSideIron.handle()) {
-        sideIronText << ", ";
+        sideIronText << ",\n";
+        sideIronText << rightSideIron.length << "mm ";
         switch (rightSideIron.type) {
             case SideIronType::A:
                 sideIronText << "Type A ";
@@ -225,12 +235,22 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                 sideIronText << "None";
                 break;
         }
+
+        if (drawing.sideIronInverted(Drawing::RIGHT)) {
+            sideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::RIGHT)) {
+            sideIronText << "Cut Down ";
+        }
+
         if (rightSideIron.type != SideIronType::None) {
-            sideIronText << "(" << rightSideIron.drawingNumber << ")";
+            sideIronText << rightSideIron.drawingNumber << " ";
         }
     }
 
     fieldText = sideIronText.str().c_str();
+    std::cout << fieldText.toStdString() << std::endl;
     drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                       fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
@@ -306,20 +326,20 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
             if (drawing.hasBackingStrips()) {
                 labelText = "Backing Strips";
-                fieldText = "Yes";
+                fieldText = drawing.backingStrip()->backingStripName().c_str();
                 drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                                   fieldText, fieldWidth, horizontalOffset, verticalOffset);
             }
         } else {
             labelText = "Backing Strips";
-            fieldText = drawing.hasBackingStrips() ? "Yes" : "No";
+            fieldText = drawing.hasBackingStrips() ? drawing.backingStrip()->backingStripName().c_str() : "No";
             drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                               fieldText, fieldWidth, horizontalOffset, verticalOffset);
         }
     } else if (productName == "Extraflex" || productName == "Polyflex") {
         if (drawing.hasBackingStrips()) {
             labelText = "Backing Strips";
-            fieldText = "Yes";
+            fieldText = drawing.backingStrip()->backingStripName().c_str();
             drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                               fieldText, fieldWidth, horizontalOffset, verticalOffset);
         }
@@ -348,36 +368,89 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                           fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
 
+    if (drawing.numberOfBlankSpaces()) {
+        std::stringstream blankSpaceFieldText;
+        std::vector<Drawing::BlankSpace> spaces = drawing.blankSpaces();
+        for (unsigned i = 0; i < spaces.size(); i++) {
+            Drawing::BlankSpace space = spaces[i];
+
+            blankSpaceFieldText << space.width << "x" << space.length << " at " << "(" << space.pos.x << ", " << space.pos.y
+                << ") ";
+
+            if (i != spaces.size() - 1) {
+                blankSpaceFieldText << ", ";
+            }
+        }
+
+        labelText = "Blank Spaces(s)";
+        fieldText = blankSpaceFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
+    if (drawing.numberOfExtraApertures()) {
+        std::stringstream ExtraAperturesFieldText;
+        std::vector<Drawing::ExtraAperture> apertures = drawing.extraApertures();
+        for (unsigned i = 0; i < apertures.size(); i++) {
+            Drawing::ExtraAperture aperture = apertures[i];
+
+            ExtraAperturesFieldText << DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName() << " Aperture across " << aperture.width << "x" << aperture.length << " at " << "(" << aperture.pos.x << ", " << aperture.pos.y
+                << ") ";
+
+            if (i != apertures.size() - 1) {
+                ExtraAperturesFieldText << ", ";
+            }
+        }
+
+        labelText = "Extra Aperture(s)";
+        fieldText = ExtraAperturesFieldText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
+    if (drawing.numberOfDamBars()) {
+        std::stringstream damBarTextField;
+        std::vector<Drawing::DamBar> bars = drawing.damBars();
+        for (unsigned i = 0; i < bars.size(); i++) {
+            Drawing::DamBar bar = bars[i];
+
+            damBarTextField << bar.width << "x" << bar.length << " at " << "(" << bar.pos.x << ", " << bar.pos.y
+                << ") ";
+
+            if (i != bars.size() - 1) {
+                damBarTextField << ", ";
+            }
+        }
+
+        labelText = "Dam Bar(s)";
+        fieldText = damBarTextField.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+
     if (drawing.numberOfCentreHoles()) {
         std::stringstream centreHolesFieldText;
         std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
+        Aperture aperture = DrawingComponentManager<Aperture>::findComponentByID(holes.front().apertureID);
+        std::string shape = DrawingComponentManager<ApertureShape>::findComponentByID(aperture.apertureShapeID).shape;
 
-        Drawing::CentreHole::Shape shape = holes.front().centreHoleShape;
+        centreHolesFieldText << aperture.apertureName();
+        centreHolesFieldText << " at ";
 
-        centreHolesFieldText << shape.width << "x" << shape.length << " ";
-        if (shape.rounded) {
-            centreHolesFieldText << "(rounded) ";
-        }
-        centreHolesFieldText << "at ";
-
-        std::vector<float> positions;
-        positions.reserve(holes.size());
+        
+        float total = 0;
+        float oldY = 0;
         for (const Drawing::CentreHole &hole : holes) {
-            positions.push_back(hole.pos.y);
-        }
-
-        std::sort(positions.begin(), positions.end());
-        std::vector<float>::iterator last = std::unique(positions.begin(), positions.end());
-        positions.erase(last, positions.end());
-
-        float lastY = 0;
-        for (float y : positions) {
-            centreHolesFieldText << (y - lastY);
-            lastY = y;
-            if (y != positions.back()) {
-                centreHolesFieldText << "+";
+            std::cout << oldY << " " << hole.pos.y << std::endl;
+            if (hole.pos.y < oldY) {
+                centreHolesFieldText << (drawing.length() - total) << "\n";
+                total = 0;
             }
+            oldY = hole.pos.y;
+            centreHolesFieldText << hole.pos.y - total << "+";
+            total = hole.pos.y;
         }
+        centreHolesFieldText << (drawing.length() - total);
 
         labelText = "Centre Holes";
         fieldText = centreHolesFieldText.str().c_str();
@@ -650,8 +723,18 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     painter.drawLine(rightWidthExtender);
     painter.setPen(Qt::black);
 
-    drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), to_str(drawing.width()).c_str(),
-              DOUBLE_HEADED);
+    
+
+    if (drawing.sideIron(Drawing::LEFT).type == SideIronType::B || drawing.sideIron(Drawing::RIGHT).type == SideIronType::B) {
+        drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(),
+                  (to_str(drawing.width() + 60 * ((drawing.sideIron(Drawing::LEFT).type == SideIronType::B)
+                                                  + (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))) + " o/h\n" +to_str(drawing.width())).c_str(),
+          DOUBLE_HEADED, false, QPen(), QPen(), 50.0, 30.0, 2);
+    }
+    else {
+        drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), (to_str(drawing.width())).c_str(),
+                          DOUBLE_HEADED);
+    }
 
     QLineF topLengthExtender(
             QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.top()),
@@ -665,10 +748,92 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     painter.setPen(dashPen);
     painter.drawLine(topLengthExtender);
     painter.drawLine(bottomLengthExtender);
+    
     painter.setPen(Qt::black);
 
+    if (drawing.sideIron(Drawing::LEFT).type != drawing.sideIron(Drawing::RIGHT).type ||
+        drawing.sideIronInverted(Drawing::LEFT) != drawing.sideIronInverted(Drawing::RIGHT) ||
+        drawing.sideIronCutDown(Drawing::LEFT) != drawing.sideIronCutDown(Drawing::RIGHT)) {
+        std::stringstream leftSideIronText, rightSideIronText;
+        SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+
+        switch (leftSideIron.type) {
+            case SideIronType::A:
+                leftSideIronText << "Type A ";
+                break;
+            case SideIronType::B:
+                leftSideIronText << "Type B ";
+                break;
+            case SideIronType::C:
+                leftSideIronText << "Type C ";
+                break;
+            case SideIronType::D:
+                leftSideIronText << "Type D ";
+                break;
+            case SideIronType::E:
+                leftSideIronText << "Type E ";
+                break;
+            case SideIronType::None:
+                leftSideIronText << "None";
+                break;
+        }
+
+        if (drawing.sideIronInverted(Drawing::LEFT)) {
+            leftSideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::LEFT)) {
+            leftSideIronText << "Cut Down ";
+        }
+
+        QRectF leftSideIronLabel = QFontMetricsF(painter.font()).boundingRect(leftSideIronText.str().c_str());
+        leftSideIronLabel.moveBottomLeft(drawingRegion.bottomLeft());
+        leftSideIronLabel.adjust((bottomLengthExtender.center() - leftSideIronLabel.center()).x(), 0,
+                                 (bottomLengthExtender.center() - leftSideIronLabel.center()).x(), 0);
+
+        painter.drawText(leftSideIronLabel, Qt::AlignHCenter | Qt::AlignVCenter, leftSideIronText.str().c_str());
+
+        switch (rightSideIron.type) {
+            case SideIronType::A:
+                rightSideIronText << "Type A ";
+                break;
+            case SideIronType::B:
+                rightSideIronText << "Type B ";
+                break;
+            case SideIronType::C:
+                rightSideIronText << "Type C ";
+                break;
+            case SideIronType::D:
+                rightSideIronText << "Type D ";
+                break;
+            case SideIronType::E:
+                rightSideIronText << "Type E ";
+                break;
+            case SideIronType::None:
+                rightSideIronText << "None";
+                break;
+        }
+
+        if (drawing.sideIronInverted(Drawing::RIGHT)) {
+            rightSideIronText << "Inverted ";
+        }
+
+        if (drawing.sideIronCutDown(Drawing::RIGHT)) {
+            rightSideIronText << "Cut Down ";
+        }
+
+        QRectF rightSideIronLabel = QFontMetricsF(painter.font()).boundingRect(rightSideIronText.str().c_str());
+        rightSideIronLabel.moveBottomRight(drawingRegion.bottomRight());
+        rightSideIronLabel.adjust(-(rightSideIronLabel.center() - rightWidthExtender.center()).x(), 0,
+                                  -(rightSideIronLabel.center() - rightWidthExtender.center()).x(), 0);
+      
+
+        painter.drawText(rightSideIronLabel, Qt::AlignHCenter | Qt::AlignVCenter, rightSideIronText.str().c_str());
+    }
+    
     drawArrow(painter, topLengthExtender.center(), bottomLengthExtender.center(), to_str(drawing.length()).c_str(),
-              DOUBLE_HEADED, true);
+                  DOUBLE_HEADED, true);
+
 
     if (leftLap.has_value()) {
         QRectF leftLapRegion;
@@ -773,7 +938,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     double currentMatPosition = 0;
 
     painter.setPen(dashDotPen);
-
+    int total = 0;
     for (unsigned bar = 0; bar < drawing.numberOfBars(); bar++) {
         currentMatPosition += drawing.barSpacing(bar);
 
@@ -789,6 +954,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         ));
 
         painter.drawLine(barCentreDividerLine);
+
 
         double barWidth = drawing.barWidth(bar + 1);
         apertureRegionEndpoints.push_back(currentMatPosition - barWidth / 2);
@@ -823,7 +989,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     }
 
     double spacingPosition = 0;
-
+    float barWidthTotal = 0;
     for (unsigned spacingDimension = 0; spacingDimension <= drawing.numberOfBars(); spacingDimension++) {
         double nextSpacingPosition = spacingPosition + drawing.barSpacing(spacingDimension);
 
@@ -839,6 +1005,16 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
                             matBoundingRegion.height() * dimensionSpacingHeight + matBoundingRegion.top()),
                     to_str(drawing.barSpacing(spacingDimension)).c_str(), DOUBLE_HEADED
             );
+            if (spacingDimension != drawing.numberOfBars()) {
+                barWidthTotal += drawing.barSpacing(spacingDimension);
+                QString runningTotal = QString::number((int)barWidthTotal);
+                QRectF rect = QFontMetricsF(painter.font()).boundingRect(runningTotal);
+                rect.moveCenter(QPoint((nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
+                                       matBoundingRegion.left(),
+                                       (0.5 * (1.0 + pLength)) * regionHeight + drawingRegion.top() + rect.height() * 2));
+                painter.drawText(rect, runningTotal);
+            }
+
         }
 
         double leftInnerSpacing = apertureRegionEndpoints[2 *
@@ -889,41 +1065,147 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
         painter.drawRect(padRegion);
     }
 
+    for (const Drawing::BlankSpace& space : drawing.blankSpaces()) {
+        QRectF padRegion(
+            QPointF((space.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                    (space.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((space.width / widthDim.rCentre) * matBoundingRegion.width(),
+                   (space.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(200, 200, 200, 127));
+        painter.drawRect(padRegion);
+    }
+
+    for (const Drawing::ExtraAperture& aperture : drawing.extraApertures()) {
+        QRectF apertureRegion(
+            QPointF((aperture.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                    (aperture.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((aperture.width / widthDim.rCentre) * matBoundingRegion.width(),
+                   (aperture.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(141, 221, 247, 127));
+        painter.drawRect(apertureRegion);
+
+        painter.setBrush(QBrush(QColor(0, 0, 0, 255)));
+        painter.drawText(apertureRegion, Qt::AlignHCenter | Qt::AlignVCenter, DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName().c_str());
+    }
+    for (const Drawing::DamBar& bar : drawing.damBars()) {
+        QRectF padRegion(
+            QPointF((bar.pos.x / widthDim.rCentre) * matBoundingRegion.width() + matBoundingRegion.left(),
+                (bar.pos.y / lengthDim.rCentre) * matBoundingRegion.height() + matBoundingRegion.top()),
+            QSizeF((bar.width / widthDim.rCentre) * matBoundingRegion.width(),
+                (bar.length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        painter.setBrush(QColor(255, 50, 50, 127));
+        painter.drawRect(padRegion);
+    }
+
     painter.restore();
 
     for (const Drawing::CentreHole &hole : drawing.centreHoles()) {
-        QRectF holeBounds = QRectF(
+        //QRectF holeBounds = QRectF(
+        //        QPointF(matBoundingRegion.left() +
+        //                ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+        //                matBoundingRegion.top() +
+        //                ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) *
+        //                matBoundingRegion.height()),
+        //        QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
+        //               (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
+        //);
+
+        //painter.setPen(Qt::red);
+
+        //if (DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID).shape != "DIA") {
+        //    painter.drawRect(holeBounds);
+        //    painter.setPen(smallDashPen);
+        //    painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+        //                     QPointF(holeBounds.center().x(), holeBounds.bottom()));
+        //    painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+        //                     QPointF(holeBounds.right(), holeBounds.center().y()));
+        //} else {
+        //    painter.setRenderHint(QPainter::Antialiasing);
+        //    QPainterPath roundedRectPath;
+        //    double radius =
+        //            (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre *
+        //            matBoundingRegion.width();
+        //    roundedRectPath.addRoundedRect(holeBounds, radius, radius);
+        //    painter.drawPath(roundedRectPath);
+        //    painter.setPen(smallDashPen);
+        //    painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
+        //                     QPointF(holeBounds.center().x(), holeBounds.bottom()));
+        //    painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
+        //                     QPointF(holeBounds.right(), holeBounds.center().y()));
+        //}
+        QRectF verticalHoleBounds = QRectF(
                 QPointF(matBoundingRegion.left() +
-                        ((hole.pos.x - hole.centreHoleShape.width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+                        ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
                         matBoundingRegion.top() +
-                        ((hole.pos.y - hole.centreHoleShape.length / 2) / lengthDim.rCentre) *
-                        matBoundingRegion.height()),
-                QSizeF((hole.centreHoleShape.width / widthDim.rCentre) * matBoundingRegion.width(),
-                       (hole.centreHoleShape.length / lengthDim.rCentre) * matBoundingRegion.height())
+                        ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height()),
+                QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
+                       (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
+        );
+        QRectF horizontalHoleBounds = QRectF(
+        QPointF(matBoundingRegion.left() +
+                ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height(),
+                matBoundingRegion.top() +
+                ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width()),
+        QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height(),
+               (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width())
         );
 
         painter.setPen(Qt::red);
-
-        if (!hole.centreHoleShape.rounded) {
-            painter.drawRect(holeBounds);
-            painter.setPen(smallDashPen);
-            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
-                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
-            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
-                             QPointF(holeBounds.right(), holeBounds.center().y()));
-        } else {
+        ApertureShape shape = DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID);
+        if (shape.shape == "SQ" || shape.shape == "SL") {
+            painter.drawRect(verticalHoleBounds);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "ST") {
+            painter.drawRect(horizontalHoleBounds);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.top()),
+                              QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.bottom()));
+            painter.drawLine(QPointF(horizontalHoleBounds.left(), horizontalHoleBounds.center().y()),
+                              QPointF(horizontalHoleBounds.right(), horizontalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "DIA") {
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
-            double radius =
-                    (std::min(hole.centreHoleShape.width, hole.centreHoleShape.length) / 2.0) / widthDim.rCentre *
-                    matBoundingRegion.width();
-            roundedRectPath.addRoundedRect(holeBounds, radius, radius);
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
             painter.drawPath(roundedRectPath);
-            painter.setPen(smallDashPen);
-            painter.drawLine(QPointF(holeBounds.center().x(), holeBounds.top()),
-                             QPointF(holeBounds.center().x(), holeBounds.bottom()));
-            painter.drawLine(QPointF(holeBounds.left(), holeBounds.center().y()),
-                             QPointF(holeBounds.right(), holeBounds.center().y()));
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "RL") {
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath roundedRectPath;
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
+            painter.drawPath(roundedRectPath);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.top()),
+                              QPointF(verticalHoleBounds.center().x(), verticalHoleBounds.bottom()));
+            painter.drawLine(QPointF(verticalHoleBounds.left(), verticalHoleBounds.center().y()),
+                              QPointF(verticalHoleBounds.right(), verticalHoleBounds.center().y()));
+        }
+        else if (shape.shape == "RT") {
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath roundedRectPath;
+            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            roundedRectPath.addRoundedRect(horizontalHoleBounds, radius, radius);
+            painter.drawPath(roundedRectPath);
+            painter.setPen(Qt::DashDotLine);
+            painter.drawLine(QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.top()),
+                              QPointF(horizontalHoleBounds.center().x(), horizontalHoleBounds.bottom()));
+            painter.drawLine(QPointF(horizontalHoleBounds.left(), horizontalHoleBounds.center().y()),
+                              QPointF(horizontalHoleBounds.right(), horizontalHoleBounds.center().y()));
         }
     }
 
@@ -1027,7 +1309,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
 }
 
 void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, const QString &label, ArrowMode mode,
-                                 bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle) {
+                                 bool flipLabel, QPen tailPen, QPen headPen, double headSize, double angle, unsigned lines) {
     painter.save();
     painter.setPen(tailPen);
 
@@ -1041,8 +1323,9 @@ void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, co
         QTextOption centreAlignedText;
         centreAlignedText.setAlignment(Qt::AlignCenter);
 
-        QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding,
+        QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding ,
                                                                                         padding);
+        labelBounds.setHeight(labelBounds.height() * lines);
         tail.center();
 
         QLineF boundsDiameter(labelBounds.center(), labelBounds.topLeft());

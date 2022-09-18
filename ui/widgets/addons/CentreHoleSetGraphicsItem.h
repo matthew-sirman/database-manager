@@ -30,11 +30,14 @@ public:
 
 	void clearCentreHoles();
 
-	Drawing::CentreHole::Shape currentShape() const;
+	
+	Aperture currentAperture() const;
 
 	bool contains(const QPointF &point) const override;
 
 	void setRemoveFunction(const std::function<void(const Drawing::CentreHole &)> &remove);
+
+	bool empty() const;
 
 protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
@@ -48,12 +51,14 @@ private:
 	std::vector<unsigned> holeAcquireIDs;
 	Inspector *inspector = nullptr;
 
-	Drawing::CentreHole::Shape currentHoleShape{ 50, 50, false };
+	unsigned apertureID;
 
 	QRectF matBounds;
 	float matWidth, matLength;
 
     std::function<void(const Drawing::CentreHole &)> removeFunction = nullptr;
+
+	ComboboxComponentDataSource<Aperture> apertureSource;
 };
 
 #endif //DATABASE_MANAGER_CENTREHOLESETGRAPHICSITEM_H

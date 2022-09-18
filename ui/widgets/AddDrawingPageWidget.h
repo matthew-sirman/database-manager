@@ -8,10 +8,13 @@
 #include <QWidget>
 #include <QGraphicsScene>
 #include <QFileDialog>
+#include <QtGlobal>
 #include <QDesktopServices>
 #include <QMessageBox>
+#include <QShortcut>
 
 #include <unordered_set>
+
 
 #include "Inspector.h"
 #include "../../include/database/Drawing.h"
@@ -66,6 +69,7 @@ private:
     ComboboxComponentDataSource<SideIron> leftSideIronSource, rightSideIronSource;
     ComboboxComponentDataSource<Machine> machineManufacturerSource, machineModelSource;
     ComboboxComponentDataSource<MachineDeck> machineDeckSource;
+    ComboboxComponentDataSource<BackingStrip> backingStripSource;
 
     SideIronFilter *leftSideIronFilter = nullptr, *rightSideIronFilter = nullptr;
     MachineModelFilter *machineModelFilter = nullptr;

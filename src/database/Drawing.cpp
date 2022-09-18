@@ -92,9 +92,9 @@ Drawing::Drawing(const Drawing &drawing) {
     this->__machineTemplate = drawing.__machineTemplate;
     this->productHandle = drawing.productHandle;
     this->apertureHandle = drawing.apertureHandle;
+    this->backingStripHandle = drawing.backingStripHandle;
     this->__tensionType = drawing.__tensionType;
     this->__rebated = drawing.__rebated;
-    this->__hasBackingStrips = drawing.__hasBackingStrips;
     this->__pressDrawingHyperlinks = drawing.__pressDrawingHyperlinks;
     this->barSpacings = drawing.barSpacings;
     this->barWidths = drawing.barWidths;
@@ -102,6 +102,8 @@ Drawing::Drawing(const Drawing &drawing) {
     this->sideIronHandles[1] = drawing.sideIronHandles[1];
     this->sideIronsInverted[0] = drawing.sideIronsInverted[0];
     this->sideIronsInverted[1] = drawing.sideIronsInverted[1];
+    this->sideIronsCutDown[0] = drawing.sideIronsCutDown[0];
+    this->sideIronsCutDown[1] = drawing.sideIronsCutDown[1];
     this->sidelaps[0] = drawing.sidelaps[0];
     this->sidelaps[1] = drawing.sidelaps[1];
     this->overlaps[0] = drawing.overlaps[0];
@@ -109,6 +111,9 @@ Drawing::Drawing(const Drawing &drawing) {
     this->topLayerThicknessHandle = drawing.topLayerThicknessHandle;
     this->bottomLayerThicknessHandle = drawing.bottomLayerThicknessHandle;
     this->__impactPads = drawing.__impactPads;
+    this->__damBars = drawing.__damBars;
+    this->__blankSpaces = drawing.__blankSpaces;
+    this->__extraApertures = drawing.__extraApertures;
     this->__centreHoles = drawing.__centreHoles;
     this->__deflectors = drawing.__deflectors;
     this->__divertors = drawing.__divertors;
@@ -127,9 +132,10 @@ void Drawing::setAsDefault() {
     this->__machineTemplate = MachineTemplate();
     this->productHandle = 0;
     this->apertureHandle = 0;
+    this->backingStripHandle = std::nullopt;
     this->__tensionType = TensionType::SIDE;
     this->__rebated = false;
-    this->__hasBackingStrips = false;
+    // this->__hasBackingStrips = false;
     this->__pressDrawingHyperlinks = std::vector<std::filesystem::path>();
     this->barSpacings = { 0 };
     this->barWidths = { 0, 0 };
@@ -137,6 +143,8 @@ void Drawing::setAsDefault() {
     this->sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
     this->sideIronsInverted[0] = false;
     this->sideIronsInverted[1] = false;
+    this->sideIronsCutDown[0] = false;
+    this->sideIronsCutDown[1] = false;
     this->sidelaps[0] = std::nullopt;
     this->sidelaps[1] = std::nullopt;
     this->overlaps[0] = std::nullopt;
@@ -144,6 +152,9 @@ void Drawing::setAsDefault() {
     this->topLayerThicknessHandle = 0;
     this->bottomLayerThicknessHandle = std::nullopt;
     this->__impactPads = {};
+    this->__damBars = {};
+    this->__blankSpaces = {};
+    this->__extraApertures = {};
     this->__centreHoles = {};
     this->__deflectors = {};
     this->__divertors = {};
@@ -272,12 +283,24 @@ void Drawing::setRebated(bool isRebated) {
     __rebated = isRebated;
 }
 
-bool Drawing::hasBackingStrips() const {
-    return __hasBackingStrips;
+std::optional<BackingStrip> Drawing::backingStrip() const {
+    if (backingStripHandle == std::nullopt)
+        return std::nullopt;
+    return DrawingComponentManager<BackingStrip>::getComponentByHandle(backingStripHandle.value());
 }
 
-void Drawing::setHasBackingStrips(bool backingStrips) {
-    __hasBackingStrips = backingStrips;
+void Drawing::setBackingStrip(const BackingStrip& strip) {
+    backingStripHandle = strip.handle();
+}
+
+void Drawing::removeBackingStrip() {
+    backingStripHandle = std::nullopt;
+}
+
+bool Drawing::hasBackingStrips() const {
+    if (backingStripHandle == std::nullopt)
+        return false;
+    return DrawingComponentManager<BackingStrip>::validComponentHandle(backingStripHandle.value());
 }
 
 std::optional<Material> Drawing::material(Drawing::MaterialLayer layer) const {
@@ -341,7 +364,7 @@ std::vector<float> Drawing::allBarSpacings() const {
     return barSpacings;
 }
 
-std::vector<float> Drawing::allBarWidths() const {
+const std::vector<float>& Drawing::allBarWidths() const {
     return barWidths;
 }
 
@@ -365,6 +388,16 @@ bool Drawing::sideIronInverted(Drawing::Side side) const {
     ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
 }
 
+bool Drawing::sideIronCutDown(Drawing::Side side) const {
+    switch (side) {
+        case LEFT:
+            return sideIronsCutDown[0];
+        case RIGHT:
+            return sideIronsCutDown[1];
+    }
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
+}
+
 void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
     switch (side) {
         case LEFT:
@@ -374,6 +407,7 @@ void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
             sideIronHandles[1] = sideIron.handle();
             break;
     }
+    __sideIronType = sideIron.type;
     invokeUpdateCallbacks();
 }
 
@@ -389,15 +423,27 @@ void Drawing::setSideIronInverted(Drawing::Side side, bool inverted) {
     invokeUpdateCallbacks();
 }
 
+void Drawing::setSideIronCutDown(Drawing::Side side, bool cutDown) {
+    switch (side) {
+        case LEFT:
+            sideIronsCutDown[0] = cutDown;
+        case RIGHT:
+            sideIronsCutDown[1] = cutDown;
+    }
+    invokeUpdateCallbacks();
+}
+
 void Drawing::removeSideIron(Drawing::Side side) {
     switch (side) {
         case LEFT:
             sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[0] = false;
+            sideIronsCutDown[0] = false;
             break;
         case RIGHT:
             sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[1] = false;
+            sideIronsCutDown[1] = false;
             break;
     }
     invokeUpdateCallbacks();
@@ -507,6 +553,69 @@ void Drawing::removeImpactPad(const Drawing::ImpactPad &pad) {
 
 unsigned Drawing::numberOfImpactPads() const {
     return __impactPads.size();
+}
+
+void Drawing::addDamBar(const DamBar& bar) {
+    __damBars.push_back(bar);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::DamBar> Drawing::damBars() const {
+    return __damBars;
+}
+
+Drawing::DamBar& Drawing::damBar(unsigned index) {
+    return __damBars[index];
+}
+
+void Drawing::removeDamBar(const Drawing::DamBar& bar) {
+    __damBars.erase(std::find(__damBars.begin(), __damBars.end(), bar));
+}
+
+unsigned Drawing::numberOfDamBars() const {
+    return __damBars.size();
+};
+
+void Drawing::addBlankSpace(const BlankSpace& blankSpace) {
+    __blankSpaces.push_back(blankSpace);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::BlankSpace> Drawing::blankSpaces() const {
+    return __blankSpaces;
+}
+
+Drawing::BlankSpace& Drawing::blankSpace(unsigned index) {
+    return __blankSpaces[index];
+}
+
+void Drawing::removeBlankSpace(const Drawing::BlankSpace& space) {
+    __blankSpaces.erase(std::find(__blankSpaces.begin(), __blankSpaces.end(), space));
+}
+
+unsigned Drawing::numberOfBlankSpaces() const {
+    return __blankSpaces.size();
+}
+
+void Drawing::addExtraAperture(const ExtraAperture& extraAperture) {
+    __extraApertures.push_back(extraAperture);
+    invokeUpdateCallbacks();
+}
+
+std::vector<Drawing::ExtraAperture> Drawing::extraApertures() const {
+    return __extraApertures;
+}
+
+Drawing::ExtraAperture& Drawing::extraAperture(unsigned index) {
+    return __extraApertures[index];
+}
+
+void Drawing::removeExtraAperture(const Drawing::ExtraAperture& aperture) {
+    __extraApertures.erase(std::find(__extraApertures.begin(), __extraApertures.end(), aperture));
+}
+
+unsigned Drawing::numberOfExtraApertures() const {
+    return __extraApertures.size();
 }
 
 void Drawing::addCentreHole(const CentreHole &centreHole) {
@@ -703,14 +812,18 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *((unsigned *) buffer) = drawing.apertureHandle;
     buffer += sizeof(unsigned);
 
+    // Backing Strip ID, which is optional, so must have a bool to identify its presence
+    *buffer++ = drawing.hasBackingStrips();
+    if (drawing.hasBackingStrips()) {
+        *((unsigned*)buffer) = drawing.backingStripHandle.value();
+    }
+    buffer += sizeof(unsigned);
+
     // Tension Type
     *buffer++ = (unsigned char) drawing.__tensionType;
 
     // Rebated
     *buffer++ = drawing.__rebated;
-
-    // Backing Strips
-    *buffer++ = drawing.__hasBackingStrips;
 
     // Press Drawing Links
     *buffer++ = drawing.__pressDrawingHyperlinks.size();
@@ -739,9 +852,11 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *((unsigned *) buffer) = drawing.sideIronHandles[0];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[0];
+    *buffer++ = drawing.sideIronsCutDown[0];
     *((unsigned *) buffer) = drawing.sideIronHandles[1];
     buffer += sizeof(unsigned);
     *buffer++ = drawing.sideIronsInverted[1];
+    *buffer++ = drawing.sideIronsCutDown[1];
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {
@@ -823,6 +938,27 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
         buffer += pad.serialisedSize();
     }
 
+    // Dam Bars
+    *buffer++ = drawing.__damBars.size();
+    for (const Drawing::DamBar& bar : drawing.__damBars) {
+        bar.serialise(buffer);
+        buffer += bar.serialisedSize();
+    }
+
+    // Blank Spaces
+    *buffer++ = drawing.__blankSpaces.size();
+    for (const Drawing::BlankSpace& pad : drawing.__blankSpaces) {
+        pad.serialise(buffer);
+        buffer += pad.serialisedSize();
+    }
+
+    // Extra Apertures
+    *buffer++ = drawing.__extraApertures.size();
+    for (const Drawing::ExtraAperture& aperture : drawing.__extraApertures) {
+        aperture.serialise(buffer);
+        buffer += aperture.serialisedSize();
+    }
+
     // Centre Holes
     *buffer++ = drawing.__centreHoles.size();
     for (const Drawing::CentreHole &hole : drawing.__centreHoles) {
@@ -870,6 +1006,8 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned);
     // Aperture ID
     size += sizeof(unsigned);
+    // Backing Strip
+    size += sizeof(bool) + sizeof(unsigned);
     // Tension Type
     size += sizeof(unsigned char);
     // Rebated
@@ -915,6 +1053,18 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__impactPads.begin(), drawing.__impactPads.end(), 0,
                         [](unsigned size, const Drawing::ImpactPad &pad) { return size + pad.serialisedSize(); });
+    // Dam Bars
+    size += sizeof(unsigned char) +
+    std::accumulate(drawing.__damBars.begin(), drawing.__damBars.end(), 0,
+        [](unsigned size, const Drawing::DamBar& bar) { return size + bar.serialisedSize(); });
+    // Blank Spaces
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__blankSpaces.begin(), drawing.__blankSpaces.end(), 0,
+            [](unsigned size, const Drawing::BlankSpace& space) { return size + space.serialisedSize(); });
+    // Extra Apertures
+    size += sizeof(unsigned char) +
+        std::accumulate(drawing.__extraApertures.begin(), drawing.__extraApertures.end(), 0,
+            [](unsigned size, const Drawing::ExtraAperture& aperture) { return size + aperture.serialisedSize(); });
     // Centre Holes
     size += sizeof(unsigned char) +
         std::accumulate(drawing.__centreHoles.begin(), drawing.__centreHoles.end(), 0,
@@ -987,14 +1137,21 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     drawing->apertureHandle = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
 
+    // Backing Strip ID
+    bool backingStripExists = *buffer++;
+    if (backingStripExists) {
+        drawing->backingStripHandle = *((unsigned*)buffer);
+    }
+    else {
+        drawing->backingStripHandle = std::nullopt;
+    }
+    buffer += sizeof(unsigned);
+
     // Tension Type
     drawing->__tensionType = (Drawing::TensionType) *buffer++;
 
     // Rebated
     drawing->__rebated = *buffer++;
-
-    // Backing Strips
-    drawing->__hasBackingStrips = *buffer++;
 
     // Press Drawing Links
     unsigned char noPressDrawings = *buffer++;
@@ -1022,10 +1179,13 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     drawing->sideIronHandles[0] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[0] = *buffer++;
+    drawing->sideIronsCutDown[0] = *buffer++;
 
     drawing->sideIronHandles[1] = *((unsigned *) buffer);
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[1] = *buffer++;
+    drawing->sideIronsCutDown[1] = *buffer++;
+
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {
@@ -1110,6 +1270,30 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
         Drawing::ImpactPad &pad = Drawing::ImpactPad::deserialise(buffer);
         buffer += pad.serialisedSize();
         drawing->__impactPads.push_back(pad);
+    }
+
+    // Dam Bars
+    unsigned char damBarCount = *buffer++;
+    for (unsigned i = 0; i < damBarCount; i++) {
+        Drawing::DamBar& pad = Drawing::DamBar::deserialise(buffer);
+        buffer += pad.serialisedSize();
+        drawing->__damBars.push_back(pad);
+    }
+
+    // Blank Spaces
+    unsigned char blankSpaceCount = *buffer++;
+    for (unsigned i = 0; i < blankSpaceCount; i++) {
+        Drawing::BlankSpace& space = Drawing::BlankSpace::deserialise(buffer);
+        buffer += space.serialisedSize();
+        drawing->__blankSpaces.push_back(space);
+    }
+
+    // Extra Apertures
+    unsigned char extraApertureCount = *buffer++;
+    for (unsigned i = 0; i < extraApertureCount; i++) {
+        Drawing::ExtraAperture& aperture = Drawing::ExtraAperture::deserialise(buffer);
+        buffer += aperture.serialisedSize();
+        drawing->__extraApertures.push_back(aperture);
     }
 
     // Centre Holes

@@ -10,13 +10,16 @@
 #include <QPdfDocument>
 #include <QPdfView>
 #include <QDesktopServices>
+#include <limits>
 
 #include <filesystem>
 
 #include "AddDrawingPageWidget.h"
 #include "../../include/database/Drawing.h"
+#include "../../include/database/ExtraPriceManager.h"
 
 #define PUNCH_PDF_LOCATION "T:/Drawings/2. Rubber Screen Cloths/Punch Program PDF's"
+#define LOSS_PERCENT 1.1
 
 namespace Ui {
     class DrawingViewWidget;

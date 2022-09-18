@@ -69,7 +69,7 @@ QVariant DrawingSearchResultsModel::headerData(int section, Qt::Orientation orie
     return QVariant();
 }
 
-void DrawingSearchResultsModel::sourceDataFromBuffer(void *buffer) {
+void DrawingSearchResultsModel::sourceDataFromBuffer(void* buffer) {
     unsigned char *buff = (unsigned char *)buffer;
     buff += sizeof(RequestType);
 

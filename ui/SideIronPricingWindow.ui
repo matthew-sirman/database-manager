@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SideIronPricingWindow</class>
+ <widget class="QDialog" name="SideIronPricingWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>429</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>400</width>
+    <height>429</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>400</width>
+    <height>429</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Add Machine</string>
+  </property>
+  <layout class="QVBoxLayout" name="addMachineVerticalLayout">
+   <item>
+    <widget class="QLabel" name="pricingTitleLabel">
+     <property name="font">
+      <font>
+       <pointsize>15</pointsize>
+       <weight>50</weight>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Side Iron Prices</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="DynamicComboBox" name="sideIronComboBox"/>
+   </item>
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="sideIronPricingScroll">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>380</width>
+        <height>324</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout"/>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="acceptButtons">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DynamicComboBox</class>
+   <extends>QComboBox</extends>
+   <header>widgets/DynamicComboBox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+  <connections>
+    <connection>
+      <sender>acceptButtons</sender>
+      <signal>accepted()</signal>
+      <receiver>SideIronlPricingWindow</receiver>
+      <slot>accept()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>248</x>
+          <y>254</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>157</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+    <connection>
+      <sender>acceptButtons</sender>
+      <signal>rejected()</signal>
+      <receiver>SideIronPricingWindow</receiver>
+      <slot>reject()</slot>
+      <hints>
+        <hint type="sourcelabel">
+          <x>316</x>
+          <y>260</y>
+        </hint>
+        <hint type="destinationlabel">
+          <x>286</x>
+          <y>274</y>
+        </hint>
+      </hints>
+    </connection>
+  </connections>
+</ui>

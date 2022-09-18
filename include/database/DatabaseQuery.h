@@ -17,9 +17,11 @@
 #include <nlohmann/json.hpp>
 
 #include "Drawing.h"
+#include "RequestType.h"
 
 // Simple macro for returning the minumum of two values
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+
 
 /// <summary>
 /// ValueRange
@@ -122,6 +124,17 @@ public:
     void *createBuffer(unsigned &size) const;
 };
 
+class DatabasePriceQuery: public DatabaseQuery {
+
+    DatabasePriceQuery();
+
+    void serialise(void* target) const;
+
+    unsigned serialisedSize() const;
+
+    static DatabasePriceQuery& deserialise(void *data);
+};
+
 /// <summary>
 /// DatabaseSearchQuery
 /// Inherits from DatabaseQuery. This query type is for searching the database for
@@ -169,7 +182,7 @@ public:
     /// </summary>
     /// <param name="resultSet">The rows from the database in their raw format.</param>
     /// <returns>A list of DrawingSummary objects for each matching drawing.</returns>
-    static std::vector<DrawingSummary> getQueryResultSummaries(mysqlx::RowResult &resultSet);
+    static std::vector<DrawingSummary> getQueryResultSummaries(mysqlx::RowResult resultSet);
 
     // Each parameter is nested inside an optional. This means that each value can
     // also take a "nullopt", which indicates that it should be omitted from the 
@@ -403,6 +416,8 @@ public:
     /// <returns>An SQL query string.</returns>
     std::string apertureInsertQuery(unsigned matID) const;
 
+    std::string backingStripInsertQuery(unsigned matID) const;
+
     /// <summary>
     /// Constructs an SQL query for inserting the side irons specified in the drawingData
     /// object in this query object.
@@ -457,6 +472,12 @@ public:
     /// <returns>An SQL query string or an empty string if there are no impact pads to insert.</returns>
     std::string impactPadsInsertQuery(unsigned matID) const;
 
+    std::string damBarInsertQuery(unsigned matID) const;
+
+    std::string blankSpaceInsertQuery(unsigned matID) const;
+
+    std::string extraApertureInsertQuery(unsigned matID) const;
+
     /// <summary>
     /// Constructs an SQL query for inserting the centre holes specified in the drawingData 
     /// object in this query object.
@@ -510,6 +531,13 @@ private:
 /// </summary>
 class ComponentInsert : public DatabaseQuery {
 public:
+
+    enum class PriceMode {
+        ADD,
+        UPDATE,
+        REMOVE
+    };
+
     /// <summary>
     /// ApertureData
     /// Object representation of the aperture data needed to insert a new aperture. This is done
@@ -520,9 +548,11 @@ public:
         unsigned baseWidth, baseLength;
         unsigned quantity;
         unsigned shapeID;
+        bool isNibble;
+        unsigned nibbleApertureId;
 
         inline constexpr unsigned serialisedSize() const {
-            return sizeof(float) * 2 + sizeof(unsigned) * 4;
+            return (isNibble ? sizeof(unsigned) : 0) + (sizeof(float) * 2 + sizeof(unsigned) * 4 + sizeof(bool));
         }
     };
 
@@ -556,6 +586,19 @@ public:
         }
     };
 
+    struct SideIronPriceData {
+        SideIronType type;
+        bool extraflex;
+        float length, price;
+        unsigned screws;
+        PriceMode priceMode;
+        unsigned sideIronPriceId = 0;
+
+        inline unsigned serialisedSize() const {
+            return sizeof(SideIronType) + sizeof(float) * 2 + sizeof(PriceMode) + sizeof(unsigned) * 2 + sizeof(bool);
+        }
+    };
+
     /// <summary>
     /// MaterialData
     /// Object representation of the aperture data needed to insert a new material. This is done
@@ -570,6 +613,57 @@ public:
         }
     };
 
+    struct MaterialPriceData {
+        unsigned material_id;
+        float width, length, price;
+        MaterialPricingType pricingType;
+        PriceMode priceMode;
+        float oldWidth = 0, oldLength = 0;
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) + sizeof(float) * 5 + sizeof(MaterialPricingType) + sizeof(PriceMode);
+        }
+    };
+
+    struct ExtraPriceData {
+        unsigned priceId;
+        ExtraPriceType type;
+        float price, squareMetres;
+        unsigned amount;
+        ExtraPriceData() {};
+
+        ExtraPriceData(unsigned id, ExtraPriceType type, float price, std::optional<float> squareMetres, std::optional<unsigned> amount) {
+            priceId = id;
+            this->type = type;
+            this->price = price;
+            if (squareMetres != std::nullopt) {
+                this->squareMetres = squareMetres.value();
+            }
+            if (amount != std::nullopt) {
+                this->amount = amount.value();
+            }
+        };
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) + sizeof(ExtraPriceType) + sizeof(float) * 2 + sizeof(unsigned);
+        }
+    };
+
+    struct LabourTimeData {
+        unsigned labourId;
+        LabourTimeType type;
+        unsigned time;
+        LabourTimeData() {};
+
+        LabourTimeData(unsigned int id, LabourTimeType type, unsigned int time) {
+            labourId = id;
+            this->type = type;
+            this->time = time;
+        };
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) + sizeof(LabourTimeType) + sizeof(unsigned);
+        };
+
+        
+    };
     /// <summary>
     /// ComponentInsertResponse
     /// Represents a response code from the server which depends on whether the component was successfully
@@ -648,7 +742,11 @@ private:
         APERTURE,
         MACHINE,
         SIDE_IRON,
-        MATERIAL
+        MATERIAL,
+        MATERIAL_PRICE,
+        SIDE_IRON_PRICE,
+        EXTRA_PRICE,
+        LABOUR_TIMES
     };
 
     // The realisation of the insert type variable. Defaults to None
@@ -659,7 +757,11 @@ private:
     std::optional<ApertureData> apertureData;
     std::optional<MachineData> machineData;
     std::optional<SideIronData> sideIronData;
+    std::optional<SideIronPriceData> sideIronPriceData;
     std::optional<MaterialData> materialData;
+    std::optional<MaterialPriceData> materialPriceData;
+    std::optional<ExtraPriceData> extraPriceData;
+    std::optional<LabourTimeData> labourTimeData;
 
 };
 

@@ -336,13 +336,14 @@ void Client::clientLoop() {
         EncryptedNetworkMessage rMessage;
         if (clientSocket.receiveMessage(rMessage, MessageProtocol::AES_MESSAGE) == SOCKET_SUCCESS) {
             if (!rMessage.error()) {
-                uint8 *decryptedMessage = (uint8 *) rMessage.decryptMessageData(sessionKey);
+                void* decryptedMessage =(uint8 *) rMessage.decryptMessageData(sessionKey);
 
                 if (responseHandler) {
                     responseHandler->onMessageReceived(decryptedMessage, rMessage.getMessageSize());
                 }
-
-                delete decryptedMessage;
+                // TODO: update pointer
+                // Race condition - "data" within drawingComponents line 420ish gets deleted then accessed
+                // delete decryptedMessage;
             }
         }
 

@@ -9,6 +9,7 @@
 #include "../networking/Server.h"
 
 #include "../../packer.h"
+#include <map>
 
 /// <summary>
 /// DatabaseRequestHandler
@@ -40,6 +41,9 @@ public:
 	std::filesystem::path backupPath;
 
 private:
+
+	std::map<std::string, MaterialPricingType> pricingMap;
+
 	/// <summary>
 	/// Creates a compression schema from the database based upon the largest values in certain 
 	/// fields.
@@ -84,6 +88,14 @@ private:
 		std::string name;
 	};
 
+	struct BackingStripData : TableSourceData {
+		// Typedef for the ComponentType. This is used for accessing the appropriate DrawingComponentManager.
+		typedef BackingStrip ComponentType;
+
+		// The ID of the shape of this aperture
+		unsigned materialID{};
+	};
+
 	/// <summary>
 	/// ApertureData
 	/// Inherits from TableSourceData. This object is for storing data about an aperture read 
@@ -101,6 +113,9 @@ private:
 		unsigned shapeID{};
 		// The number of physical copies of this tool which exist
 		unsigned short quantity{};
+
+		bool isNibble;
+		unsigned nibbleApertureId;
 	};
 
 	/// <summary>
@@ -129,6 +144,32 @@ private:
 		std::string name;
 		// The hardness and thickness of this material
 		unsigned short hardness{}, thickness{};
+
+		std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
+	};
+
+	struct ExtraPriceData : TableSourceData {
+		typedef ExtraPrice ComponentType;
+
+		ExtraPriceType type;
+		float price;
+		std::optional<float> squareMetres;
+		std::optional<unsigned> amount;
+	};
+
+	struct LabourTimeData : TableSourceData {
+		typedef LabourTime ComponentType;
+
+		LabourTimeType type;
+		unsigned time;
+	};
+
+	struct SideIronPriceData : TableSourceData {
+		typedef SideIronPrice ComponentType;
+
+		SideIronType type;
+		// length, price
+		std::vector<std::tuple<unsigned, float, float, unsigned, bool>> prices;
 	};
 
 	/// <summary>
@@ -208,7 +249,7 @@ private:
 	/// <param name="sizeValue">The amount of space the element(s) added will occupy in a buffer, so we know how big of a buffer to 
 	/// construct.</param>
 	template<typename T>
-	void constructDataElement(const mysqlx::Row &sourceRow, unsigned &handle, std::vector<T> &elements, unsigned &sizeValue) const;
+	void constructDataElements(mysqlx::RowResult &sourceRow, unsigned &handle, std::vector<T> &elements, unsigned &sizeValue) const;
 
 	/// <summary>
 	/// Writes a single element to the buffer.
@@ -253,10 +294,8 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 	unsigned handle = 1;
 
 	// We loop through each row in the source
-	for (const mysqlx::Row &row : sourceRows) {
 		// For each, we construct the data element(s). This is added tot he elements list from inside this function.
-		constructDataElement<T>(row, handle, elements, bufferSize);
-	}
+	constructDataElements<T>(sourceRows, handle, elements, bufferSize);
 
 	// Next we create the source data buffer with the size we have calculated.
 	void *sourceBuffer = malloc(bufferSize);
@@ -288,7 +327,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 	// Finally, once the buffer has been constructed, we send the buffer to the DrawingComponentManager of the correct type.
 	// This is where we use the T::ComponentType which will be the "true" type for each data type above. (e.g. ProductData -> Product)
-	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize);
+	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize + 4);
 }
 
 

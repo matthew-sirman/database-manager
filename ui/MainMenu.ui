@@ -1258,9 +1258,18 @@ color: rgb(70, 70, 70);
     <addaction name="componentsMenu_addSideIronAction"/>
     <addaction name="componentsMenu_addMaterialAction"/>
    </widget>
+   <widget class="QMenu" name="pricingMenu">
+    <property name="title">
+     <string>Prices</string>
+    </property>
+    <addaction name="pricingMenu_materialPricesAction"/>
+    <addaction name="pricingMenu_sideIronPricesAction"/>
+    <addaction name="pricingMenu_extraPricesAction"/>
+   </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
    <addaction name="componentsMenu"/>
+   <addaction name="pricingMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="drawingMenu_addDrawingAction">
@@ -1301,6 +1310,27 @@ color: rgb(70, 70, 70);
   <action name="drawingMenu_addManualDrawingAction">
    <property name="text">
     <string>Add Manual Drawing</string>
+   </property>
+  </action>
+  <action name="pricingMenu_materialPricesAction">
+   <property name="text">
+    <string>Material Prices</string>
+   </property>
+  </action>
+  <action name="pricingMenu_sideIronPricesAction">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Side Iron Prices</string>
+   </property>
+  </action>
+  <action name="pricingMenu_extraPricesAction">
+   <property name="text">
+    <string>Extra Prices</string>
    </property>
   </action>
  </widget>
