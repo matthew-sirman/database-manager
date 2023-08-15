@@ -1,9 +1,5 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs
-/out/build
+﻿/.vs
+/out/
 /.idea
 /cmake-build-debug
 /CMakeFiles
@@ -12,3 +8,7 @@
 /pyapi
 /CMakeSettings.json
 /oldcmakelist.txt
+/.metadata/
+/vcpkg_installed
+vcpkg-configuration.json
+vcpkg.json

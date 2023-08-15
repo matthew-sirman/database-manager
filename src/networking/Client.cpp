@@ -14,6 +14,10 @@ Client::~Client() {
     clientSocket.closeSocket();
 }
 
+void Client::heartbeat() {
+    clientSocket.heartbeat();
+}
+
 void Client::initialiseClient() {
     // If we already have a client socket, don't create another
     if (clientSocket.open()) {

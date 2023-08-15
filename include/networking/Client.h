@@ -66,6 +66,8 @@ public:
 
     void setResponseHandler(ClientResponseHandler &handler);
 
+    void heartbeat();
+
 private:
     // The RSA key for establishing a secure and authenticated connection with the server
     RSAKeyPair clientKey;

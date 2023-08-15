@@ -190,7 +190,7 @@ public:
     std::string materialName;
     unsigned short hardness{}, thickness{};
 
-    // width, length if exists, price, type
+    // length, width if exists, price, type
     std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
 
     std::string material() const;
@@ -233,21 +233,6 @@ struct ExtraPriceTrait<ExtraPriceType::PRIMER> {
     using numType = float;
 };
 
-template<>
-struct ExtraPriceTrait<ExtraPriceType::DIVERTOR> {
-    using numType = unsigned;
-};
-
-template<>
-struct ExtraPriceTrait<ExtraPriceType::DEFLECTOR> {
-    using numType = unsigned;
-};
-
-template<>
-struct ExtraPriceTrait<ExtraPriceType::DAM_BAR> {
-    using numType = unsigned;
-};
-
 struct ExtraPrice : public DrawingComponent {
     friend class DrawingComponentManager<ExtraPrice>;
 
@@ -276,11 +261,13 @@ struct LabourTime : public DrawingComponent {
     friend class DrawingComponentManager<LabourTime>;
 
 public:
-    LabourTimeType type;
+    std::string job;
     unsigned time;
 
     std::string labourTime() const;
+    LabourType getType() const;
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
 private:
     LabourTime(unsigned id);
 
@@ -308,7 +295,6 @@ public:
     std::string sideIronStr() const;
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
-
 private:
     SideIron(unsigned id);
 
@@ -319,6 +305,7 @@ struct SideIronPrice : DrawingComponent {
     friend class DrawingComponentManager<SideIronPrice>;
 
     SideIronType type;
+    // type, length, price, screws, is_extraflex
     std::vector<std::tuple<unsigned, float, float, unsigned, bool>> prices;
 
     std::string sideIronPriceStr() const;
@@ -531,6 +518,7 @@ void DrawingComponentManager<T>::sourceComponentTable(void *data, unsigned dataS
         unsigned handle = *((unsigned *)buff);
         buff += sizeof(unsigned);
 
+        // TODO: issues with sizes and allocation
         T *element = T::fromSource(&buff);
         element->__handle = handle;
         componentLookup[handle] = element;

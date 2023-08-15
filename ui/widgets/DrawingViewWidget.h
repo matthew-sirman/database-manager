@@ -11,6 +11,9 @@
 #include <QPdfView>
 #include <QDesktopServices>
 #include <limits>
+#include <tuple>
+#include <variant>
+#include <PricingPackage.h>
 
 #include <filesystem>
 

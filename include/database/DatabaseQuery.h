@@ -649,17 +649,17 @@ public:
 
     struct LabourTimeData {
         unsigned labourId;
-        LabourTimeType type;
+        std::string job;
         unsigned time;
         LabourTimeData() {};
 
-        LabourTimeData(unsigned int id, LabourTimeType type, unsigned int time) {
+        LabourTimeData(unsigned int id, std::string job, unsigned int time) {
             labourId = id;
-            this->type = type;
+            this->job = job;
             this->time = time;
         };
         inline unsigned serialisedSize() const {
-            return sizeof(unsigned) + sizeof(LabourTimeType) + sizeof(unsigned);
+            return sizeof(unsigned) * 2 + job.size() + sizeof(size_t);
         };
 
         

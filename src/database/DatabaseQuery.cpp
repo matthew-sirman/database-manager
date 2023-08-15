@@ -1207,14 +1207,22 @@ std::string DrawingInsert::sideIronInsertQuery(unsigned matID) const {
 
     // First specify the columns to insert
     insert << "INSERT INTO {0}.mat_side_iron_link" << std::endl;
-    insert << "(mat_id, side_iron_id, bar_width, inverted, cut_down, side_iron_index)" << std::endl;
+    insert << "(mat_id, side_iron_id, bar_width, inverted, cut_down, side_iron_index, fixed_end, feed_end, hook_orientation)" << std::endl;
     insert << "VALUES" << std::endl;
 
     // Then add the data to insert for both of the side iron side. We specify which is which by the final index parameter.
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::LEFT).componentID() << ", " << drawingData->leftMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::LEFT) << ", " << drawingData->sideIronCutDown(Drawing::LEFT) << ", 0), " << std::endl;
+        drawingData->sideIronInverted(Drawing::LEFT) << ", " << drawingData->sideIronCutDown(Drawing::LEFT) << ", 0, "<<
+        (drawingData->sideIronFixedEnd(Drawing::LEFT).has_value() ? std::to_string(drawingData->sideIronFixedEnd(Drawing::LEFT).value()) : "NULL") << ", " <<
+        (drawingData->sideIronFeedEnd().has_value() && drawingData->sideIronFeedEnd().value() == Drawing::LEFT ? "1" : "0") << ", " <<
+        (drawingData->sideIronHookOrientation(Drawing::LEFT).has_value() ? std::to_string(drawingData->sideIronHookOrientation(Drawing::LEFT).value()) : "NULL") <<
+        "), " << std::endl;
     insert << "(" << matID << ", " << drawingData->sideIron(Drawing::RIGHT).componentID() << ", " << drawingData->rightMargin() << ", " <<
-           drawingData->sideIronInverted(Drawing::RIGHT) << ", " << drawingData->sideIronCutDown(Drawing::RIGHT) << ", 1)" << std::endl;
+           drawingData->sideIronInverted(Drawing::RIGHT) << ", " << drawingData->sideIronCutDown(Drawing::RIGHT) << ", 1," <<
+        (drawingData->sideIronFixedEnd(Drawing::RIGHT).has_value() ? std::to_string(drawingData->sideIronFixedEnd(Drawing::RIGHT).value()) : "NULL") << ", " <<
+        (drawingData->sideIronFeedEnd().has_value() && drawingData->sideIronFeedEnd().value() == Drawing::RIGHT ? "1" : "0") << ", " <<
+        (drawingData->sideIronHookOrientation(Drawing::RIGHT).has_value() ? std::to_string(drawingData->sideIronHookOrientation(Drawing::RIGHT).value()) : "NULL") <<
+        ")" << std::endl;
 
     // Return the constructed MySQL string
     return insert.str();
@@ -1743,7 +1751,7 @@ void ComponentInsert::serialise(void *target) const {
             *((float*)buff) = extraPriceData->price;
             buff += sizeof(float);
             switch (extraPriceData->type) {
-                case (ExtraPriceType::SIDE_IRON_NUTS):case (ExtraPriceType::SIDE_IRON_SCREWS):case (ExtraPriceType::DIVERTOR):case (ExtraPriceType::DEFLECTOR):case (ExtraPriceType::DAM_BAR):
+                case (ExtraPriceType::SIDE_IRON_NUTS):case (ExtraPriceType::SIDE_IRON_SCREWS):
                     *((unsigned*)buff) = extraPriceData->amount;
                     buff += sizeof(unsigned);
                     break;
@@ -1757,6 +1765,16 @@ void ComponentInsert::serialise(void *target) const {
                     break;
             }
             break;
+        }
+        case (InsertType::LABOUR_TIMES): {
+            *((unsigned*)buff) = labourTimeData->labourId;
+            buff += sizeof(unsigned);
+            *((size_t*)buff) = labourTimeData->job.size();
+            buff += sizeof(size_t);
+            memcpy(buff, labourTimeData->job.data(), labourTimeData->job.size());
+            buff += labourTimeData->job.size();
+            *((unsigned*)buff) = labourTimeData->time;
+            buff += sizeof(unsigned);
         }
     }
 }
@@ -1932,7 +1950,7 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             buff += sizeof(float);
 
             switch (data.type) {
-                case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
+                case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS:
                     data.amount = *((unsigned*)buff);
                     buff += sizeof(unsigned);
                     break;
@@ -1954,8 +1972,11 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
 
             data.labourId = *((unsigned*)buff);
             buff += sizeof(unsigned);
-            data.type = *((LabourTimeType*)buff);
-            buff += sizeof(ExtraPriceType);
+            size_t strSize = *((size_t*)buff);
+            buff += sizeof(size_t);
+            data.job.resize(strSize);
+            memcpy(&data.job[0], buff, strSize);
+            buff += strSize;
             data.time = *((unsigned*)buff);
             buff += sizeof(unsigned);
 
@@ -2063,7 +2084,8 @@ std::string ComponentInsert::toSQLQueryString() const {
                     break;
                 case PriceMode::UPDATE:
                     insert << "UPDATE {0}.side_iron_prices SET" << std::endl;
-                    insert << "length = " << sideIronPriceData->length << ", price = " << sideIronPriceData->price << ", product_id="  << (int)sideIronPriceData->extraflex + 1 << std::endl;
+                    insert << "length = " << sideIronPriceData->length << ", price = " << sideIronPriceData->price << ", product_id=" << (int)sideIronPriceData->extraflex + 1;
+                    insert << ", screws = " << sideIronPriceData->screws << ", type = " << (unsigned)sideIronPriceData->type << std::endl;
                     insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
                     break;
                 case PriceMode::REMOVE:
@@ -2147,29 +2169,16 @@ std::string ComponentInsert::toSQLQueryString() const {
                     break;
                 case ExtraPriceType::PRIMER:
                     insert << "UPDATE {0}.extra_prices SET" << std::endl;
-                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
+                    insert << "price = " << extraPriceData->price << ", square_metres = " << extraPriceData->squareMetres;
+                    insert << " WHERE" << std::endl;
                     insert << "price_id = " << extraPriceData->priceId << " AND type = 'primer'" << std::endl;
-                    break;
-                case ExtraPriceType::DEFLECTOR:
-                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
-                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
-                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'deflector'" << std::endl;
-                    break;
-                case ExtraPriceType::DIVERTOR:
-                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
-                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
-                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'divertor'" << std::endl;
-                    break;
-                case ExtraPriceType::DAM_BAR:
-                    insert << "UPDATE {0}.extra_prices SET" << std::endl;
-                    insert << "price = " << extraPriceData->price << " WHERE" << std::endl;
-                    insert << "price_id = " << extraPriceData->priceId << " AND type = 'dam_bar'" << std::endl;
                     break;
             }
             break;
         case InsertType::LABOUR_TIMES:
             insert << "UPDATE {0}.labour_times set" << std::endl;
-            insert << "time = " << labourTimeData->time << " WHERE" << std::endl;
+            insert << "time = " << labourTimeData->time;
+            insert <<" WHERE" << std::endl;
             insert << "labour_id = " << labourTimeData->labourId;
         default:
             break;
@@ -2195,7 +2204,7 @@ RequestType ComponentInsert::getSourceTableCode() const {
         case InsertType::EXTRA_PRICE:
             return RequestType::SOURCE_EXTRA_PRICES_TABLE;
         case InsertType::LABOUR_TIMES:
-            return RequestType::SOURCE_LABOUR_TIMES;
+            return RequestType::SOURCE_LABOUR_TIMES_TABLE;
         default:
             return (RequestType)(-1);
     }

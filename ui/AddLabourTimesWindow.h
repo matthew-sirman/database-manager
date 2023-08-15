@@ -12,17 +12,17 @@
 #include <QMessageBox>
 
 namespace Ui {
-    class AddExtraPriceWindow;
+    class AddLabourTimesWindow;
 }
 
-class ExtraPricingWindow;
+class LabourTimesWindow;
 
-class AddExtraPriceWindow : public QDialog {
+class AddLabourTimesWindow : public QDialog {
     Q_OBJECT
 public:
-    explicit AddExtraPriceWindow(Client* client, ExtraPrice& price, int index, QWidget* parent = nullptr); // Update
+    explicit AddLabourTimesWindow(Client* client, LabourTime& times, int index, QWidget* parent = nullptr); // Update
 private:
-    Ui::AddExtraPriceWindow* ui = nullptr;
+    Ui::AddLabourTimesWindow* ui = nullptr;
 signals:
-    void updateParent(QString, std::optional<QString>);
+    void updateParent(QString l);
 };

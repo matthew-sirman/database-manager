@@ -2,7 +2,7 @@
 #include "../build/ui_AddExtraPriceWindow.h"
 #include "ExtraPricingWindow.h"
 
-AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* caller,
+AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
 										 ExtraPrice& price, int index, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddExtraPriceWindow()) {
 	ui->setupUi(this);
@@ -73,50 +73,17 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
             values.push_back(primerAmount);
             break;
         }
-        case (ExtraPriceType::DIVERTOR):
-        {
-            layout->addRow(new QLabel("Divertors"));
-            QLineEdit* divertorsAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
-            QLineEdit* divertorsPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
-            layout->addRow("Amount: ", divertorsAmount);
-            layout->addRow("Price: ", divertorsPrice);
-            values.push_back(divertorsPrice);
-            values.push_back(divertorsAmount);
-            break;
-        }
-        case (ExtraPriceType::DEFLECTOR):
-        {
-            layout->addRow(new QLabel("Deflector"));
-            QLineEdit* deflectorAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
-            QLineEdit* deflectorPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
-            layout->addRow("Amount: ", deflectorAmount);
-            layout->addRow("Price: ", deflectorPrice);
-            values.push_back(deflectorPrice);
-            values.push_back(deflectorAmount);
-            break;
-        }
-        case (ExtraPriceType::DAM_BAR):
-        {
-            layout->addRow(new QLabel("Dam Bar"));
-            QLineEdit* damBarAmount = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
-            QLineEdit* damBarPrice = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
-            layout->addRow("Amount: ", damBarAmount);
-            layout->addRow("Price: ", damBarPrice);
-            values.push_back(damBarPrice);
-            values.push_back(damBarAmount);
-            break;
-        }
         default:
             break;
     }
 
-    connect(this, &QDialog::accepted, [extraPrice, values, client, caller, index]() {
+    connect(this, &QDialog::accepted, [this, extraPrice, values, client, index]() {
         ComponentInsert insert;
 
         ComponentInsert::ExtraPriceData* priceData = nullptr;
         switch (extraPrice.type) {
             //price then amount
-            case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
+            case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS:
                 priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt());
                 break;
             //price then surface area
@@ -139,9 +106,6 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client, ExtraPricingWindow* cal
         void* buffer = alloca(bufferSize);
         insert.serialise(buffer);
         client->addMessageToSendQueue(buffer, bufferSize);
-
-        caller->setComboboxCallback([index, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); caller->update(client); });
-        caller->updateSource();
-        caller->update(client);
+        emit updateParent(values[0]->text(),extraPrice.type != ExtraPriceType::LABOUR ? std::make_optional(values[1]->text()) : std::nullopt);
             });
 }

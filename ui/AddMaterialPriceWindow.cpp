@@ -3,7 +3,7 @@
 #include "MaterialPricingWindow.h"
 
 // adding a price
-AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int index, QWidget* parent)
+AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddMaterialPriceWindow()) {
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
@@ -12,7 +12,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 
 	materialNameComboBox->setDataSource(materialSource);
 
-	materialNameComboBox->setManualIndexFunc([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); });
+	materialNameComboBox->setManualIndexFunc([handle](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); });
 
 	DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); });
 	materialSource.updateSource();
@@ -56,7 +56,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		}
 	}
 
-	connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, caller, client, this, priceTypeComboBox, index]() {
+	connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, caller, client, this, priceTypeComboBox, handle]() {
 		materialSource.updateSource();
 		if (DrawingComponentManager<Material>::validComponentHandle(materialNameComboBox->currentIndex() && widthEdit->text().size() > 0 && priceEdit->text().size() > 0)) {
 
@@ -65,8 +65,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 			if (priceTypeComboBox->currentText() == "Running Metre") {
 
 				insert.setComponentData<ComponentInsert::MaterialPriceData>({
-					//DrawingComponentManager<Material>::getComponentByHandle(materialNameComboBox->currentIndex()).componentID() + 1,
-					(unsigned)materialNameComboBox->currentIndex() + 1,
+					DrawingComponentManager<Material>::getComponentByHandle(handle).componentID(),
 					widthEdit->text().toFloat(),
 					lengthEdit->text().toFloat(),
 					priceEdit->text().toFloat(),
@@ -76,8 +75,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 			}
 			else if (priceTypeComboBox->currentText() == "Square Metre") {
 				insert.setComponentData<ComponentInsert::MaterialPriceData>({
-					//DrawingComponentManager<Material>::getComponentByHandle(materialNameComboBox->currentIndex()).componentID() + 1,
-					(unsigned)materialNameComboBox->currentIndex() + 1,
+					DrawingComponentManager<Material>::getComponentByHandle(handle).componentID(),
 					widthEdit->text().toFloat(),
 					lengthEdit->text().toFloat(),
 					priceEdit->text().toFloat(),
@@ -87,8 +85,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 			}
 			else if (priceTypeComboBox->currentText() == "Sheet") {
 				insert.setComponentData<ComponentInsert::MaterialPriceData>({
-					//DrawingComponentManager<Material>::getComponentByHandle(materialNameComboBox->currentIndex()).componentID() + 1,
-					(unsigned)materialNameComboBox->currentIndex() + 1,
+					DrawingComponentManager<Material>::getComponentByHandle(handle).componentID(),
 					widthEdit->text().toFloat(),
 					lengthEdit->text().toFloat(),
 					priceEdit->text().toFloat(),
@@ -101,7 +98,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 			insert.serialise(buffer);
 			client->addMessageToSendQueue(buffer, bufferSize);
 
-			caller->setComboboxCallback([index, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); caller->update(client); });
+			caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
 			caller->updateSource();
 			caller->update(client);
 		}
@@ -116,7 +113,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 
 
 // updating or removing a price
-AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int index, ComponentInsert::PriceMode priceMode, Material material, std::tuple<float, float, float, MaterialPricingType> pricing, QWidget* parent)
+AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, ComponentInsert::PriceMode priceMode, std::tuple<float, float, float, MaterialPricingType> pricing, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddMaterialPriceWindow()) {
 
 	ui->setupUi(this);
@@ -124,7 +121,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 
 	materialNameComboBox = ui->materialNameComboBox;
 
-	materialNameComboBox->setManualIndexFunc([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); comboBox->setDisabled(true); });
+	materialNameComboBox->setManualIndexFunc([handle](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); comboBox->setDisabled(true); });
 
 	materialNameComboBox->setDataSource(materialSource);
 
@@ -175,21 +172,19 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		});
 
 
-	int handle = material.handle();
-
-
 	if (priceMode == ComponentInsert::PriceMode::UPDATE) {
 
 		for (QAbstractButton* button : ui->acceptButtons->buttons()) {
 			if (button->text() == "OK") {
 				button->setText("Edit");
+				priceEdit->setFocus();
 			}
 		}
 
 		this->setWindowTitle("Edit Material Price");
 		ui->AddPriceTitleLabel->setText("Edit Material Price");
 
-		connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, pricing, handle, caller, client, priceTypeComboBox, index]() {
+		connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, pricing, handle, caller, client, priceTypeComboBox]() {
 			if (widthEdit->text().size() > 0 && priceEdit->text().size() > 0) {
 				ComponentInsert insert;
 
@@ -235,7 +230,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 				insert.serialise(buffer);
 				client->addMessageToSendQueue(buffer, bufferSize);
 
-				caller->setComboboxCallback([index, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); caller->update(client); });
+				caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
 				caller->updateSource();
 				caller->update(client);
 			}
@@ -261,7 +256,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		lengthEdit->setDisabled(true);
 		priceEdit->setDisabled(true);
 		ui->priceTypeComboBox->setDisabled(true);
-		connect(this, &QDialog::accepted, [client, caller, handle, widthEdit, lengthEdit, priceEdit, index]() {
+		connect(this, &QDialog::accepted, [client, caller, handle, widthEdit, lengthEdit, priceEdit]() {
 			if (widthEdit->text().size() > 0 && priceEdit->text().size() > 0) {
 				ComponentInsert insert;
 
@@ -279,7 +274,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 				insert.serialise(buffer);
 				client->addMessageToSendQueue(buffer, bufferSize);
 
-				caller->setComboboxCallback([index, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); caller->update(client); });
+				caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
 				caller->updateSource();
 				caller->update(client);
 			}

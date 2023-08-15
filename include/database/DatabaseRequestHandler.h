@@ -160,7 +160,7 @@ private:
 	struct LabourTimeData : TableSourceData {
 		typedef LabourTime ComponentType;
 
-		LabourTimeType type;
+		std::string job;
 		unsigned time;
 	};
 

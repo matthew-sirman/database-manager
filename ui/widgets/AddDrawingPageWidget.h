@@ -12,6 +12,7 @@
 #include <QDesktopServices>
 #include <QMessageBox>
 #include <QShortcut>
+#include <qcombobox.h>
 
 #include <unordered_set>
 
@@ -112,6 +113,10 @@ private:
 
     std::unordered_set<DrawingNoteType> addedNotes;
 
+    unsigned int* boxesValues = new unsigned int[4]{ 0, 0, 0, 0 };
+
+signals:
+    void drawingAddedToDb();
 private slots:
     void capitaliseLineEdit(const QString &text);
 };

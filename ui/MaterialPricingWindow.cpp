@@ -1,6 +1,8 @@
 #include "MaterialPricingWindow.h"
 #include "../build/ui_MaterialPricingWindow.h"
 
+// ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()
+
 MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
     : QDialog(parent), ui(new Ui::MaterialPricingWindow()) {
     ui->setupUi(this);
@@ -19,7 +21,7 @@ MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
     materialSource.updateSource();
 
     connect(button, &QPushButton::clicked, [client, this]() {
-        (new AddMaterialPriceWindow(client, this, materialComboBox->currentIndex()))->show();
+        (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt()))->show();
         });
     connect(materialComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index){
         update(client);
@@ -29,8 +31,7 @@ MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
 
 void MaterialPricingWindow::update(Client* client) {
     if (!materialSource.empty()) {
-        Material& material = DrawingComponentManager<Material>::getComponentByHandle(
-            materialComboBox->currentData().toInt());
+        Material& material = DrawingComponentManager<Material>::getComponentByHandle(materialComboBox->itemData(materialComboBox->currentIndex()).toInt());
         for (int _ = 0; _ < 5; _++) {
             for (int i = 0; i < materialPricingScroll->layout()->count(); ++i) {
                 QWidget* widget = materialPricingScroll->layout()->takeAt(i)->widget();
@@ -86,11 +87,11 @@ void MaterialPricingWindow::update(Client* client) {
                 layout->addRow(line);
                 lastLine = line;
 
-                connect(edit, &QPushButton::clicked, [client, this, material, element]() {
-                    (new AddMaterialPriceWindow(client, this, materialComboBox->currentIndex(), ComponentInsert::PriceMode::UPDATE, material, element))->show();
+                connect(edit, &QPushButton::clicked, [client, this, element]() {
+                    (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::UPDATE, element))->show();
                     });
-                connect(remove, &QPushButton::clicked, [client, this, material, element]() {
-                    (new AddMaterialPriceWindow(client, this, materialComboBox->currentIndex(), ComponentInsert::PriceMode::REMOVE, material, element))->show();
+                connect(remove, &QPushButton::clicked, [client, this, element]() {
+                    (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::REMOVE, element))->show();
                     });
             }
             if (lastLine != nullptr) {

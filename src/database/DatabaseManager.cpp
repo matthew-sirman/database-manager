@@ -173,7 +173,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setLoadWarning(Drawing::LoadWarning::INVALID_BACKING_STRIP_DETECTED);
 		}
 		// Get the side irons associated with this drawing
-		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted", "cut_down")
+		mysqlx::RowResult sideIrons = sess.getSchema(database).getTable("mat_side_iron_link").select("side_iron_id", "bar_width", "inverted", "cut_down", "fixed_end", "feed_end", "hook_orientation")
 			.where("mat_id=:matID").orderBy("side_iron_index ASC").bind("matID", query.matID).execute();
 
 		// Get the left (first) side iron
@@ -190,6 +190,16 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			drawing->setSideIronInverted(Drawing::LEFT, leftSideIron[2].get<bool>());
 			// Set whether this side iron is cut down
 			drawing->setSideIronCutDown(Drawing::LEFT, leftSideIron[3].get<bool>());
+			if (!leftSideIron[4].isNull()) {
+				drawing->setSideIronEnding(Drawing::LEFT, (Drawing::Ending)leftSideIron[4].get<int>());
+			}
+
+			if (!leftSideIron[5].isNull() && leftSideIron[5].get<bool>()) {
+				drawing->setSideIronFeed(Drawing::LEFT);
+			}
+			if (!leftSideIron[6].isNull())
+				drawing->setSideIronHookOrientation(Drawing::LEFT, (Drawing::HookOrientation)leftSideIron[6].get<int>());
+
 
 			// Get the right (second) side iron
 			mysqlx::Row rightSideIron = sideIrons.fetchOne();
@@ -202,6 +212,16 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 					DrawingComponentManager<SideIron>::findComponentByID(rightSideIron[0]));
 				// Set whether this side iron is inverted
 				drawing->setSideIronInverted(Drawing::RIGHT, rightSideIron[2].get<bool>());
+
+				if (!rightSideIron[4].isNull()) {
+					drawing->setSideIronEnding(Drawing::RIGHT, (Drawing::Ending)rightSideIron[4].get<int>());
+				}
+
+				if (!rightSideIron[5].isNull() && rightSideIron[5].get<bool>()) {
+					drawing->setSideIronFeed(Drawing::RIGHT);
+				}
+				if (!rightSideIron[6].isNull())
+					drawing->setSideIronHookOrientation(Drawing::RIGHT, (Drawing::HookOrientation)rightSideIron[6].get<int>());
 			} else {
 				// If this side iron was missing, set the associated bar spacing to 0 and send a load warning
 				// that there were missing side irons.

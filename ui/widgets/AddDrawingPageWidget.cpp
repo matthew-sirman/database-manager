@@ -229,7 +229,6 @@ void AddDrawingPageWidget::setupActivators() {
                 }
             }
     );
-
     ui->leftSideIronLabel->setActive();
     ui->backingStripsLabel->setActive(drawing.hasBackingStrips());
     ui->leftSideIronLabel->addTarget(ui->leftSideIronTypeLabel);
@@ -331,6 +330,108 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
             drawing.setDrawingNumber(text.toStdString());
         }
     });
+    connect(ui->leftSideIronFeedEndInput, &QCheckBox::stateChanged, [this](int state) {
+        ui->rightSideIronFeedEndInput->blockSignals(true);
+        if (state) {
+            
+            ui->rightSideIronFeedEndInput->setChecked(!state);
+            
+            drawing.setSideIronFeed(Drawing::LEFT);
+        }
+        else {
+            drawing.removeSideIronFeed(Drawing::LEFT);
+        }
+        ui->rightSideIronFeedEndInput->blockSignals(false);
+        });
+    connect(ui->rightSideIronFeedEndInput, &QCheckBox::stateChanged, [this](int state) {
+        ui->leftSideIronFeedEndInput->blockSignals(true);
+        if (state) {
+            
+            ui->leftSideIronFeedEndInput->setChecked(!state);
+            
+            drawing.setSideIronFeed(Drawing::RIGHT);
+        }
+        else {
+            drawing.removeSideIronFeed(Drawing::RIGHT);
+        }
+        ui->leftSideIronFeedEndInput->blockSignals(false);
+        });
+    connect(ui->leftSideIronFixedEndInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        ui->rightSideIronFixedEndInput->blockSignals(true);
+        if (index == 0) {
+            ui->rightSideIronFixedEndInput->setCurrentIndex(0);
+            drawing.removeSideIronEnding(Drawing::LEFT);
+            drawing.removeSideIronEnding(Drawing::RIGHT);
+        }
+        else {
+            ui->rightSideIronFixedEndInput->setCurrentIndex((!(index - 1)) + 1); // reverses 1 and 2
+            boxesValues[1] = (!(index - 1)) + 1;
+            
+            drawing.setSideIronEnding(Drawing::LEFT, (Drawing::Ending)index);
+            drawing.setSideIronEnding(Drawing::RIGHT, (Drawing::Ending)((!(index - 1)) + 1));
+        }
+        ui->rightSideIronFixedEndInput->blockSignals(false);
+        });
+    connect(ui->rightSideIronFixedEndInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        ui->leftSideIronFixedEndInput->blockSignals(true);
+        if (index == 0) {
+            ui->leftSideIronFixedEndInput->setCurrentIndex(0);
+            drawing.removeSideIronEnding(Drawing::LEFT);
+            drawing.removeSideIronEnding(Drawing::RIGHT);
+        }
+        else {
+            ui->leftSideIronFixedEndInput->setCurrentIndex((!(index - 1)) + 1); // reverses 1 and 2
+
+            drawing.setSideIronEnding(Drawing::RIGHT, (Drawing::Ending)index);
+            drawing.setSideIronEnding(Drawing::LEFT, (Drawing::Ending)((!(index - 1)) + 1));
+        }
+        ui->leftSideIronFixedEndInput->blockSignals(false);
+        });
+    connect(ui->leftSideIronHookOriInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        ui->rightSideIronHookOriInput->blockSignals(true);
+        if (boxesValues[2] == 0) {
+            ui->rightSideIronHookOriInput->setCurrentIndex((!(index - 1)) + 1);
+            boxesValues[3] = (!(index - 1)) + 1;
+            
+            drawing.setSideIronHookOrientation(Drawing::LEFT, (Drawing::HookOrientation)index);
+            drawing.setSideIronHookOrientation(Drawing::RIGHT, (Drawing::HookOrientation)((!(index - 1)) + 1));
+        }
+        boxesValues[2] = index;
+        if (index == 0) {
+            drawing.removeSideIronHookOrientation(Drawing::LEFT);
+        }
+        else if (index == 1) { //Cannot have 2 hook ups.
+            ui->rightSideIronHookOriInput->setCurrentIndex(2);
+            boxesValues[2] = 1;
+            boxesValues[3] = 2;
+            drawing.setSideIronHookOrientation(Drawing::LEFT, Drawing::HOOK_UP);
+            drawing.setSideIronHookOrientation(Drawing::RIGHT, Drawing::HOOK_DOWN);
+        }
+        ui->rightSideIronHookOriInput->blockSignals(false);
+        });
+    connect(ui->rightSideIronHookOriInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
+        ui->leftSideIronHookOriInput->blockSignals(true);
+        if (boxesValues[3] == 0) {
+            
+            ui->leftSideIronHookOriInput->setCurrentIndex((!(index - 1)) + 1);
+            boxesValues[2] = (!(index - 1)) + 1;
+            
+            drawing.setSideIronHookOrientation(Drawing::RIGHT, (Drawing::HookOrientation)index);
+            drawing.setSideIronHookOrientation(Drawing::LEFT, (Drawing::HookOrientation)((!(index - 1)) + 1));
+        }
+        boxesValues[3] = index;
+        if (index == 0) {
+            drawing.removeSideIronHookOrientation(Drawing::RIGHT);
+        }
+        else if (index == 1) { //Cannot have 2 hook ups.
+            ui->leftSideIronHookOriInput->setCurrentIndex(2);
+            boxesValues[2] = 2;
+            boxesValues[3] = 1;
+            drawing.setSideIronHookOrientation(Drawing::RIGHT, Drawing::HOOK_UP);
+            drawing.setSideIronHookOrientation(Drawing::LEFT, Drawing::HOOK_DOWN);
+        }
+        ui->leftSideIronHookOriInput->blockSignals(false);
+        });
     connect(ui->productInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         Product &product = DrawingComponentManager<Product>::getComponentByHandle(
                 ui->productInput->itemData(index).toInt());
@@ -802,6 +903,28 @@ void AddDrawingPageWidget::loadDrawing() {
         ui->rightSideIronTypeInput->setCurrentIndex((unsigned)(rightSideIron.type) - 1);
         ui->rightSideIronInvertedInput->setChecked(drawing.sideIronInverted(Drawing::RIGHT));
         ui->rightSideIronCutDownInput->setChecked(drawing.sideIronCutDown(Drawing::RIGHT));
+        if (drawing.sideIronFeedEnd().has_value()) {
+            switch (drawing.sideIronFeedEnd().value()) {
+            case Drawing::LEFT :
+                ui->leftSideIronFeedEndInput->setChecked(true);
+                break;
+            case Drawing::RIGHT :
+                ui->rightSideIronFeedEndInput->setChecked(true);
+                break;
+            }
+        }
+        if (drawing.sideIronFixedEnd(Drawing::LEFT).has_value()) {
+            ui->leftSideIronFixedEndInput->setCurrentIndex((int)(drawing.sideIronFixedEnd(Drawing::LEFT).value()));
+        }
+        if (drawing.sideIronFixedEnd(Drawing::RIGHT).has_value()) {
+            ui->rightSideIronFixedEndInput->setCurrentIndex((int)(drawing.sideIronFixedEnd(Drawing::RIGHT).value()));
+        }
+        if (drawing.sideIronHookOrientation(Drawing::LEFT).has_value()) {
+            ui->leftSideIronHookOriInput->setCurrentIndex((int)(drawing.sideIronHookOrientation(Drawing::LEFT).value()));
+        }
+        if (drawing.sideIronHookOrientation(Drawing::RIGHT).has_value()) {
+            ui->rightSideIronHookOriInput->setCurrentIndex((int)(drawing.sideIronHookOrientation(Drawing::RIGHT).value()));
+        }
         if (leftSideIron.handle() == rightSideIron.handle()) {
             ui->rightSideIronLabel->setActive(false);
 
@@ -902,6 +1025,7 @@ void AddDrawingPageWidget::confirmDrawing() {
                 break;
         }
     }
+    emit drawingAddedToDb();
 }
 
 void AddDrawingPageWidget::setConfirmationCallback(const std::function<void(const Drawing &, bool)> &callback) {

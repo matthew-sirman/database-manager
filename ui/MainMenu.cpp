@@ -230,6 +230,9 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->pricingMenu_extraPricesAction, &QAction::triggered, [this]() {
         (new ExtraPricingWindow(client))->show();
     });
+    connect(ui->pricingMenu_labourTimes, &QAction::triggered, [this]() {
+        (new LabourTimesWindow(client))->show();
+    });
     connect(ui->componentsMenu_addApertureAction, &QAction::triggered, [this]() {
         (new AddApertureWindow(client))->show();
     });
@@ -317,6 +320,8 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     setupActivators();
     setupSearchResultsTable();
     requestNextDrawingNumbers();
+
+    // client->heartbeat();
 }
 
 MainMenu::~MainMenu() = default;
@@ -344,6 +349,7 @@ void MainMenu::sendSourceTableRequests() const {
     sourceTable(RequestType::SOURCE_MACHINE_DECK_TABLE);
     sourceTable(RequestType::SOURCE_EXTRA_PRICES_TABLE);
     sourceTable(RequestType::SOURCE_BACKING_STRIPS_TABLE);
+    sourceTable(RequestType::SOURCE_LABOUR_TIMES_TABLE);
 }
 
 void MainMenu::sourceTable(RequestType requestType) const {
@@ -951,6 +957,7 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
             }
             break;
     }
+    searchButtonPressed();
 }
 
 void MainMenu::insertComponentResponse(unsigned responseCode) {

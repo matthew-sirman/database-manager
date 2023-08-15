@@ -199,12 +199,6 @@ std::string ExtraPrice::extraPrice() const {
             return "Labour";
         case (ExtraPriceType::PRIMER):
             return "Primer";
-        case ExtraPriceType::DIVERTOR:
-            return "Divertor";
-        case ExtraPriceType::DEFLECTOR:
-            return "Deflector";
-        case ExtraPriceType::DAM_BAR:
-            return "Dam Bar";
         default:
             return std::string();
     }
@@ -235,25 +229,9 @@ float ExtraPrice::getPrice<ExtraPriceType::LABOUR>(typename ExtraPriceTrait<Extr
     return n * (price / 60);
 }
 
-//TODO: fix all these
 template<>
 float ExtraPrice::getPrice<ExtraPriceType::PRIMER>(typename ExtraPriceTrait<ExtraPriceType::PRIMER>::numType n) {
     return n * (price / squareMetres.value());
-}
-
-template<>
-float ExtraPrice::getPrice<ExtraPriceType::DIVERTOR>(typename ExtraPriceTrait<ExtraPriceType::DIVERTOR>::numType n) {
-    return n * (price / amount.value());
-}
-
-template<>
-float ExtraPrice::getPrice<ExtraPriceType::DEFLECTOR>(typename ExtraPriceTrait<ExtraPriceType::DEFLECTOR>::numType n) {
-    return n * (price / amount.value());
-}
-
-template<>
-float ExtraPrice::getPrice<ExtraPriceType::DAM_BAR>(typename ExtraPriceTrait<ExtraPriceType::DAM_BAR>::numType n) {
-    return n * (price / amount.value());
 }
 
 ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
@@ -270,7 +248,7 @@ ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
     *buff += sizeof(float);
 
     switch (extraPrice->type) {
-        case (ExtraPriceType::SIDE_IRON_NUTS): case (ExtraPriceType::SIDE_IRON_SCREWS): case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
+        case (ExtraPriceType::SIDE_IRON_NUTS): case (ExtraPriceType::SIDE_IRON_SCREWS):
             extraPrice->amount = *((unsigned*)(*buff));
             extraPrice->squareMetres = std::nullopt;
             *buff += sizeof(unsigned);
@@ -299,43 +277,43 @@ ExtraPrice* ExtraPrice::fromSource(unsigned char** buff) {
         case ExtraPriceType::PRIMER:
             ExtraPriceManager<ExtraPriceType::PRIMER>::setExtraPrice(extraPrice);
             break;
-        case ExtraPriceType::DEFLECTOR:
-            ExtraPriceManager<ExtraPriceType::DEFLECTOR>::setExtraPrice(extraPrice);
-            break;
-        case ExtraPriceType::DIVERTOR:
-            ExtraPriceManager<ExtraPriceType::DIVERTOR>::setExtraPrice(extraPrice);
-            break;
-        case ExtraPriceType::DAM_BAR:
-            ExtraPriceManager<ExtraPriceType::DAM_BAR>::setExtraPrice(extraPrice);
-            break;
-        default:
-            break;
     }
     return extraPrice;
 
 }
 
 std::string LabourTime::labourTime() const {
-    switch (this->type) {
-        case LabourTimeType::CUTTING_AMOUNT:
-            return "Cutting Amount";
-        case LabourTimeType::TIME_TO_PUNCH:
-            return "Time to Punch";
-        case LabourTimeType::TIME_TO_SHOD:
-            return "Time to Shod";
-        case LabourTimeType::TIME_TO_REBATE:
-            return "Time to Rebate";
-        case LabourTimeType::BACKING_STRIPS:
-            return "Backing Strips";
-        case LabourTimeType::COVER_STRAPS:
-            return "Cover Straps";
-        case LabourTimeType::BONDED_OVERLAP:
-            return "Bonded Overlap";
-        case LabourTimeType::CUTTING_TO_SIZE:
-            return "Cutting to size";
-        default:
-            return "";
-    }
+    return job;
+}
+
+LabourType LabourTime::getType() const {
+    if (job == "Cutting Amount")
+        return LabourType::CUTTING_AMOUNT;
+    else if (job == "Time to Punch")
+        return LabourType::TIME_TO_PUNCH;
+    else if (job == "Time to Shod")
+        return LabourType::TIME_TO_SHOD;
+    else if (job == "Time to Rebate")
+        return LabourType::TIME_TO_REBATE;
+    else if (job == "Backing Strips")
+        return LabourType::BACKING_STRIPS;
+    else if (job == "Cover Straps")
+        return LabourType::COVER_STRAPS;
+    else if (job == "Bonded Overlap")
+        return LabourType::BONDED_OVERLAP;
+    else if (job == "Cutting to Size")
+        return LabourType::CUTTING_TO_SIZE;
+    else if (job == "Impact Pads")
+        return LabourType::IMPACT_PADS;
+    else if (job == "Centre Holes")
+        return LabourType::CENTRE_HOLES;
+    else if (job == "Divertors")
+        return LabourType::DIVERTORS;
+    else if (job == "Deflectors")
+        return LabourType::DEFLECTORS;
+    else if (job == "Dam Bars")
+        return LabourType::DAM_BARS;
+    return LabourType::ERR;
 }
 
 ComboboxDataElement LabourTime::toDataElement(unsigned mode) const {
@@ -347,8 +325,12 @@ LabourTime* LabourTime::fromSource(unsigned char** buff) {
     LabourTime* data = new LabourTime(*((unsigned*)*buff));
     *buff += sizeof(unsigned);
 
-    data->type = *((LabourTimeType*)(*buff));
-    *buff += sizeof(LabourTimeType);
+    size_t strLength = *((size_t*)*buff);
+    *buff += sizeof(size_t);
+
+    data->job.resize(strLength);
+    std::memcpy(&data->job[0], *buff, strLength);
+    *buff += strLength;
 
     data->time = *((unsigned*)(*buff));
 

@@ -43,15 +43,16 @@ void ExtraPricingWindow::update(Client* client) {
             }
             QFormLayout* layout = new QFormLayout();
             QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-
+            QLineEdit* amountTextbox = nullptr;
+            QLineEdit* priceTextbox = nullptr;
             switch (extraPrice.type) {
-                case (ExtraPriceType::SIDE_IRON_NUTS): case ExtraPriceType::SIDE_IRON_SCREWS: case ExtraPriceType::DIVERTOR: case ExtraPriceType::DEFLECTOR: case ExtraPriceType::DAM_BAR:
+                case (ExtraPriceType::SIDE_IRON_NUTS): case ExtraPriceType::SIDE_IRON_SCREWS:
                 {
-                    QLineEdit* amountTextbox = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
+                    amountTextbox = new QLineEdit(QString::number(extraPrice.amount.value(), 'f', 0));
                     amountTextbox->setReadOnly(true);
                     amountTextbox->setValidator(validator);
                     layout->addRow("Amount: ", amountTextbox);
-                    QLineEdit* priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+                    priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
                     priceTextbox->setReadOnly(true);
                     priceTextbox->setValidator(validator);
                     layout->addRow("Price: ", priceTextbox);
@@ -59,11 +60,11 @@ void ExtraPricingWindow::update(Client* client) {
                 }
                 case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
                 {
-                    QLineEdit* squareMetresTextbox = new QLineEdit(QString::number(extraPrice.squareMetres.value(), 'f', 2));
-                    squareMetresTextbox->setReadOnly(true);
-                    squareMetresTextbox->setValidator(validator);
-                    layout->addRow("Square Metres: ", squareMetresTextbox);
-                    QLineEdit* priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+                    amountTextbox = new QLineEdit(QString::number(extraPrice.squareMetres.value(), 'f', 2));
+                    amountTextbox->setReadOnly(true);
+                    amountTextbox->setValidator(validator);
+                    layout->addRow("Square Metres: ", amountTextbox);
+                    priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
                     priceTextbox->setReadOnly(true);
                     priceTextbox->setValidator(validator);
                     layout->addRow("Price: ", priceTextbox);
@@ -71,7 +72,7 @@ void ExtraPricingWindow::update(Client* client) {
                 }
                 case ExtraPriceType::LABOUR:
                 {
-                    QLineEdit* priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
+                    priceTextbox = new QLineEdit(QString::number(extraPrice.price, 'f', 2));
                     priceTextbox->setReadOnly(true);
                     priceTextbox->setValidator(validator);
                     layout->addRow("Per hour: ", priceTextbox);
@@ -83,9 +84,15 @@ void ExtraPricingWindow::update(Client* client) {
             QPushButton* edit = new QPushButton("Edit");
             layout->addRow(edit);
 
-            connect(edit, &QPushButton::clicked, [client, this, extraPrice]() mutable {
-                // (new AddExtraPriceWindow(client, this, extraPrice, extraPriceComboBox->currentIndex()))->show();
-                (new AddExtraPriceWindow(client, this, extraPrice, extraPriceComboBox->currentIndex()))->show();
+            connect(edit, &QPushButton::clicked, [client, this, extraPrice, priceTextbox, amountTextbox]() mutable {
+                AddExtraPriceWindow* window = new AddExtraPriceWindow(client, extraPrice, extraPriceComboBox->currentIndex());
+                connect(window, &AddExtraPriceWindow::updateParent, this, [this, priceTextbox, amountTextbox](QString val1, std::optional<QString> val2) {
+                    priceTextbox->setText(val1);
+                    if (val2.has_value() && amountTextbox != nullptr) {
+                        amountTextbox->setText(val2.value());
+                    }
+                    });
+                window->show();
                 });
 
             extraPricingScroll->setLayout(layout);
@@ -106,3 +113,4 @@ void ExtraPricingWindow::setComboboxCallback(std::function<void(DynamicComboBox*
 void ExtraPricingWindow::updateSource() {
     extraPriceSource.updateSource();
 }
+

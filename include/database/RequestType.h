@@ -24,7 +24,7 @@ enum class RequestType {
     ADD_NEW_COMPONENT,
     GET_NEXT_DRAWING_NUMBER,
     CREATE_DATABASE_BACKUP,
-    SOURCE_LABOUR_TIMES
+    SOURCE_LABOUR_TIMES_TABLE
 };
 
 enum class MaterialPricingType {
@@ -40,13 +40,10 @@ enum class ExtraPriceType {
     SIDE_IRON_SCREWS,
     TACKYBACK_GLUE,
     LABOUR,
-    PRIMER,
-    DEFLECTOR,
-    DIVERTOR,
-    DAM_BAR
+    PRIMER
 };
 
-enum class LabourTimeType {
+enum class LabourType {
     CUTTING_AMOUNT,
     TIME_TO_PUNCH,
     TIME_TO_SHOD,
@@ -54,6 +51,12 @@ enum class LabourTimeType {
     BACKING_STRIPS,
     COVER_STRAPS,
     BONDED_OVERLAP,
-    CUTTING_TO_SIZE
+    CUTTING_TO_SIZE,
+    IMPACT_PADS,
+    CENTRE_HOLES,
+    DIVERTORS,
+    DEFLECTORS,
+    DAM_BARS,
+    ERR
 };
 #endif //DATABASE_MANAGER_REQUESTTYPE_H

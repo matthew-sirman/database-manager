@@ -1,4 +1,4 @@
-// #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+﻿// #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 #include <iostream>
 //#include <unistd.h>
@@ -13,6 +13,7 @@
 #include "include/networking/Client.h"
 #include "include/database/DatabaseRequestHandler.h"
 #include "ui/MainMenu.h"
+
 
 enum RunMode {
     NO_MODE,
@@ -404,6 +405,12 @@ int runClient(const std::filesystem::path &clientMetaFile, int argc, char *argv[
     return QApplication::exec();
 }
 
+
+void test() {
+    QMessageBox::information(nullptr, "Popup", "This is a popup from a non-GUI thread.");
+}
+
+
 void printHelpMessage() {
     // Print a help message to the console
     std::cout << "Database Manager Help" << std::endl;
@@ -534,13 +541,26 @@ int main(int argc, char *argv[]) {
         std::cerr << "Only the server can be in dev mode." << std::endl;
         goto error;
     }
-
     switch (mode) {
         case SERVER:
             runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
-            return runClient(metaFilePath, argc, argv);
+            try {
+                return runClient(metaFilePath, argc, argv);
+            }
+            catch (std::exception e) {
+                auto now = std::chrono::system_clock::now();
+                std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+                std::ostringstream oss;
+                oss << std::put_time(std::gmtime(&currentTime), "%Y-%m-%d %H:%M:%S");
+                std::string formattedTime = oss.str();
+                std::ofstream outputFile;
+                outputFile.open("U:\\SCS Screen Mat Database\\client\\errorlogs\\" + formattedTime + ".err");
+                //outputFile << ErrorTracker::getTracker()->get();
+                outputFile.close();
+                throw e;
+            }
         case SETUP:
             setupServerKeys(metaFilePath);
             break;

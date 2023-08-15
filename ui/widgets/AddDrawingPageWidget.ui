@@ -172,7 +172,7 @@
         </sizepolicy>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="drawingSpecsTab">
         <attribute name="title">
@@ -825,6 +825,117 @@
                </property>
               </widget>
              </item>
+             <item row="7" column="1">
+              <widget class="QComboBox" name="leftSideIronHookOriInput">
+               <item>
+                <property name="text">
+                 <string/>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hook Up</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hook Down</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="leftSideIronHookOriLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Hook Orientation</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="leftSideIronFeedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Feed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="leftSideIronfixedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Fixed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QCheckBox" name="leftSideIronFeedEndInput">
+               <property name="text">
+                <string/>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
+               </property>
+               <property name="tristate">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QComboBox" name="leftSideIronFixedEndInput">
+               <item>
+                <property name="text">
+                 <string/>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Fixed End</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Tensioned End</string>
+                </property>
+               </item>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -1039,6 +1150,111 @@
                <property name="text">
                 <string>Cut Down</string>
                </property>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="rightSideIronHookOriLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Hook Orientation</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="1">
+              <widget class="QComboBox" name="rightSideIronHookOriInput">
+               <item>
+                <property name="text">
+                 <string/>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hook Up</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Hook Down</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="rightSideIronFeedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Feed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="rightSideIronFixedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Fixed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QCheckBox" name="rightSideIronFeedEndInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QComboBox" name="rightSideIronFixedEndInput">
+               <item>
+                <property name="text">
+                 <string/>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Fixed End</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Tensioned End</string>
+                </property>
+               </item>
               </widget>
              </item>
             </layout>

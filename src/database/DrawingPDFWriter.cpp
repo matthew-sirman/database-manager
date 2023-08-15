@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by matthew on 27/07/2020.
 //
 
@@ -254,7 +254,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                       fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-    labelText = "Side Overlaps";
+    labelText = "Overlaps";
 
     std::stringstream sideOverlapsText;
 
@@ -272,7 +272,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             lapString.str(std::string());
             lapString << leftOverlap->width << "mm";
             if (leftOverlap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (bonded " << leftOverlap->material().thickness << "mm)";
+                lapString << " (" << leftOverlap->material().materialName << " " << leftOverlap->material().materialName << "mm)";
             }
             lapStrings.push_back(lapString.str());
         }
@@ -280,7 +280,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             lapString.str(std::string());
             lapString << rightOverlap->width << "mm";
             if (rightOverlap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (bonded " << rightOverlap->material().thickness << "mm)";
+                lapString << " (" << rightOverlap->material().materialName << " " << rightOverlap->material().thickness << "mm)";
             }
             lapStrings.push_back(lapString.str());
         }
@@ -288,7 +288,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             lapString.str(std::string());
             lapString << leftSidelap->width << "mm";
             if (leftSidelap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (bonded " << leftSidelap->material().thickness << "mm)";
+                lapString << " (" << leftSidelap->material().materialName << " " << leftSidelap->material().thickness << "mm)";
             }
             lapStrings.push_back(lapString.str());
         }
@@ -296,7 +296,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             lapString.str(std::string());
             lapString << rightSidelap->width << "mm";
             if (rightSidelap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (bonded " << rightSidelap->material().thickness << "mm)";
+                lapString << " (" << rightSidelap->material().materialName << " " <<  rightSidelap->material().thickness << "mm)";
             }
             lapStrings.push_back(lapString.str());
         }
@@ -483,21 +483,21 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         std::stringstream divertorsFieldText;
         std::vector<Drawing::Divertor> divertors = drawing.divertors();
 
-        Material &mat = divertors.front().material();
+        Material& mat = divertors.front().material();
 
         divertorsFieldText << divertors.front().width << "x" << divertors.front().length << " " << mat.thickness
-                           << "mm " << mat.materialName << " at ";
+            << "mm " << mat.materialName << " at ";
 
         std::vector<float> leftYPositions, rightYPositions;
 
-        for (const Drawing::Divertor &divertor : divertors) {
+        for (const Drawing::Divertor& divertor : divertors) {
             switch (divertor.side) {
-                case Drawing::LEFT:
-                    leftYPositions.push_back(divertor.verticalPosition);
-                    break;
-                case Drawing::RIGHT:
-                    rightYPositions.push_back(divertor.verticalPosition);
-                    break;
+            case Drawing::LEFT:
+                leftYPositions.push_back(divertor.verticalPosition);
+                break;
+            case Drawing::RIGHT:
+                rightYPositions.push_back(divertor.verticalPosition);
+                break;
             }
         }
 
@@ -513,7 +513,8 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                     break;
                 }
             }
-        } else {
+        }
+        else {
             matchingSides = false;
         }
 
@@ -526,7 +527,8 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                     divertorsFieldText << "+";
                 }
             }
-        } else if (leftYPositions.empty()) {
+        }
+        else if (leftYPositions.empty()) {
             float lastY = 0;
             for (float y : rightYPositions) {
                 divertorsFieldText << (y - lastY);
@@ -535,7 +537,8 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                     divertorsFieldText << "+";
                 }
             }
-        } else if (rightYPositions.empty()) {
+        }
+        else if (rightYPositions.empty()) {
             float lastY = 0;
             for (float y : leftYPositions) {
                 divertorsFieldText << (y - lastY);
@@ -544,7 +547,8 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                     divertorsFieldText << "+";
                 }
             }
-        } else {
+        }
+        else {
             divertorsFieldText << "Left: ";
             float lastY = 0;
             for (float y : leftYPositions) {
@@ -568,7 +572,24 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         labelText = "Divertors";
         fieldText = divertorsFieldText.str().c_str();
         drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-                          fieldText, fieldWidth, horizontalOffset, verticalOffset);
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
+    }
+    if (drawing.sideIronFixedEnd() || drawing.sideIronFeedEnd().has_value()) {
+        std::stringstream markingRefText;
+        labelText = "Marking Reference";
+        if (drawing.sideIronFixedEnd()) {
+            markingRefText << "FX - Fixed End";
+            if (drawing.sideIronFeedEnd().has_value()) {
+                markingRefText << "\n";
+            }
+        }
+        if (drawing.sideIronFeedEnd().has_value()) {
+            markingRefText << "FE - Feed End";
+        }
+
+        fieldText = markingRefText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
 
     labelText = "Notes";
@@ -621,7 +642,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     painter.restore();
 }
 
-void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRegion, const Drawing &drawing) const {
+void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRegion, const Drawing& drawing) const {
     const double maxDimensionPercentage = 0.9;
     const double defaultHorizontalBarSize = 45;
     const double dimensionSpacingHeight = 0.7, dimensionBarHeight = 0.8, dimensionInnerSpacingHeight = 0.9;
@@ -630,13 +651,13 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     const double mainDimensionLineSize = 0.06;
 
     QPen dashDotPen = QPen(QBrush(Qt::black), 1, Qt::DashDotLine);
-    dashDotPen.setDashPattern({96, 48, 4, 48});
+    dashDotPen.setDashPattern({ 96, 48, 4, 48 });
 
     QPen dashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
-    dashPen.setDashPattern({96, 48});
+    dashPen.setDashPattern({ 96, 48 });
 
     QPen smallDashPen = QPen(QBrush(Qt::black), 1, Qt::DashLine);
-    smallDashPen.setDashPattern({48, 24});
+    smallDashPen.setDashPattern({ 48, 24 });
 
     QFont font = painter.font();
     font.setPointSize(10);
@@ -647,18 +668,18 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     std::optional<Drawing::Lap> leftLap, rightLap, topLap, bottomLap;
 
     switch (drawing.tensionType()) {
-        case Drawing::SIDE:
-            leftLap = drawing.sidelap(Drawing::LEFT);
-            rightLap = drawing.sidelap(Drawing::RIGHT);
-            topLap = drawing.overlap(Drawing::LEFT);
-            bottomLap = drawing.overlap(Drawing::RIGHT);
-            break;
-        case Drawing::END:
-            leftLap = drawing.overlap(Drawing::LEFT);
-            rightLap = drawing.overlap(Drawing::RIGHT);
-            topLap = drawing.sidelap(Drawing::LEFT);
-            bottomLap = drawing.sidelap(Drawing::RIGHT);
-            break;
+    case Drawing::SIDE:
+        leftLap = drawing.sidelap(Drawing::LEFT);
+        rightLap = drawing.sidelap(Drawing::RIGHT);
+        topLap = drawing.overlap(Drawing::LEFT);
+        bottomLap = drawing.overlap(Drawing::RIGHT);
+        break;
+    case Drawing::END:
+        leftLap = drawing.overlap(Drawing::LEFT);
+        rightLap = drawing.overlap(Drawing::RIGHT);
+        topLap = drawing.sidelap(Drawing::LEFT);
+        bottomLap = drawing.sidelap(Drawing::RIGHT);
+        break;
     }
 
     struct {
@@ -692,68 +713,134 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
     if (widthDim.total() / regionWidth > lengthDim.total() / regionHeight) {
         pWidth = maxDimensionPercentage;
         pLength = maxDimensionPercentage * ((lengthDim.total() / regionHeight) / (widthDim.total() / regionWidth));
-    } else {
+    }
+    else {
         pLength = maxDimensionPercentage;
         pWidth = maxDimensionPercentage * ((widthDim.total() / regionWidth) / (lengthDim.total() / regionHeight));
     }
 
     QRectF matBoundingRegion;
     matBoundingRegion.setTopLeft(QPointF(
-            (0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * regionWidth + drawingRegion.left(),
-            (0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * regionHeight + drawingRegion.top()
+        (0.5 - pWidth * (0.5 - widthDim.rLeft / widthDim.total())) * regionWidth + drawingRegion.left(),
+        (0.5 - pLength * (0.5 - lengthDim.rLeft / lengthDim.total())) * regionHeight + drawingRegion.top()
     ));
     matBoundingRegion.setBottomRight(QPointF(
-            (0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * regionWidth + drawingRegion.left(),
-            (0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * regionHeight + drawingRegion.top()
+        (0.5 + pWidth * (0.5 - widthDim.rRight / widthDim.total())) * regionWidth + drawingRegion.left(),
+        (0.5 + pLength * (0.5 - lengthDim.rRight / lengthDim.total())) * regionHeight + drawingRegion.top()
     ));
 
     painter.drawRect(matBoundingRegion);
 
     QLineF leftWidthExtender(
-            QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
-            QPointF(matBoundingRegion.left(),
-                    (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
+        QPointF(matBoundingRegion.left(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
+        QPointF(matBoundingRegion.left(),
+            (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
     QLineF rightWidthExtender(
-            QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
-            QPointF(matBoundingRegion.right(),
-                    (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
+        QPointF(matBoundingRegion.right(), (0.5 * (1.0 - pLength)) * regionHeight + drawingRegion.top()),
+        QPointF(matBoundingRegion.right(),
+            (0.5 * (1.0 - pLength) - mainDimensionLineSize) * regionHeight + drawingRegion.top()));
 
     painter.setPen(dashPen);
     painter.drawLine(leftWidthExtender);
     painter.drawLine(rightWidthExtender);
     painter.setPen(Qt::black);
 
-    
-
     if (drawing.sideIron(Drawing::LEFT).type == SideIronType::B || drawing.sideIron(Drawing::RIGHT).type == SideIronType::B) {
         drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(),
-                  (to_str(drawing.width() + 60 * ((drawing.sideIron(Drawing::LEFT).type == SideIronType::B)
-                                                  + (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))) + " o/h\n" +to_str(drawing.width())).c_str(),
-          DOUBLE_HEADED, false, QPen(), QPen(), 50.0, 30.0, 2);
+            (to_str(drawing.width() + 60 * ((drawing.sideIron(Drawing::LEFT).type == SideIronType::B)
+                + (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))) + " o/h\n" + to_str(drawing.width())).c_str(),
+            DOUBLE_HEADED, false, QPen(), QPen(), 50.0, 30.0, 2);
     }
     else {
         drawArrow(painter, leftWidthExtender.center(), rightWidthExtender.center(), (to_str(drawing.width())).c_str(),
-                          DOUBLE_HEADED);
+            DOUBLE_HEADED);
     }
 
     QLineF topLengthExtender(
-            QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.top()),
-            QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
-                    matBoundingRegion.top()));
+        QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.top()),
+        QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
+            matBoundingRegion.top()));
     QLineF bottomLengthExtender(
-            QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.bottom()),
-            QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
-                    matBoundingRegion.bottom()));
+        QPointF((0.5 * (1.0 - pWidth)) * regionWidth + drawingRegion.left(), matBoundingRegion.bottom()),
+        QPointF((0.5 * (1.0 - pWidth) - mainDimensionLineSize) * regionWidth + drawingRegion.left(),
+            matBoundingRegion.bottom()));
 
     painter.setPen(dashPen);
     painter.drawLine(topLengthExtender);
     painter.drawLine(bottomLengthExtender);
-    
+
     painter.setPen(Qt::black);
+    bool needed = false;
+    if (drawing.sideIronFixedEnd(Drawing::LEFT).has_value() || drawing.sideIronFixedEnd(Drawing::RIGHT).has_value()) {
+        needed = true;
+        std::stringstream leftSideIronLowerText, rightSideIronLowerText;
+
+        
+        if (drawing.sideIronHookOrientation(Drawing::LEFT).has_value()) {
+            switch (drawing.sideIronHookOrientation(Drawing::LEFT).value()) {
+            case Drawing::HOOK_UP:
+                leftSideIronLowerText << "Hook Up ";
+                break;
+            case Drawing::HOOK_DOWN:
+                leftSideIronLowerText << "Hook Down ";
+                break;
+            }
+        }
+        
+        if (*drawing.sideIronFixedEnd(Drawing::LEFT) == Drawing::FIXED_END) {
+            leftSideIronLowerText << "FX";
+            if (*drawing.sideIronFeedEnd() == Drawing::LEFT) {
+                leftSideIronLowerText << ";FE";
+            }
+        }
+        else if (*drawing.sideIronFeedEnd() == Drawing::LEFT) {
+            leftSideIronLowerText << "FE";
+        }
+
+        QRectF leftSideIronLowerLabel = QFontMetricsF(painter.font()).boundingRect(leftSideIronLowerText.str().c_str());
+        leftSideIronLowerLabel.moveBottomLeft(drawingRegion.bottomLeft());
+        leftSideIronLowerLabel.adjust((bottomLengthExtender.center() - leftSideIronLowerLabel.center()).x(), QFontMetricsF(painter.font()).height(),
+            (bottomLengthExtender.center() - leftSideIronLowerLabel.center()).x(), QFontMetricsF(painter.font()).height());
+
+        painter.drawText(leftSideIronLowerLabel, Qt::AlignHCenter | Qt::AlignVCenter, leftSideIronLowerText.str().c_str());
+
+        if (drawing.sideIronHookOrientation(Drawing::RIGHT).has_value()) {
+            switch (drawing.sideIronHookOrientation(Drawing::RIGHT).value()) {
+            case Drawing::HOOK_UP:
+                rightSideIronLowerText << "Hook Up ";
+                break;
+            case Drawing::HOOK_DOWN:
+                rightSideIronLowerText << "Hook Down ";
+                break;
+            }
+        }
+        
+        if (*drawing.sideIronFixedEnd(Drawing::RIGHT) == Drawing::FIXED_END) {
+            rightSideIronLowerText << "FX";
+            if (*drawing.sideIronFeedEnd() == Drawing::RIGHT) {
+                rightSideIronLowerText << ";FE";
+            }
+        }
+        else if (*drawing.sideIronFeedEnd() == Drawing::RIGHT) {
+            rightSideIronLowerText << "FE";
+        }
+        
+
+        QRectF rightSideIronLowerLabel = QFontMetricsF(painter.font()).boundingRect(rightSideIronLowerText.str().c_str());
+        rightSideIronLowerLabel.moveBottomRight(drawingRegion.bottomRight());
+        rightSideIronLowerLabel.adjust(-(rightSideIronLowerLabel.center() - rightWidthExtender.center()).x(), QFontMetricsF(painter.font()).height(),
+            -(rightSideIronLowerLabel.center() - rightWidthExtender.center()).x(), QFontMetricsF(painter.font()).height());
+
+
+        painter.drawText(rightSideIronLowerLabel, Qt::AlignHCenter | Qt::AlignVCenter, rightSideIronLowerText.str().c_str());
+
+
+
+    }
 
     if (drawing.sideIron(Drawing::LEFT).type != drawing.sideIron(Drawing::RIGHT).type ||
         drawing.sideIronInverted(Drawing::LEFT) != drawing.sideIronInverted(Drawing::RIGHT) ||
-        drawing.sideIronCutDown(Drawing::LEFT) != drawing.sideIronCutDown(Drawing::RIGHT)) {
+        drawing.sideIronCutDown(Drawing::LEFT) != drawing.sideIronCutDown(Drawing::RIGHT) || needed) {
         std::stringstream leftSideIronText, rightSideIronText;
         SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
 
@@ -1007,7 +1094,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter, QRectF drawingRe
             );
             if (spacingDimension != drawing.numberOfBars()) {
                 barWidthTotal += drawing.barSpacing(spacingDimension);
-                QString runningTotal = QString::number((int)barWidthTotal);
+                QString runningTotal = QString::number(((int)(barWidthTotal * 10)) / 10.0f);
                 QRectF rect = QFontMetricsF(painter.font()).boundingRect(runningTotal);
                 rect.moveCenter(QPoint((nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
                                        matBoundingRegion.left(),

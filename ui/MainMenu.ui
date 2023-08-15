@@ -1265,6 +1265,7 @@ color: rgb(70, 70, 70);
     <addaction name="pricingMenu_materialPricesAction"/>
     <addaction name="pricingMenu_sideIronPricesAction"/>
     <addaction name="pricingMenu_extraPricesAction"/>
+    <addaction name="pricingMenu_labourTimes"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
@@ -1331,6 +1332,11 @@ color: rgb(70, 70, 70);
   <action name="pricingMenu_extraPricesAction">
    <property name="text">
     <string>Extra Prices</string>
+   </property>
+  </action>
+  <action name="pricingMenu_labourTimes">
+   <property name="text">
+    <string>Labour Times</string>
    </property>
   </action>
  </widget>

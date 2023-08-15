@@ -187,12 +187,12 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                                             DrawingComponentManager<ExtraPrice>::rawSourceDataSize());
             break;
         }
-        case RequestType::SOURCE_LABOUR_TIMES:
+        case RequestType::SOURCE_LABOUR_TIMES_TABLE:
         {
             if (DrawingComponentManager<LabourTime>::dirty()) {
                 createSourceData<LabourTimeData>(caller.databaseManager().sourceTable("labour_times"));
             }
-            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<LabourTime>::rawSourceData,
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<LabourTime>::rawSourceData(),
                 DrawingComponentManager<LabourTime>::rawSourceDataSize());
                 break;
         }
@@ -369,7 +369,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     caller.changelogMessage(clientHandle, "Added a new Extra Price");
                     break;
                 }
-                case RequestType::SOURCE_LABOUR_TIMES:
+                case RequestType::SOURCE_LABOUR_TIMES_TABLE:
                 {
                     createSourceData<LabourTimeData>(caller.databaseManager().sourceTable("labour_times"));
                     sourceData = DrawingComponentManager<LabourTime>::rawSourceData();
@@ -660,24 +660,6 @@ void DatabaseRequestHandler::constructDataElements(
             data.squareMetres = row[4].get<float>();
             sizeValue += sizeof(float);
         }
-        else if (row[1].get<std::string>() == "divertor") {
-            data.type = ExtraPriceType::DIVERTOR;
-            data.amount = row[3].get<unsigned>();
-            data.squareMetres = std::nullopt;
-            sizeValue += sizeof(float);
-        }
-        else if (row[1].get<std::string>() == "deflector") {
-            data.type = ExtraPriceType::DEFLECTOR;
-            data.amount = row[3].get<unsigned>();
-            data.squareMetres = std::nullopt;
-            sizeValue += sizeof(float);
-        }
-        else if (row[1].get<std::string>() == "dam_bar") {
-            data.type = ExtraPriceType::DAM_BAR;
-            data.amount = row[3].get<unsigned>();
-            data.squareMetres = std::nullopt;
-            sizeValue += sizeof(float);
-        }
         data.price = row[2];
         sizeValue += sizeof(ExtraPriceType) + sizeof(float) + sizeof(unsigned) * 2;
 
@@ -725,25 +707,10 @@ void DatabaseRequestHandler::constructDataElements(mysqlx::RowResult& labourTime
         LabourTimeData data;
 
         data.handle = handle++;
-        data.id = row.get(0).get<unsigned int>();
-        if (row[1].get<std::string>() == "Cutting Amount")
-            data.type = LabourTimeType::CUTTING_AMOUNT;
-        else if (row[1].get<std::string>() == "Time to Punch")
-            data.type = LabourTimeType::TIME_TO_PUNCH;
-        else if (row[1].get<std::string>() == "Time to Shod")
-            data.type = LabourTimeType::TIME_TO_SHOD;
-        else if (row[1].get<std::string>() == "Time to Rebate")
-            data.type = LabourTimeType::TIME_TO_REBATE;
-        else if (row[1].get<std::string>() == "Backing Strips")
-            data.type = LabourTimeType::BACKING_STRIPS;
-        else if (row[1].get<std::string>() == "Cover Straps")
-            data.type = LabourTimeType::COVER_STRAPS;
-        else if (row[1].get<std::string>() == "Bonded overlap")
-            data.type = LabourTimeType::BONDED_OVERLAP;
-        else if (row[1].get<std::string>() == "Cutting to Size")
-            data.type = LabourTimeType::CUTTING_TO_SIZE;
+        data.id = row.get(0).get<unsigned>();
+        data.job = row.get(1).get<std::string>();
         data.time = row[2].get<unsigned>();
-        sizeValue += sizeof(unsigned) * 3 + sizeof(LabourTimeType);
+        sizeValue += sizeof(unsigned) * 3 + sizeof(data.job.size()) + data.job.size();
 
         elements.push_back(data);
     }
@@ -751,20 +718,22 @@ void DatabaseRequestHandler::constructDataElements(mysqlx::RowResult& labourTime
 
 template<>
 void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::LabourTimeData& element, void* buffer, unsigned& sizeValue) const {
-    unsigned char* buff = (unsigned char*)buff;
+    unsigned char* buff = (unsigned char*)buffer;
 
-    *((LabourTimeType*)buff) = element.type;
-    buff += sizeof(LabourTimeType);
+    *((size_t*)buff) = element.job.size();
+    buff += sizeof(size_t);
+    std::memcpy(buff, element.job.c_str(), element.job.size());
+    buff += element.job.size();
 
     *((unsigned*)buff) = element.time;
     buff += sizeof(unsigned);
 
-    sizeValue += sizeof(LabourTimeType) + sizeof(unsigned);
+    sizeValue += sizeof(unsigned) + sizeof(size_t) + element.job.size();
 }
 
 template<>
 RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::LabourTimeData>() const {
-    return RequestType::SOURCE_LABOUR_TIMES;
+    return RequestType::SOURCE_LABOUR_TIMES_TABLE;
 }
 
 template<>

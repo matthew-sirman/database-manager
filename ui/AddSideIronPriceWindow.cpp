@@ -23,12 +23,12 @@ AddSideIronPriceWindow::AddSideIronPriceWindow(Client* client, SideIronPricingWi
 	lengthEdit->setText(QString::number(0, 'f', 2));
 	QLineEdit* priceEdit = ui->priceEdit;
 	priceEdit->setText(QString::number(0, 'f', 2));
-	QLineEdit* screwsEdit = ui->priceEdit;
-	screwsEdit->setText(QString::number(0, 'f', 0));
-	lengthEdit->setValidator(validator);
-	priceEdit->setValidator(validator);
-	screwsEdit->setValidator(validator);
+	QLineEdit* screwsEdit = ui->screwsEdit;
+	screwsEdit->setText(QString::number(0));
 	QComboBox* extraflex = ui->extraflexCombobox;
+	priceEdit->setValidator(validator);
+	screwsEdit->setValidator(new QRegExpValidator(QRegExp("[1-9][0-9]*")));
+	
 
 	this->setWindowTitle("Add Side Iron Price");
 	ui->AddPriceTitleLabel->setText("Add Side Iron Price");

@@ -104,6 +104,11 @@ Drawing::Drawing(const Drawing &drawing) {
     this->sideIronsInverted[1] = drawing.sideIronsInverted[1];
     this->sideIronsCutDown[0] = drawing.sideIronsCutDown[0];
     this->sideIronsCutDown[1] = drawing.sideIronsCutDown[1];
+    this->feedEnd = drawing.feedEnd;
+    this->ending[0] = drawing.ending[0];
+    this->ending[1] = drawing.ending[1];
+    this->hookOrientation[0] = drawing.hookOrientation[0];
+    this->hookOrientation[1] = drawing.hookOrientation[1];
     this->sidelaps[0] = drawing.sidelaps[0];
     this->sidelaps[1] = drawing.sidelaps[1];
     this->overlaps[0] = drawing.overlaps[0];
@@ -145,6 +150,11 @@ void Drawing::setAsDefault() {
     this->sideIronsInverted[1] = false;
     this->sideIronsCutDown[0] = false;
     this->sideIronsCutDown[1] = false;
+    this->feedEnd = std::nullopt;
+    this->ending[0] = std::nullopt;
+    this->ending[1] = std::nullopt;
+    this->hookOrientation[0] = std::nullopt;
+    this->hookOrientation[1] = std::nullopt;
     this->sidelaps[0] = std::nullopt;
     this->sidelaps[1] = std::nullopt;
     this->overlaps[0] = std::nullopt;
@@ -397,6 +407,32 @@ bool Drawing::sideIronCutDown(Drawing::Side side) const {
     }
     ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
 }
+bool Drawing::sideIronFixedEnd() const {
+    return (ending[0].has_value() || ending[1].has_value());
+}
+
+std::optional<Drawing::Ending> Drawing::sideIronFixedEnd(Side side) const {
+    switch (side) {
+    case LEFT:
+        return ending[0];
+    case RIGHT:
+        return ending[1];
+    }
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
+}
+std::optional<Drawing::Side> Drawing::sideIronFeedEnd() const {
+    return feedEnd;
+}
+
+std::optional<Drawing::HookOrientation> Drawing::sideIronHookOrientation(Side side) const {
+    switch (side) {
+    case LEFT:
+        return hookOrientation[0];
+    case RIGHT:
+        return hookOrientation[1];
+    }
+    ERROR_RAW("Invalid Side Iron side requested. The side must be either Left or Right", std::cerr);
+}
 
 void Drawing::setSideIron(Drawing::Side side, const SideIron &sideIron) {
     switch (side) {
@@ -427,10 +463,67 @@ void Drawing::setSideIronCutDown(Drawing::Side side, bool cutDown) {
     switch (side) {
         case LEFT:
             sideIronsCutDown[0] = cutDown;
+            break;
         case RIGHT:
             sideIronsCutDown[1] = cutDown;
+            break;
     }
     invokeUpdateCallbacks();
+}
+
+void Drawing::setSideIronEnding(Drawing::Side side, Drawing::Ending ending) {
+    switch (side) {
+    case LEFT:
+        this->ending[0] = std::optional<Drawing::Ending>(ending);
+        break;
+    case RIGHT:
+        this->ending[1] = std::optional<Drawing::Ending>(ending);
+        break;
+    }
+    invokeUpdateCallbacks();
+}
+
+void Drawing::setSideIronFeed(Drawing::Side side) {
+    feedEnd = std::optional<Drawing::Side>(side);
+}
+
+void Drawing::setSideIronHookOrientation(Drawing::Side side, Drawing::HookOrientation orientation) {
+    switch (side) {
+    case LEFT:
+        hookOrientation[0] = std::optional<Drawing::HookOrientation>(orientation);
+        return;
+    case RIGHT:
+        hookOrientation[1] = std::optional<Drawing::HookOrientation>(orientation);
+        return;
+    }
+}
+
+void Drawing::removeSideIronFeed(Drawing::Side side) {
+    if (feedEnd.has_value() && side == feedEnd.value()) {
+        feedEnd = std::nullopt;
+    }
+}
+
+void Drawing::removeSideIronEnding(Drawing::Side side) {
+    switch (side) {
+    case LEFT:
+        ending[0] = std::nullopt;
+        return;
+    case RIGHT:
+        ending[1] = std::nullopt;
+        return;
+    }
+}
+
+void Drawing::removeSideIronHookOrientation(Drawing::Side side) {
+    switch (side) {
+    case LEFT:
+        hookOrientation[0] = std::nullopt;
+        break;
+    case RIGHT:
+        hookOrientation[1] = std::nullopt;
+        break;
+    }
 }
 
 void Drawing::removeSideIron(Drawing::Side side) {
@@ -439,6 +532,7 @@ void Drawing::removeSideIron(Drawing::Side side) {
             sideIronHandles[0] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
             sideIronsInverted[0] = false;
             sideIronsCutDown[0] = false;
+
             break;
         case RIGHT:
             sideIronHandles[1] = DrawingComponentManager<SideIron>::findComponentByID(1).handle();
@@ -858,6 +952,32 @@ void DrawingSerialiser::serialise(const Drawing &drawing, void *target) {
     *buffer++ = drawing.sideIronsInverted[1];
     *buffer++ = drawing.sideIronsCutDown[1];
 
+    *buffer++ = drawing.feedEnd.has_value();
+    if (drawing.feedEnd.has_value()) {
+        *((Drawing::Side*)buffer) = drawing.feedEnd.value();
+        buffer += sizeof(Drawing::Side);
+    }
+    *buffer++ = drawing.ending[0].has_value();
+    if (drawing.ending[0].has_value()) {
+        *((Drawing::Ending*)buffer) = drawing.ending[0].value();
+        buffer += sizeof(Drawing::Side);
+    }
+    *buffer++ = drawing.ending[1].has_value();
+    if (drawing.ending[1].has_value()) {
+        *((Drawing::Ending*)buffer) = drawing.ending[1].value();
+        buffer += sizeof(Drawing::Side);
+    }
+    *buffer++ = drawing.hookOrientation[0].has_value();
+    if (drawing.hookOrientation[0].has_value()) {
+        *((Drawing::HookOrientation*)buffer) = drawing.hookOrientation[0].value();
+        buffer += sizeof(Drawing::HookOrientation);
+    }
+    *buffer++ = drawing.hookOrientation[1].has_value();
+    if (drawing.hookOrientation[1].has_value()) {
+        *((Drawing::HookOrientation*)buffer) = drawing.hookOrientation[1].value();
+        buffer += sizeof(Drawing::HookOrientation);
+    }
+
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     enum Flags {
         SIDELAP_L = 0x01,
@@ -1024,6 +1144,23 @@ unsigned DrawingSerialiser::serialisedSize(const Drawing &drawing) {
     size += sizeof(unsigned char) + drawing.barWidths.size() * sizeof(float);
     // Side Irons
     size += 2 * (sizeof(unsigned) + sizeof(unsigned char));
+
+    size += 5;
+    if (drawing.ending[0].has_value()) {
+        size += sizeof(Drawing::Ending);
+    }
+    if (drawing.ending[1].has_value()) {
+        size += sizeof(Drawing::Ending);
+    }
+    if (drawing.feedEnd.has_value()) {
+        size += sizeof(Drawing::Side);
+    }
+    if (drawing.hookOrientation[0].has_value()) {
+        size += sizeof(Drawing::HookOrientation);
+    }
+    if (drawing.hookOrientation[1].has_value()) {
+        size += sizeof(Drawing::HookOrientation);
+    }
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L
     size += sizeof(unsigned char);
     // Lap: Attachment Type, Width, Material ID
@@ -1185,6 +1322,33 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     buffer += sizeof(unsigned);
     drawing->sideIronsInverted[1] = *buffer++;
     drawing->sideIronsCutDown[1] = *buffer++;
+    /// feed, ending, hook
+
+    bool hasFeedEnd = *buffer++;
+    if (hasFeedEnd) {
+        drawing->feedEnd = *((Drawing::Side*)buffer);
+        buffer += sizeof(Drawing::Side);
+    }
+    bool hasLeftEnding = *buffer++;
+    if (hasLeftEnding) {
+        drawing->ending[0] = *((Drawing::Ending*)buffer);
+        buffer += sizeof(Drawing::Ending);
+    }
+    bool hasRightEnding = *buffer++;
+    if (hasRightEnding) {
+        drawing->ending[1] = *((Drawing::Ending*)buffer);
+        buffer += sizeof(Drawing::Ending);;
+    }
+    bool hasLeftHookOrientation = *buffer++;
+    if (hasLeftHookOrientation) {
+        drawing->hookOrientation[0] = *((Drawing::HookOrientation*)buffer);
+        buffer += sizeof(Drawing::HookOrientation);
+    }
+    bool hasRightHookOrientation = *buffer++;
+    if (hasRightHookOrientation) {
+        drawing->hookOrientation[1] = *((Drawing::HookOrientation*)buffer);
+        buffer += sizeof(Drawing::HookOrientation);
+    }
 
 
     // A byte for flags: UNUSED, UNUSED, UNUSED, HAS_BOTTOM_LAYER, OL_R, OL_L, SL_R, SL_L

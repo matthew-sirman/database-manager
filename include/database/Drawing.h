@@ -170,6 +170,18 @@ public:
         RIGHT
     };
 
+    enum HookOrientation {
+        UNKOWN,
+        HOOK_UP,
+        HOOK_DOWN
+    };
+
+    enum Ending {
+        DEFAULT,
+        FIXED_END,
+        TENSION_END
+    };
+
     /// <summary>
     /// MaterialLayer enum
     /// Represents whether an entity represents the top or bottom layer of a material. Note that if a mat has
@@ -344,7 +356,7 @@ public:
         /// <returns>A string contianing the details about the lap.</returns>
         inline std::string strAsSidelap() const {
             std::stringstream ss;
-            ss << width << "mm " << (attachmentType == LapAttachment::INTEGRAL ? "integral" : "bonded") << " sidelap (" << material().material() << ")";
+            ss << width << "mm " << (attachmentType == LapAttachment::INTEGRAL ? "integral" : material().materialName) << " sidelap (" << material().material() << ")";
             return ss.str();
         }
 
@@ -1441,6 +1453,14 @@ public:
      /// <returns>Whether the specified side iron is cut down.</returns>
     bool sideIronCutDown(Side side) const;
 
+    bool sideIronFixedEnd() const;
+
+    std::optional<Ending> sideIronFixedEnd(Side side) const;
+
+    std::optional<Side> sideIronFeedEnd() const;
+
+    std::optional<HookOrientation> sideIronHookOrientation(Side side) const;
+
     /// <summary>
     /// Setter for a side iron
     /// </summary>
@@ -1461,6 +1481,18 @@ public:
     /// <param name="side">The side to are specifying for.</param>
     /// <param name="cutDown">The value to set the specified side to.</param>
     void setSideIronCutDown(Side side, bool cutDown);
+
+    void setSideIronEnding(Side side, Ending ending);
+
+    void setSideIronFeed(Side side);
+
+    void setSideIronHookOrientation(Side side, HookOrientation hookOrientation);
+
+    void removeSideIronEnding(Side side);
+
+    void removeSideIronFeed(Side side);
+
+    void removeSideIronHookOrientation(Side side);
 
     /// <summary>
     /// Remover for a side iron
@@ -1753,6 +1785,9 @@ private:
     private:
     bool sideIronsInverted[2];
     bool sideIronsCutDown[2];
+    std::optional<Side> feedEnd;
+    std::optional<Ending> ending[2];
+    std::optional<HookOrientation> hookOrientation[2];
 
     std::optional<Lap> sidelaps[2], overlaps[2];
 
@@ -1775,6 +1810,8 @@ private:
     // A set of update callbacks. Each time a change is made, each callback is invoked
     std::vector<std::function<void()>> updateCallbacks;
 };
+
+
 
 /// <summary>
 /// DrawingSerialiser
