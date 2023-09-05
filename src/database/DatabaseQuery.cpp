@@ -1686,29 +1686,40 @@ void ComponentInsert::serialise(void *target) const {
             *buff++ = hyperlinkSize;
             memcpy(buff, sideIronData->hyperlink.generic_string().c_str(), hyperlinkSize);
             buff += hyperlinkSize;
+            *buff++ = sideIronData->price.has_value();
+            if (sideIronData->price.has_value()) {
+                *((float*)buff) = sideIronData->price.value();
+            }
+            *buff++ = sideIronData->screws.has_value();
+            if (sideIronData->screws.has_value()) {
+                *((unsigned*)buff) = sideIronData->screws.value();
+            }
             break;
         }
         case InsertType::SIDE_IRON_PRICE: {
+
             *((SideIronType*)buff) = sideIronPriceData->type;
             buff += sizeof(SideIronType);
+
+            *((unsigned*)buff) = sideIronPriceData->lowerLength;
+            buff += sizeof(unsigned);
+
+            *((unsigned*)buff) = sideIronPriceData->upperLength;
+            buff += sizeof(unsigned);
 
             *((bool*)buff) = sideIronPriceData->extraflex;
             buff += sizeof(bool);
 
-            *((float*)buff) = sideIronPriceData->length;
-            buff += sizeof(float);
-
             *((float*)buff) = sideIronPriceData->price;
             buff += sizeof(float);
 
-            *((PriceMode*)buff) = sideIronPriceData->priceMode;
-            buff += sizeof(PriceMode);
+            *((ComponentInsert::PriceMode*)buff) = sideIronPriceData->priceMode;
 
-            *((unsigned*)buff) = sideIronPriceData->screws;
-            buff += sizeof(unsigned);
-
-            *((unsigned*)buff) = sideIronPriceData->sideIronPriceId;
-            buff += sizeof(unsigned);
+            *buff++ = sideIronPriceData->componentID.has_value();
+            if (sideIronPriceData->componentID.has_value()) {
+                *((unsigned*)buff) = *sideIronPriceData->componentID;
+                buff += sizeof(unsigned);
+            }
 
             break;
         }
@@ -1775,6 +1786,27 @@ void ComponentInsert::serialise(void *target) const {
             buff += labourTimeData->job.size();
             *((unsigned*)buff) = labourTimeData->time;
             buff += sizeof(unsigned);
+            break;
+        }
+        case (InsertType::SPECIFIC_SIDE_IRON_PRICE): {
+            *((PriceMode*)buff) = specificSideIronPriceData->priceMode;
+            buff += sizeof(PriceMode);
+            *((unsigned*)buff) = specificSideIronPriceData->sideIronComponentID;
+            buff += sizeof(unsigned);
+            *((float*)buff) = specificSideIronPriceData->price;
+            buff += sizeof(float);
+            *((unsigned*)buff) = specificSideIronPriceData->screws;
+            buff += sizeof(unsigned);
+            break;
+        }
+        case (InsertType::POWDER_COATING): {
+            *((unsigned*)buff) = powderCoatingPriceData->priceID;
+            buff += sizeof(unsigned);
+            *((float*)buff) = powderCoatingPriceData->hookPrice;
+            buff += sizeof(float);
+            *((float*)buff) = powderCoatingPriceData->strapPrice;
+            buff += sizeof(float);
+            break;
         }
     }
 }
@@ -1797,6 +1829,10 @@ unsigned int ComponentInsert::serialisedSize() const {
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + extraPriceData->serialisedSize();
         case InsertType::LABOUR_TIMES:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + labourTimeData->serialisedSize();
+        case InsertType::SPECIFIC_SIDE_IRON_PRICE:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + specificSideIronPriceData->serialisedSize();
+        case InsertType::POWDER_COATING:
+            return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse) + powderCoatingPriceData->serialisedSize();
         case InsertType::NONE:
         default:
             return sizeof(RequestType) + sizeof(InsertType) + sizeof(ComponentInsertResponse);
@@ -1878,23 +1914,24 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             data.type = *((SideIronType*)buff);
             buff += sizeof(SideIronType);
 
-            data.extraflex = *((bool*)buff);
-            buff += sizeof(bool);
+            data.lowerLength = *((unsigned*)buff);
+            buff += sizeof(unsigned);
 
-            data.length = *((float*)buff);
-            buff += sizeof(float);
+            data.upperLength = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            data.extraflex = *buff++;
 
             data.price = *((float*)buff);
             buff += sizeof(float);
 
-            data.priceMode = *((PriceMode*)buff);
-            buff += sizeof(PriceMode);
+            data.priceMode = *((ComponentInsert::PriceMode*)buff);
 
-            data.screws = *((unsigned*)buff);
-            buff += sizeof(unsigned);
-
-            data.sideIronPriceId = *((unsigned*)buff);
-            buff += sizeof(unsigned);
+            bool hasID = *buff++;
+            if (hasID) {
+                data.componentID = std::make_optional(*((unsigned*)buff));
+                buff += sizeof(unsigned);
+            }
 
             insert->sideIronPriceData = data;
             break;
@@ -1983,6 +2020,32 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             insert->labourTimeData = data;
             break;
         }
+        case InsertType::SPECIFIC_SIDE_IRON_PRICE: {
+            SpecificSideIronPriceData data;
+            data.priceMode = *((PriceMode*)buff);
+            buff += sizeof(PriceMode);
+            data.sideIronComponentID = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.price = *((float*)buff);
+            buff += sizeof(float);
+            data.screws = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+
+            insert->specificSideIronPriceData = data;
+            break;
+        }
+        case InsertType::POWDER_COATING: {
+            PowderCoatingPriceData data;
+            data.priceID = *((unsigned*)buff);
+            buff += sizeof(unsigned);
+            data.hookPrice = *((float*)buff);
+            buff += sizeof(float);
+            data.strapPrice = *((float*)buff);
+            buff += sizeof(float);
+
+            insert->powderCoatingPriceData = data;
+            break;
+        }
     }
 
     return *insert;
@@ -2010,6 +2073,22 @@ void ComponentInsert::setComponentData(const SideIronData &data) {
     responseCode = ComponentInsertResponse::NONE;
 
     sideIronData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const SpecificSideIronPriceData& data) {
+    insertType = InsertType::SPECIFIC_SIDE_IRON_PRICE;
+    responseCode = ComponentInsertResponse::NONE;
+
+    specificSideIronPriceData = data;
+}
+
+template<>
+void ComponentInsert::setComponentData(const PowderCoatingPriceData& data) {
+    insertType = InsertType::POWDER_COATING;
+    responseCode = ComponentInsertResponse::NONE;
+
+    powderCoatingPriceData = data;
 }
 
 template<>
@@ -2070,27 +2149,36 @@ std::string ComponentInsert::toSQLQueryString() const {
             insert << "('" << machineData->manufacturer << "', '" << machineData->model << "')" << std::endl;
             break;
         case InsertType::SIDE_IRON:
-            insert << "INSERT INTO {0}.side_irons (type, length, drawing_number, hyperlink)" << std::endl;
+            insert << "INSERT INTO {0}.side_irons (type, length, drawing_number, hyperlink, price, screws)" << std::endl;
             insert << "VALUES" << std::endl;
             insert << "(" << (unsigned)sideIronData->type << ", " << sideIronData->length << ", '" << sideIronData->drawingNumber << "', '"
-                << sideIronData->hyperlink.generic_string() << "')" << std::endl;
+                << sideIronData->hyperlink.generic_string() << "', " << (sideIronData->price.has_value() ? std::to_string(*sideIronData->price) : "NULL")
+                << ", " << (sideIronData->screws.has_value() ? std::to_string(*sideIronData->screws) : "NULL") << ")" << std::endl;
             break;
         case InsertType::SIDE_IRON_PRICE:
             switch (sideIronPriceData->priceMode) {
                 case PriceMode::ADD:
-                    insert << "INSERT INTO {0}.side_iron_prices (type, length, price, screws, product_id)" << std::endl;
-                    insert << "VALUES" << std::endl;
-                    insert << "(" << (unsigned)sideIronPriceData->type << ", " << sideIronPriceData->length << ", " << sideIronPriceData->price << ", " << sideIronPriceData->screws << ", " << (int)sideIronPriceData->extraflex + 1 << ")" << std::endl;
+                    insert << "INSERT INTO {0}.side_iron_prices (type, lower_length, upper_length, product_id, price) VALUES ";
+                    insert << "(" << (unsigned)sideIronPriceData->type << " , " << sideIronPriceData->lowerLength << " , " << sideIronPriceData->upperLength << " , ";
+                    insert << sideIronPriceData->extraflex + 1 << " , " << sideIronPriceData->price << ")";
                     break;
                 case PriceMode::UPDATE:
+                    if (!sideIronPriceData->componentID.has_value()) {
+                        std::cout << "cannot update side iron data as component id is missing";
+                    }
+
                     insert << "UPDATE {0}.side_iron_prices SET" << std::endl;
-                    insert << "length = " << sideIronPriceData->length << ", price = " << sideIronPriceData->price << ", product_id=" << (int)sideIronPriceData->extraflex + 1;
-                    insert << ", screws = " << sideIronPriceData->screws << ", type = " << (unsigned)sideIronPriceData->type << std::endl;
-                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    insert << "type=" << (unsigned)sideIronPriceData->type << " , lower_length=" << sideIronPriceData->lowerLength << " , upper_length=" << sideIronPriceData->upperLength;
+                    insert << " , product_id=" << sideIronPriceData->extraflex << " , price=" << sideIronPriceData->price;
+                    insert << " WHERE side_iron_price_id = " << *sideIronPriceData->componentID << std::endl;
                     break;
                 case PriceMode::REMOVE:
+                    if (!sideIronPriceData->componentID.has_value()) {
+                        std::cout << "cannot remove side iron data as component id is missing";
+                    }
+
                     insert << "DELETE FROM {0}.side_iron_prices" << std::endl;
-                    insert << "WHERE side_iron_price_id = " << sideIronPriceData->sideIronPriceId << std::endl;
+                    insert << "WHERE side_iron_price_id = " << *sideIronPriceData->componentID << std::endl;
                     break;
                 default:
                     break;
@@ -2180,6 +2268,32 @@ std::string ComponentInsert::toSQLQueryString() const {
             insert << "time = " << labourTimeData->time;
             insert <<" WHERE" << std::endl;
             insert << "labour_id = " << labourTimeData->labourId;
+            break;
+        case InsertType::SPECIFIC_SIDE_IRON_PRICE:
+            switch (specificSideIronPriceData->priceMode) {
+            case PriceMode::UPDATE: {
+                insert << "UPDATE {0}.side_irons set" << std::endl;
+                insert << "price = " << specificSideIronPriceData->price;
+                insert << " , screws = " << specificSideIronPriceData->screws;
+                insert << " WHERE" << std::endl;
+                insert << "side_iron_id = " << specificSideIronPriceData->sideIronComponentID;
+                break;
+            } case PriceMode::REMOVE: {
+                insert << "UPDATE {0}.side_irons set" << std::endl;
+                insert << "price = NULL, screws = NULL";
+                insert << " WHERE" << std::endl;
+                insert << "side_iron_id = " << specificSideIronPriceData->sideIronComponentID;
+                break;
+            }
+            }
+            break;
+        case InsertType::POWDER_COATING: {
+            insert << "UPDATE {0}.powder_coating_prices set" << std::endl;
+            insert << "hook_price = " << powderCoatingPriceData->hookPrice;
+            insert << " , strap_price = " << powderCoatingPriceData->strapPrice;
+            insert << " WHERE coating_id = " << powderCoatingPriceData->priceID;
+            break;
+        }
         default:
             break;
     }
@@ -2205,6 +2319,8 @@ RequestType ComponentInsert::getSourceTableCode() const {
             return RequestType::SOURCE_EXTRA_PRICES_TABLE;
         case InsertType::LABOUR_TIMES:
             return RequestType::SOURCE_LABOUR_TIMES_TABLE;
+        case InsertType::POWDER_COATING:
+            return RequestType::SOURCE_POWDER_COATING_TABLE;
         default:
             return (RequestType)(-1);
     }

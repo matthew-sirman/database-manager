@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1112</width>
-    <height>608</height>
+    <height>719</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -172,7 +172,7 @@
         </sizepolicy>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="drawingSpecsTab">
         <attribute name="title">
@@ -1624,7 +1624,7 @@
   <customwidget>
    <class>DynamicComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/DynamicComboBox.h</header>
+   <header location="global">widgets/DynamicComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ActivatorLabel</class>

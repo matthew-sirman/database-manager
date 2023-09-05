@@ -274,8 +274,7 @@ public:
     /// Lap
     /// This is a simple structure for storing the information about an overlap or sidelap on a particular drawing.
     /// </summary>
-    struct Lap {
-        // Friend the drawing structure
+    struct Lap { // Friend the drawing structure
         friend struct Drawing;
 
         // The width of the lap
@@ -455,7 +454,7 @@ public:
         /// Getter for the material of the impact pad
         /// </summary>
         /// <returns>A material reference for the material present on the impact pad.</returns>
-        inline Material &material() const {
+        virtual inline Material &material() const {
             // Get the material from the drawing component manager and return it directly
             return DrawingComponentManager<Material>::getComponentByHandle(materialHandle);
         }
@@ -473,7 +472,7 @@ public:
         /// Getter for the aperture punched on the impact pad
         /// </summary>
         /// <returns>An aperture reference to the aperture present on the impact pad.</returns>
-        inline Aperture &aperture() const {
+        virtual inline Aperture &aperture() const {
             // Get the material handle from the drawing component manager and return it directly
             return DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle);
         }
@@ -1221,7 +1220,7 @@ public:
     /// Getter for the width
     /// </summary>
     /// <returns>The width of the drawing in millimetres.</returns>
-    float width() const;
+    virtual float width() const;
 
     /// <summary>
     /// Setter for the width
@@ -1233,7 +1232,7 @@ public:
     /// Getter for the length
     /// </summary>
     /// <returns>The length of this drawing in millimetres.</returns>
-    float length() const;
+    virtual float length() const;
 
     /// <summary>
     /// Setter for the length
@@ -1308,7 +1307,7 @@ public:
     /// Getter for the product
     /// </summary>
     /// <returns>The Product object associated with this drawing.</returns>
-    Product product() const;
+    virtual Product product() const;
 
     /// <summary>
     /// Setter for the product
@@ -1320,7 +1319,7 @@ public:
     /// Getter for the aperture
     /// </summary>
     /// <returns>The Aperture object associated with this drawing.</returns>
-    Aperture aperture() const;
+    virtual Aperture &aperture() const;
 
     /// <summary>
     /// Setter for the aperture
@@ -1328,19 +1327,19 @@ public:
     /// <param name="ap">The Aperture to set this drawing to.</param>
     void setAperture(const Aperture &ap);
 
-    std::optional<BackingStrip> backingStrip() const;
+    virtual std::optional<BackingStrip> backingStrip() const;
 
     void setBackingStrip(const BackingStrip& strip);
 
     void removeBackingStrip();
 
-    bool hasBackingStrips() const;
+    virtual bool hasBackingStrips() const;
 
     /// <summary>
     /// Getter for the tension type
     /// </summary>
     /// <returns>The TensionType associated with this drawing.</returns>
-    TensionType tensionType() const;
+    virtual TensionType tensionType() const;
 
     /// <summary>
     /// Setter for the tension type
@@ -1352,7 +1351,7 @@ public:
     /// Getter for the rebated property
     /// </summary>
     /// <returns>Whether the drawing is rebated or not.</returns>
-    bool rebated() const;
+    virtual bool rebated() const;
 
     /// <summary>
     /// Setter for the rebated property
@@ -1364,7 +1363,7 @@ public:
     /// Getter for the product
     /// </summary>
     /// <returns>The Product object associated with this drawing.</returns>
-    std::optional<Material> material(MaterialLayer layer) const;
+    virtual std::optional<Material> material(MaterialLayer layer) const;
 
     /// <summary>
     /// Setter for the material
@@ -1382,7 +1381,7 @@ public:
     /// Getter for the number of bars on the mat
     /// </summary>
     /// <returns>The number of support bars used to support this mat.</returns>
-    unsigned numberOfBars() const;
+    virtual unsigned numberOfBars() const;
 
     /// <summary>
     /// Setter for the bar spacings and bar widths
@@ -1397,7 +1396,7 @@ public:
     /// </summary>
     /// <param name="index">The index of the bar spacing to return.</param>
     /// <returns>The spacing at the specified index.</returns>
-    float barSpacing(unsigned index) const;
+    virtual float barSpacing(unsigned index) const;
 
     /// <summary>
     /// Getter for an indexed bar width
@@ -1405,61 +1404,61 @@ public:
     /// <param name="index">The index of the bar to retrieve. Note this function includes the left and right
     /// margins, and so the left most true "bar" is indexed as 0.</param>
     /// <returns></returns>
-    float barWidth(unsigned index) const;
+    virtual float barWidth(unsigned index) const;
 
     /// <summary>
     /// Getter for the left margin
     /// </summary>
     /// <returns>The width of the left margin.</returns>
-    float leftMargin() const;
+    virtual float leftMargin() const;
 
     /// <summary>
     /// Getter for the right margin
     /// </summary>
     /// <returns>The width of the right margin.</returns>
-    float rightMargin() const;
+    virtual float rightMargin() const;
 
     /// <summary>
     /// Getter for the vector of all bar spacings.
     /// </summary>
     /// <returns>A vector of a copy of each bar spacing in this drawing.</returns>
-    std::vector<float> allBarSpacings() const;
+    virtual std::vector<float> allBarSpacings() const;
 
     /// <summary>
     /// Getter for the vector of all bar widths. Note: this returns the left and right
     /// margins as well
     /// </summary>
     /// <returns>A vector of a copy of each bar width (and margin) in this drawing.</returns>
-    const std::vector<float>& allBarWidths() const;
+    virtual const std::vector<float>& allBarWidths() const;
 
     /// <summary>
     /// Getter for each side iron
     /// </summary>
     /// <param name="side">The side to retrieve the side iron for.</param>
     /// <returns>The side iron associated with the specified side.</returns>
-    SideIron sideIron(Side side) const;
+    virtual SideIron sideIron(Side side) const;
 
     /// <summary>
     /// Getter for whether each side iron is inverted or not.
     /// </summary>
     /// <param name="side">The side to retrieve the property from.</param>
     /// <returns>Whether the specified side iron is inverted.</returns>
-    bool sideIronInverted(Side side) const;
+    virtual bool sideIronInverted(Side side) const;
 
     /// <summary>
      /// Getter for whether each side iron is cut down or not.
      /// </summary>
      /// <param name="side">The side to retrieve the property from.</param>
      /// <returns>Whether the specified side iron is cut down.</returns>
-    bool sideIronCutDown(Side side) const;
+    virtual bool sideIronCutDown(Side side) const;
 
-    bool sideIronFixedEnd() const;
+    virtual bool sideIronFixedEnd() const;
 
-    std::optional<Ending> sideIronFixedEnd(Side side) const;
+    virtual std::optional<Ending> sideIronFixedEnd(Side side) const;
 
-    std::optional<Side> sideIronFeedEnd() const;
+    virtual std::optional<Side> sideIronFeedEnd() const;
 
-    std::optional<HookOrientation> sideIronHookOrientation(Side side) const;
+    virtual std::optional<HookOrientation> sideIronHookOrientation(Side side) const;
 
     /// <summary>
     /// Setter for a side iron
@@ -1505,7 +1504,7 @@ public:
     /// </summary>
     /// <param name="side">The side to retrieve the sidelap for.</param>
     /// <returns>The sidelap associated with the given side.</returns>
-    std::optional<Lap> sidelap(Side side) const;
+    virtual std::optional<Lap> sidelap(Side side) const;
 
     /// <summary>
     /// Setter for a sidelap
@@ -1525,7 +1524,7 @@ public:
     /// </summary>
     /// <param name="side">The side to retrieve the overlap for.</param>
     /// <returns>The overlap associated with the given side.</returns>
-    std::optional<Lap> overlap(Side side) const;
+    virtual std::optional<Lap> overlap(Side side) const;
 
     /// <summary>
     /// Setter for an overlap
@@ -1556,13 +1555,13 @@ public:
     /// Helper function to return if the drawing has any sidelaps
     /// </summary>
     /// <returns>Whether or not the drawing has sidelaps.</returns>
-    bool hasSidelaps() const;
+    virtual bool hasSidelaps() const;
 
     /// <summary>
     /// Helper function to return if the drawing has any overlaps
     /// </summary>
     /// <returns>Whether or not the drawing has overlaps.</returns>
-    bool hasOverlaps() const;
+    virtual bool hasOverlaps() const;
 
     /// <summary>
     /// Adds an impact pad to the drawing
@@ -1574,15 +1573,16 @@ public:
     /// Getter for the impact pads
     /// </summary>
     /// <returns>A vector of impact pads on this drawing.</returns>
-    std::vector<ImpactPad> impactPads() const;
+    virtual std::vector<ImpactPad> impactPads() const;
 
     /// <summary>
     /// Getter for an individual impact pad
     /// </summary>
     /// <param name="index">The index to retrieve the impact pad from</param>
     /// <returns>A reference to the impact pad at the given index.</returns>
-    ImpactPad &impactPad(unsigned index);
+    virtual ImpactPad &impactPad(unsigned index);
 
+    virtual const ImpactPad &safeImpactPad(unsigned index) const;
     /// <summary>
     /// Remover for an impact pad from the drawing
     /// </summary>
@@ -1593,37 +1593,37 @@ public:
     /// Getter for the number of impact pads
     /// </summary>
     /// <returns>The size of the impact pads vector.</returns>
-    unsigned numberOfImpactPads() const;
+    virtual unsigned numberOfImpactPads() const;
 
     void addDamBar(const DamBar& bar);
 
-    std::vector<DamBar> damBars() const;
+    virtual std::vector<DamBar> damBars() const;
 
-    DamBar& damBar(unsigned index);
+    virtual DamBar& damBar(unsigned index);
 
     void removeDamBar(const DamBar& bar);
 
-    unsigned numberOfDamBars() const;
+    virtual unsigned numberOfDamBars() const;
 
     void addBlankSpace(const BlankSpace& blankSpace);
 
-    std::vector<BlankSpace> blankSpaces() const;
+    virtual std::vector<BlankSpace> blankSpaces() const;
 
-    BlankSpace& blankSpace(unsigned index);
+    virtual BlankSpace& blankSpace(unsigned index);
 
     void removeBlankSpace(const BlankSpace& space);
 
-    unsigned numberOfBlankSpaces() const;
+    virtual unsigned numberOfBlankSpaces() const;
 
     void addExtraAperture(const ExtraAperture& extraAperture);
 
-    std::vector<ExtraAperture> extraApertures() const;
+    virtual std::vector<ExtraAperture> extraApertures() const;
 
-    ExtraAperture& extraAperture(unsigned index);
+    virtual ExtraAperture& extraAperture(unsigned index);
 
     void removeExtraAperture(const ExtraAperture& aperture);
 
-    unsigned numberOfExtraApertures() const;
+    virtual unsigned numberOfExtraApertures() const;
 
     /// <summary>
     /// Adds a centre hole to the drawing
@@ -1635,14 +1635,14 @@ public:
     /// Getter for the centre holes
     /// </summary>
     /// <returns>A vector of centre holes on this drawing.</returns>
-    std::vector<CentreHole> centreHoles() const;
+    virtual std::vector<CentreHole> centreHoles() const;
 
     /// <summary>
     /// Getter for an individual centre hole
     /// </summary>
     /// <param name="index">The index to retrieve the centre hole from</param>
     /// <returns>A reference to the centre hole at the given index.</returns>
-    CentreHole &centreHole(unsigned index);
+    virtual CentreHole &centreHole(unsigned index);
 
     /// <summary>
     /// Remover for a centre hole from the drawing
@@ -1654,7 +1654,7 @@ public:
     /// Getter for the number of centre holes
     /// </summary>
     /// <returns>The size of the center holes vector.</returns>
-    unsigned numberOfCentreHoles() const;
+    virtual unsigned numberOfCentreHoles() const;
 
     /// <summary>
     /// Adds a deflector to the drawing
@@ -1666,14 +1666,14 @@ public:
     /// Getter for the deflectors
     /// </summary>
     /// <returns>A vector of deflectors on this drawing.</returns>
-    std::vector<Deflector> deflectors() const;
+    virtual std::vector<Deflector> deflectors() const;
 
     /// <summary>
     /// Getter for an individual deflector
     /// </summary>
     /// <param name="index">The index to retrieve the deflector from</param>
     /// <returns>A reference to the deflector at the given index.</returns>
-    Deflector &deflector(unsigned index);
+    virtual Deflector &deflector(unsigned index);
 
     /// <summary>
     /// Remover for a deflector from the drawing
@@ -1685,7 +1685,7 @@ public:
     /// Getter for the number of deflectors
     /// </summary>
     /// <returns>The size of the deflectors vector.</returns>
-    unsigned numberOfDeflectors() const;
+    virtual unsigned numberOfDeflectors() const;
 
     /// <summary>
     /// Adds a divertor to the drawing
@@ -1697,14 +1697,14 @@ public:
     /// Getter for the divertors
     /// </summary>
     /// <returns>A vector of divertors on this drawing.</returns>
-    std::vector<Divertor> divertors() const;
+    virtual std::vector<Divertor> divertors() const;
 
     /// <summary>
     /// Getter for an individual divertor
     /// </summary>
     /// <param name="index">The index to retrieve the divertor from</param>
     /// <returns>A reference to the divertor at the given index.</returns>
-    Divertor &divertor(unsigned index);
+    virtual Divertor &divertor(unsigned index);
 
     /// <summary>
     /// Remover for a divertor from the drawing
@@ -1716,7 +1716,7 @@ public:
     /// Getter for the number of divertors
     /// </summary>
     /// <returns>The size of the divertors vector.</returns>
-    unsigned numberOfDivertors() const;
+    virtual unsigned numberOfDivertors() const;
 
     /// <summary>
     /// Method to check whether a drawing is valid

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>AddMaterialPriceWindow</class>
- <widget class="QDialog" name="AddMaterialPriceWindow">
+ <class>AddSpecificSideIronPriceWindow</class>
+ <widget class="QDialog" name="AddSpecificSideIronPriceWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>233</height>
+    <height>227</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,9 +23,9 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Add Side Iron Price</string>
+   <string>Add Extra  Price</string>
   </property>
-  <layout class="QVBoxLayout" name="addMaterialPriceVerticalLayout">
+  <layout class="QVBoxLayout" name="addExtraPriceVerticalLayout">
    <item>
     <widget class="QLabel" name="AddPriceTitleLabel">
      <property name="sizePolicy">
@@ -40,58 +40,47 @@
       </font>
      </property>
      <property name="text">
-      <string>Add Side Iron Price</string>
+      <string>Add Specific Side Iron Price</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="DynamicComboBox" name="materialNameComboBox"/>
-   </item>
-   <item>
-    <widget class="QWidget" name="formLayout" native="true">
-     <layout class="QFormLayout" name="formLayout_2">
-      <item row="0" column="0">
-       <widget class="QLabel" name="widthLabel">
-        <property name="text">
-         <string>Width :</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="widthEdit"/>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="lengthLabel">
-        <property name="text">
-         <string>Length :</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="lengthEdit"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="priceLabel">
-        <property name="text">
-         <string>Price :</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="priceEdit"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="priceTypeLabel">
-        <property name="text">
-         <string>Per :</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="priceTypeComboBox"/>
-      </item>
-     </layout>
-    </widget>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="sideIronLabel">
+       <property name="text">
+        <string>Side Iron</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="priceLabel">
+       <property name="text">
+        <string>Price</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="screwsLabel">
+       <property name="text">
+        <string>Screws</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="DynamicComboBox" name="sideIronComboBox">
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="priceEdit"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="screwsEdit"/>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="acceptButtons">
@@ -117,7 +106,7 @@
   <connection>
    <sender>acceptButtons</sender>
    <signal>accepted()</signal>
-   <receiver>AddMaterialPriceWindow</receiver>
+   <receiver>AddSpecificSideIronPriceWindow</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -133,7 +122,7 @@
   <connection>
    <sender>acceptButtons</sender>
    <signal>rejected()</signal>
-   <receiver>AddMaterialPriceWindow</receiver>
+   <receiver>AddSpecificSideIronPriceWindow</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

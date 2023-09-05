@@ -20,12 +20,8 @@ class SideIronPricingWindow;
 class AddSideIronPriceWindow : public QDialog {
     Q_OBJECT
 public:
-    explicit AddSideIronPriceWindow(Client* client, SideIronPricingWindow* caller, int index, QWidget* parent = nullptr); // New
-    explicit AddSideIronPriceWindow(Client* client, SideIronPricingWindow* caller, int index, ComponentInsert::PriceMode priceMode, SideIronPrice sideIronPrice, std::tuple<unsigned, float, float, unsigned, bool> pricing, QWidget* parent = nullptr); // Update and Remove
+    explicit AddSideIronPriceWindow(Client *client, QWidget* parent = nullptr); // New
+    explicit AddSideIronPriceWindow(Client* client, ComponentInsert::PriceMode priceMode, const SideIronPrice& price, QWidget* parent = nullptr); // update/remove
 private:
     Ui::AddSideIronPriceWindow* ui = nullptr;
-
-    ComboboxComponentDataSource<SideIronPrice> sideIronPriceSource;
-
-    DynamicComboBox* sideIronNameComboBox;
 };

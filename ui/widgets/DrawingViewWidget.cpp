@@ -4,7 +4,6 @@
 
 #include "DrawingViewWidget.h"
 #include "../build/ui_DrawingViewWidget.h"
-#include <QDebug>
 
 DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
         : QWidget(parent), ui(new Ui::DrawingViewWidget()) {
@@ -155,10 +154,12 @@ void DrawingViewWidget::updateFields() {
         ui->drawingPDFSelectorInput->addItem(pdf.generic_string().c_str(), pdf.generic_string().c_str());
     }
 
-    std::filesystem::path pressDrawingLocation = punchProgramPathForDrawing(drawing->drawingNumber());
+    std::vector<std::filesystem::path> pressDrawingLocations = punchProgramPathForDrawing(drawing->drawingNumber());
 
-    if (std::filesystem::exists(pressDrawingLocation)) {
-        ui->drawingPDFSelectorInput->addItem("Punch Program (auto search)", pressDrawingLocation.generic_string().c_str());
+    for (std::filesystem::path p : pressDrawingLocations) {
+        if (std::filesystem::exists(p)) {
+            ui->drawingPDFSelectorInput->addItem((p.filename().string() + " Punch Press Program").c_str(), p.generic_string().c_str());
+        }
     }
 
     if (!drawing->loadWarning(Drawing::MISSING_SIDE_IRONS_DETECTED)) {
@@ -187,11 +188,11 @@ void DrawingViewWidget::updateFields() {
     ui->pricesTab->setLayout(outerLayout);
 
     QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
+    QRegExpValidator* unsignedValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
     float total = 0;
     QHBoxLayout* prices_layout = new QHBoxLayout();
     QWidget* prices_layout_container = new QWidget();
     prices_layout_container->setLayout(prices_layout);
-    // prices_layout_container->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     outerLayout->addWidget(prices_layout_container);
 
     QWidget* item_container = new QWidget();
@@ -205,16 +206,16 @@ void DrawingViewWidget::updateFields() {
     std::vector<PriceItem> items = get_prices(*drawing);
     for (PriceItem item : items) {
         QHBoxLayout* vlayout = new QHBoxLayout();
+        QLineEdit *second;
         if (float* flt = std::get_if<float>(&item.second)) {
             QLabel *poundLabel = new QLabel(QStringLiteral("\u00A3"));
             poundLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
             poundLabel->setAlignment(Qt::AlignCenter);
-            QLineEdit *second = new QLineEdit(QString::number(*flt, 'f', 2));
-            second->setDisabled(true);
+            second = new QLineEdit(QString::number(*flt, 'f', 2));
+            // second->setDisabled(true);
             second->setValidator(validator);
             total += *flt;
             vlayout->addWidget(poundLabel);
-            vlayout->addWidget(second);
         }
         else {
             QLabel* spaceLabel = new QLabel(QStringLiteral("\u00A3"));
@@ -222,24 +223,27 @@ void DrawingViewWidget::updateFields() {
             spaceLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
             spaceLabel->setAlignment(Qt::AlignCenter);
             std::string err = std::get<std::string>(item.second);
-            QLineEdit *second = new QLineEdit(err.c_str());
-            second->setDisabled(true);
+            second = new QLineEdit(err.c_str());
+            second->setValidator(validator);
+            // second->setDisabled(true);
             vlayout->addWidget(spaceLabel);
-            vlayout->addWidget(second);
         }
+        vlayout->addWidget(second);
+        subtotalEdits.push_back(second);
+        connect(second, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
         items_layout->addRow(item.first.c_str(), vlayout);
     }
-    QHBoxLayout *totalLayout = new QHBoxLayout();
+    QHBoxLayout *extrasLayout = new QHBoxLayout();
 
     QLabel* poundLabel = new QLabel(QStringLiteral("\u00A3"));
     poundLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     poundLabel->setAlignment(Qt::AlignCenter);
-    QLineEdit *totalBox = new QLineEdit(QString::number(total, 'f', 2));
-    totalBox->setDisabled(true);
-    totalBox->setValidator(validator);
-    totalLayout->addWidget(poundLabel);
-    totalLayout->addWidget(totalBox);
-    items_layout->addRow("Subtotal", totalLayout);
+    extraBox = new QLineEdit(QString::number(0, 'f', 2));
+    extraBox->setValidator(validator);
+    extrasLayout->addWidget(poundLabel);
+    extrasLayout->addWidget(extraBox);
+    items_layout->addRow("Extras", extrasLayout);
+    connect(extraBox, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
 
     QFormLayout* times_layout = new QFormLayout();
     times_layout->setLabelAlignment(Qt::AlignRight);
@@ -250,12 +254,21 @@ void DrawingViewWidget::updateFields() {
     for (TimeItem t : get_times(*drawing)) {
         total_time += t.second;
         QLineEdit* timeEdit = new QLineEdit(QString::number(t.second));
-        timeEdit->setDisabled(true);
+        timeEdit->setValidator(unsignedValidator);
         times_layout->addRow(t.first.c_str(), timeEdit);
+        labourEdits.push_back(timeEdit);
+        connect(timeEdit, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
     }
-    QLineEdit* timeEdit = new QLineEdit(QString::number(total_time));
-    timeEdit->setDisabled(true);
-    times_layout->addRow("Total Time", timeEdit);
+    extraTimeEdit = new QLineEdit(QString::number(0));
+    extraTimeEdit->setValidator(unsignedValidator);
+    times_layout->addRow("Extra Time", extraTimeEdit);
+    connect(extraTimeEdit, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
+
+    totalTimeEdit = new QLineEdit(QString::number(total_time));
+    totalTimeEdit->setValidator(unsignedValidator);
+    totalTimeEdit->setDisabled(true);
+    times_layout->addRow("Total Time", totalTimeEdit);
+    connect(totalTimeEdit, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
 
     QHBoxLayout* totaling_layout = new QHBoxLayout();
     QWidget* totaling_layout_widget = new QWidget();
@@ -271,12 +284,12 @@ void DrawingViewWidget::updateFields() {
 
     QFormLayout* final_layout = new QFormLayout(contents);
     final_layout->setLabelAlignment(Qt::AlignRight);
-    QLineEdit* subtotal_lineEdit = new QLineEdit(QString::number(total, 'f', 2));
+    subtotal_lineEdit = new QLineEdit(QString::number(total, 'f', 2));
     subtotal_lineEdit->setDisabled(true);
     final_layout->addRow(new QLabel("Subtotal " + QStringLiteral("\u00A3")), subtotal_lineEdit);
 
-    float labour_total_cost = ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(total);
-    QLineEdit* labour_cost_lineEdit = new QLineEdit(QString::number(labour_total_cost, 'f', 2));
+    float labour_total_cost = ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(total_time);
+    labour_cost_lineEdit = new QLineEdit(QString::number(labour_total_cost, 'f', 2));
     labour_cost_lineEdit->setDisabled(true);
     final_layout->addRow(new QLabel("Labour Total " + QStringLiteral("\u00A3")), labour_cost_lineEdit);
 
@@ -286,28 +299,26 @@ void DrawingViewWidget::updateFields() {
     final_layout->addRow(line);
 
     float total_total = total + labour_total_cost;
-    QLineEdit* total_lineEdit = new QLineEdit(QString::number(total_total, 'f', 2));
+    total_lineEdit = new QLineEdit(QString::number(total_total, 'f', 2));
     total_lineEdit->setDisabled(true);
     final_layout->addRow(new QLabel("Total " + QStringLiteral("\u00A3")), total_lineEdit);
 
-    QLineEdit* sales_increase = new QLineEdit(QString::number(20, 'f', 2));
+    sales_increase = new QLineEdit(QString::number(20, 'f', 2));
     sales_increase->setValidator(validator);
     final_layout->addRow("Sales Increase", sales_increase);
+    connect(sales_increase, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
 
-    QLineEdit* sales_total = new QLineEdit(QString::number(total_total * 1.2, 'f', 2));
+    sales_total = new QLineEdit(QString::number(total_total * 1.2, 'f', 2));
     sales_total->setDisabled(true);
     final_layout->addRow("Sales Price", sales_total);
-
-    connect(sales_increase, &QLineEdit::textChanged, this, [sales_total, total_total](const QString &text) {
-        sales_total->setText(QString::number(total_total * (1 + (text.toFloat() / 100)), 'f', 2));
-        });
+    connect(sales_total, &QLineEdit::textChanged, this, &DrawingViewWidget::updateTotals);
 }
 
 void DrawingViewWidget::setChangeDrawingCallback(const std::function<void(AddDrawingPageWidget::AddDrawingMode)> &callback) {
     changeDrawingCallback = callback;
 }
 
-std::filesystem::path DrawingViewWidget::punchProgramPathForDrawing(const std::string &drawingNumber) {
+std::vector<std::filesystem::path> DrawingViewWidget::punchProgramPathForDrawing(const std::string &drawingNumber) {
     std::filesystem::path path = PUNCH_PDF_LOCATION;
     std::string folder;
 
@@ -324,8 +335,35 @@ std::filesystem::path DrawingViewWidget::punchProgramPathForDrawing(const std::s
         folder = "1" + folder;
     }
 
+    std::vector<std::filesystem::path> out;
     path /= folder;
-    path /= drawingNumber + ".pdf";
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+        if (std::filesystem::is_regular_file(entry.path()) && std::regex_match(entry.path().filename().string(), std::regex(drawingNumber + ".*\\.pdf"))) {
+            out.push_back(entry);
+        }
+    }
 
-    return path;
-}
+    return out;
+};
+
+
+void DrawingViewWidget::updateTotals() const {
+    float totalCost = 0;
+    for (QLineEdit *edit : subtotalEdits) {
+        totalCost += edit->text().toFloat();
+    }
+    totalCost += extraBox->text().toFloat();
+    subtotal_lineEdit->setText(QString::number(totalCost, 'f', 2));
+
+    unsigned total_time = 0;
+    for (QLineEdit* edit : labourEdits) {
+        total_time += edit->text().toUInt();
+    }
+    totalTimeEdit->setText(QString::number(total_time));
+    float labour_total_cost = ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(total_time);
+    labour_cost_lineEdit->setText(QString::number(labour_total_cost, 'f', 2));
+
+    total_lineEdit->setText(QString::number(totalCost + labour_total_cost, 'f', 2));
+
+    sales_total->setText(QString::number((totalCost + labour_total_cost) * (1 + (sales_increase->text().toFloat()/100)), 'f', 2));
+};

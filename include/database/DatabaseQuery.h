@@ -579,23 +579,42 @@ public:
         unsigned length;
         std::string drawingNumber;
         std::filesystem::path hyperlink;
+        std::optional<float> price;
+        std::optional<unsigned> screws;
 
         inline unsigned serialisedSize() const {
-            return sizeof(SideIronType) + sizeof(unsigned) + sizeof(unsigned char) + 
-                drawingNumber.size() + sizeof(unsigned char) + hyperlink.generic_string().size();
+            unsigned total = sizeof(SideIronType) + sizeof(unsigned) + sizeof(unsigned char) + drawingNumber.size() + sizeof(unsigned char) + hyperlink.generic_string().size();
+            total += sizeof(bool);
+            if (price.has_value())
+                total += sizeof(float);
+            total += sizeof(bool);
+            if (screws.has_value())
+                total += sizeof(unsigned);
+            return total;
         }
     };
 
     struct SideIronPriceData {
         SideIronType type;
+        unsigned lowerLength, upperLength;
+        float price;
         bool extraflex;
-        float length, price;
-        unsigned screws;
         PriceMode priceMode;
-        unsigned sideIronPriceId = 0;
+        std::optional<unsigned> componentID = std::nullopt;
 
         inline unsigned serialisedSize() const {
-            return sizeof(SideIronType) + sizeof(float) * 2 + sizeof(PriceMode) + sizeof(unsigned) * 2 + sizeof(bool);
+            return sizeof(SideIronType) + sizeof(bool) * 2 + sizeof(float) + sizeof(unsigned) * 3 + sizeof(PriceMode) + (componentID.has_value() ? sizeof(unsigned) : 0);
+        }
+    };
+
+    struct SpecificSideIronPriceData {
+        PriceMode priceMode;
+        unsigned sideIronComponentID;
+        float price;
+        unsigned screws;
+
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) * 2 + sizeof(float) + sizeof(priceMode);
         }
     };
 
@@ -663,6 +682,23 @@ public:
         };
 
         
+    };
+
+    struct PowderCoatingPriceData {
+        unsigned priceID;
+        float hookPrice, strapPrice;
+
+        PowderCoatingPriceData() {};
+
+        PowderCoatingPriceData(unsigned id, float hookPrice, float strapPrice) {
+            priceID = id;
+            this->hookPrice = hookPrice;
+            this->strapPrice = strapPrice;
+        }
+
+        inline unsigned serialisedSize() const {
+            return sizeof(unsigned) + sizeof(float) * 2;
+        }
     };
     /// <summary>
     /// ComponentInsertResponse
@@ -746,7 +782,9 @@ private:
         MATERIAL_PRICE,
         SIDE_IRON_PRICE,
         EXTRA_PRICE,
-        LABOUR_TIMES
+        LABOUR_TIMES,
+        SPECIFIC_SIDE_IRON_PRICE,
+        POWDER_COATING
     };
 
     // The realisation of the insert type variable. Defaults to None
@@ -758,10 +796,12 @@ private:
     std::optional<MachineData> machineData;
     std::optional<SideIronData> sideIronData;
     std::optional<SideIronPriceData> sideIronPriceData;
+    std::optional<SpecificSideIronPriceData> specificSideIronPriceData;
     std::optional<MaterialData> materialData;
     std::optional<MaterialPriceData> materialPriceData;
     std::optional<ExtraPriceData> extraPriceData;
     std::optional<LabourTimeData> labourTimeData;
+    std::optional<PowderCoatingPriceData> powderCoatingPriceData;
 
 };
 

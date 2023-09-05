@@ -196,9 +196,18 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                 DrawingComponentManager<LabourTime>::rawSourceDataSize());
                 break;
         }
+        case RequestType::SOURCE_POWDER_COATING_TABLE:
+        {
+            if (DrawingComponentManager<PowderCoatingPrice>::dirty()) {
+                createSourceData<PowderCoatingPriceData>(caller.databaseManager().sourceTable("powder_coating_prices"));
+            }
+            caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<PowderCoatingPrice>::rawSourceData(),
+                DrawingComponentManager<PowderCoatingPrice>::rawSourceDataSize());
+            break;
+        }
         case RequestType::SOURCE_SIDE_IRON_PRICES_TABLE: {
             if (DrawingComponentManager<SideIronPrice>::dirty()) {
-                createSourceData<SideIronPriceData>(caller.databaseManager().sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
+                createSourceData<SideIronPriceData>(caller.databaseManager().sourceTable("side_iron_prices"));
             }
 
             caller.addMessageToSendQueue(clientHandle, DrawingComponentManager<SideIronPrice>::rawSourceData(),
@@ -331,7 +340,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     break;
                 }
                 case RequestType::SOURCE_SIDE_IRON_TABLE: {
-                    std::stringstream orderBy;
+                   std::stringstream orderBy;
                     orderBy << "CASE " << std::endl;
                     orderBy << "WHEN drawing_number LIKE 'None' THEN 1 " << std::endl;
                     orderBy << "WHEN drawing_number LIKE 'SCS1562%' THEN 2 " << std::endl;
@@ -374,6 +383,14 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
                     createSourceData<LabourTimeData>(caller.databaseManager().sourceTable("labour_times"));
                     sourceData = DrawingComponentManager<LabourTime>::rawSourceData();
                     sourceDataBufferSize = DrawingComponentManager<LabourTime>::rawSourceDataSize();
+                    break;
+                }
+                case RequestType::SOURCE_POWDER_COATING_TABLE:
+                {
+                    createSourceData<PowderCoatingPriceData>(caller.databaseManager().sourceTable("powder_coating_prices"));
+                    sourceData = DrawingComponentManager<PowderCoatingPrice>::rawSourceData();
+                    sourceDataBufferSize = DrawingComponentManager<PowderCoatingPrice>::rawSourceDataSize();
+                    break;
                 }
                 case RequestType::SOURCE_SIDE_IRON_PRICES_TABLE: {
                     createSourceData<SideIronPriceData>(caller.databaseManager().sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
@@ -467,7 +484,7 @@ DrawingSummaryCompressionSchema DatabaseRequestHandler::compressionSchema(Databa
 		}
 
         if (DrawingComponentManager<SideIronPrice>::dirty()) {
-            createSourceData<SideIronPriceData>(dbManager->sourceMultipleTable("side_iron_prices", "side_iron_types", std::tuple<std::string, std::string>("type", "side_iron_type_id")));
+            createSourceData<SideIronPriceData>(dbManager->sourceTable("side_iron_prices"));
         }
 
 		unsigned maxMatID, maxThicknessHandle, maxApertureHandle;
@@ -844,27 +861,43 @@ template<>
 void DatabaseRequestHandler::constructDataElements(mysqlx::RowResult& sideIronPriceRow, unsigned& handle,
     std::vector<DatabaseRequestHandler::SideIronPriceData>& elements, unsigned& sizeValue
 ) const {
-    std::map<SideIronType, DatabaseRequestHandler::SideIronPriceData&> typeToPrice;
     for (mysqlx::Row row : sideIronPriceRow) {
-        if (!row.get(6).isNull() && typeToPrice.find((SideIronType)row[6].get<unsigned>()) == typeToPrice.end()) {
-            SideIronPriceData* data = new SideIronPriceData;
-            data->handle = handle++;
-            data->id = row[6];
-            data->type = (SideIronType)row[6].get<unsigned>();
-            typeToPrice.insert({ (SideIronType)row[6].get<unsigned>(), *data });
-            sizeValue += sizeof(unsigned) * 2 + sizeof(SideIronType) + sizeof(unsigned char);
-            if (!row[2].isNull()) {
-                data->prices.push_back({ row[0], row[2], row[3], row[4], (bool)(row[5].get<int>() - 1) });
-                sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool);
-            }
+        if (row.isNull())
+            continue;
+        DatabaseRequestHandler::SideIronPriceData data;
+        data.handle = handle++;
+        if (row[0].isNull()) {
+            std::cout << "row 0" << std::endl;
+            continue;
         }
-        else if (!row.get(1).isNull()) {
-            typeToPrice.at((SideIronType)row[6].get<unsigned>()).prices.push_back({ row[0], row[2], row[3], row[4], (bool)(row[5].get<int>() - 1) });;
-            sizeValue += sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool);
-        }         
-    }
-    for (std::pair<SideIronType, SideIronPriceData> it : typeToPrice) {
-        elements.push_back(it.second);
+        data.id = row[0];
+        if (row[1].isNull()) {
+            std::cout << "row 0" << std::endl;
+            continue;
+        }
+        data.type = (SideIronType)row[1].get<unsigned>();
+        if (row[2].isNull()) {
+            std::cout << "row 1" << std::endl;
+            continue;
+        }
+        data.lowerLength = row[2].get<unsigned>();
+        if (row[3].isNull()) {
+            std::cout << "row 2" << std::endl;
+            continue;
+        }
+        data.upperLength = row[3].get<unsigned>();
+        if (row[4].isNull()) {
+            std::cout << "row 3" << std::endl;
+            continue;
+        }
+        data.extraflex = (row[4].get<unsigned>()-1);
+        if (row[5].isNull()) {
+            std::cout << "row 4" << std::endl;
+            continue;
+        }
+        data.price = row[5].get<float>();
+        elements.push_back(data);
+        sizeValue += sizeof(unsigned) * 4 + sizeof(SideIronType) + sizeof(bool) + sizeof(float);
     }
 };
 
@@ -875,26 +908,59 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
     *((SideIronType*)buff) = element.type;
     buff += sizeof(SideIronType);
 
-    *buff++ = element.prices.size();
+    *((unsigned*)buff) = element.lowerLength;
+    buff += sizeof(unsigned);
 
-    for (std::tuple<unsigned, float, float, unsigned, bool> price : element.prices) {
-        *((unsigned*)buff) = std::get<0>(price);
-        buff += sizeof(unsigned);
+    *((unsigned*)buff) = element.upperLength;
+    buff += sizeof(unsigned);
 
-        *((float*)buff) = std::get<1>(price);
-        buff += sizeof(float);
+    *buff++ = element.extraflex;
 
-        *((float*)buff) = std::get<2>(price);
-        buff += sizeof(float);
+    *((float*)buff) = element.price;
+    buff += sizeof(float);
 
-        *((unsigned*)buff) = std::get<3>(price);
-        buff += sizeof(unsigned);
+    sizeValue += sizeof(unsigned) * 2 + sizeof(float) + sizeof(SideIronType) + sizeof(bool);
+}
 
-        *((bool*)buff) = std::get<4>(price);
-        buff += sizeof(bool);
+template<>
+void DatabaseRequestHandler::constructDataElements(
+    mysqlx::RowResult& powderCoatingRow, unsigned& handle,
+    std::vector<DatabaseRequestHandler::PowderCoatingPriceData>& elements, unsigned& sizeValue
+) const {
+    for (mysqlx::Row row : powderCoatingRow) {
+        PowderCoatingPriceData data;
+        data.handle = handle++;
+        data.id = row[0];
+        sizeValue += sizeof(unsigned) * 2;
+        if (!row[1].isNull()) {
+            data.hookPrice = row[1].get<float>();
+            sizeValue += sizeof(float);
+        }
+        if (!row[2].isNull()) {
+            data.strapPrice = row[2].get<float>();
+            sizeValue += sizeof(float);
+        }
+
+        elements.push_back(data);
     }
+}
 
-    sizeValue += sizeof(SideIronType) + sizeof(unsigned char) + element.prices.size() * (sizeof(unsigned) * 2 + sizeof(float) * 2 + sizeof(bool));
+
+template<>
+void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::PowderCoatingPriceData& element, void* buffer, unsigned& sizeValue) const {
+    unsigned char* buff = (unsigned char*)buffer;
+
+    *((float*)buff) = element.hookPrice;
+    buff += sizeof(float);
+    *((float*)buff) = element.strapPrice;
+    buff += sizeof(float);
+    sizeValue += sizeof(float) * 2;
+
+}
+
+template<>
+RequestType DatabaseRequestHandler::getRequestType<DatabaseRequestHandler::PowderCoatingPriceData>() const {
+    return RequestType::SOURCE_POWDER_COATING_TABLE;
 }
 
 template<>
@@ -925,8 +991,23 @@ void DatabaseRequestHandler::constructDataElements(
         }
         data.drawingNumber = row[3].get<std::string>();
         data.hyperlink = row[4].get<std::string>();
+
+        if (!row[5].isNull()) {
+            data.price = std::make_optional(row[5].get<float>());
+        }
+        else {
+            data.price = std::nullopt;
+        }
+        if (!row[6].isNull()) {
+            data.screws = std::make_optional(row[6].get<unsigned>());
+        }
+        else {
+            data.screws = std::nullopt;
+        }
+
         sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) +
-            data.drawingNumber.size() + sizeof(unsigned char) + data.hyperlink.size();
+            data.drawingNumber.size() + sizeof(unsigned char) + data.hyperlink.size() + sizeof(bool) * 2 + 
+            (data.price.has_value() ? sizeof(float) : 0) + (data.screws.has_value() ? sizeof(unsigned) : 0);
 
         elements.push_back(data);
     }
@@ -944,10 +1025,22 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
 	memcpy(buff, element.drawingNumber.c_str(), nameSize);
 	buff += nameSize;
 	unsigned char hyperlinkSize = element.hyperlink.size();
-	*buff++ = hyperlinkSize;
+    *buff++ = hyperlinkSize;
 	memcpy(buff, element.hyperlink.c_str(), hyperlinkSize);
+    buff += hyperlinkSize;
+    *buff++ = element.price.has_value();
+    if (element.price.has_value()) {
+        *((float*)buff) = *element.price;
+        buff += sizeof(float);
+    }
+    *buff++ = element.screws.has_value();
+    if (element.screws.has_value()) {
+        *((unsigned*)buff) = *element.screws;
+        buff += sizeof(unsigned);
+    }
 
-	sizeValue += sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) + nameSize + sizeof(unsigned char) + hyperlinkSize;
+	sizeValue += sizeof(unsigned char) + sizeof(unsigned short) + sizeof(unsigned char) + nameSize + sizeof(unsigned char) + hyperlinkSize
+        + sizeof(bool) * 2 + (element.price.has_value() ? sizeof(float) : 0) + (element.screws.has_value() ? sizeof(unsigned) : 0);
 }
 
 template<>

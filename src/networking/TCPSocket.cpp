@@ -399,13 +399,11 @@ TCPSocketCode TCPSocket::receiveMessage(NetworkMessage &message, MessageProtocol
         if (message.protocol() == MessageProtocol::HEARTBEAT && status == DecodeStatus::DECODED) {
             switch (*((HeartbeatMode *)message.getMessageData())) {
                 case HeartbeatMode::REQUEST: {
-                    std::cout << "heartbeat asked" << std::endl;
                     HeartbeatMode response = HeartbeatMode::RESPONSE;
                     sendMessage(NetworkMessage(&response, sizeof(HeartbeatMode), MessageProtocol::HEARTBEAT));
                     return WAS_HEARTBEAT;
                 }
                 case HeartbeatMode::RESPONSE:
-                    std::cout << "was heartbeat" << std::endl;
                     flags &= (unsigned char)(~SOCKET_WAITING);
                     return WAS_HEARTBEAT;
             }

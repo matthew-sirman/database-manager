@@ -2,195 +2,94 @@
 #include "../build/ui_AddSideIronPriceWindow.h"
 #include "SideIronPricingWindow.h"
 
-// adding a price
-AddSideIronPriceWindow::AddSideIronPriceWindow(Client* client, SideIronPricingWindow* caller, int index, QWidget* parent)
+AddSideIronPriceWindow::AddSideIronPriceWindow(Client *client, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddSideIronPriceWindow()) {
-
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
-	sideIronNameComboBox = ui->sideIronNameComboBox;
+	this->setWindowTitle("Add new Side Iron Price");
 
-	sideIronNameComboBox->setManualIndexFunc([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); });
+	QObject::connect(ui->acceptButtons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	QObject::connect(ui->acceptButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-	sideIronNameComboBox->setDataSource(sideIronPriceSource);
-	DrawingComponentManager<SideIronPrice>::addCallback([this]() { sideIronPriceSource.updateSource(); });
-	sideIronPriceSource.updateSource();
+	QDoubleValidator* doubleValidator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
+	QRegExpValidator* numberValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+	ui->lowerLengthEdit->setValidator(numberValidator);
+	ui->upperLengthEdit->setValidator(numberValidator);
+	ui->priceEdit->setValidator(doubleValidator);
 
-	QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
+	connect(ui->acceptButtons, &QDialogButtonBox::accepted, this, [=]() {
+		ComponentInsert insert;
+		insert.setComponentData<ComponentInsert::SideIronPriceData>({
+			(SideIronType)ui->sideIronTypeComboBox->currentIndex(),
+			ui->lowerLengthEdit->text().toUInt(),
+			ui->upperLengthEdit->text().toUInt(),
+			ui->priceEdit->text().toFloat(),
+			(bool)ui->extraflexCheckBox->checkState(),
+			ComponentInsert::PriceMode::ADD,
+			std::nullopt
+			});
 
-	QLineEdit* lengthEdit = ui->lengthEdit;
-	lengthEdit->setText(QString::number(0, 'f', 2));
-	QLineEdit* priceEdit = ui->priceEdit;
-	priceEdit->setText(QString::number(0, 'f', 2));
-	QLineEdit* screwsEdit = ui->screwsEdit;
-	screwsEdit->setText(QString::number(0));
-	QComboBox* extraflex = ui->extraflexCombobox;
-	priceEdit->setValidator(validator);
-	screwsEdit->setValidator(new QRegExpValidator(QRegExp("[1-9][0-9]*")));
-	
 
-	this->setWindowTitle("Add Side Iron Price");
-	ui->AddPriceTitleLabel->setText("Add Side Iron Price");
+		// somehow changes from whatever you set here to 70
 
-	for (QAbstractButton* button : ui->acceptButtons->buttons()) {
-		if (button->text() == "OK") {
-			button->setText("Add");
-		}
-	}
-
-	connect(this, &QDialog::accepted, [lengthEdit, priceEdit, extraflex, caller, client, this, index, screwsEdit]() {
-		if (DrawingComponentManager<SideIron>::validComponentHandle(sideIronNameComboBox->currentIndex() && lengthEdit->text().size() > 0 && priceEdit->text().size() > 0)) {
-
-			ComponentInsert insert;
-
-			insert.setComponentData<ComponentInsert::SideIronPriceData>({
-				(SideIronType)(sideIronNameComboBox->currentIndex() + 1),
-				(bool)(extraflex->currentIndex()),
-				lengthEdit->text().toFloat(),
-				priceEdit->text().toFloat(),
-				screwsEdit->text().toUInt(),
-				ComponentInsert::PriceMode::ADD
-				
-				});
-
-			unsigned bufferSize = insert.serialisedSize();
-			void* buffer = alloca(bufferSize);
-			insert.serialise(buffer);
-			client->addMessageToSendQueue(buffer, bufferSize);
-
-			caller->setComboboxCallback([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); });
-			caller->update(client, index);
-		}
-		else {
-			QMessageBox* box = new QMessageBox(caller);
-			box->setText("Invalid inputs, check that all fields are filled in correctly.");
-			box->exec();
-		}
-		});
-
+		unsigned bufferSize = insert.serialisedSize();
+		void* buffer = alloca(bufferSize);
+		insert.serialise(buffer);
+		client->addMessageToSendQueue(buffer, bufferSize);
+		RequestType req = RequestType::SOURCE_SIDE_IRON_PRICES_TABLE;
+		client->addMessageToSendQueue(&req, sizeof(RequestType));
+	});
 }
 
-// updating or removing a price
-AddSideIronPriceWindow::AddSideIronPriceWindow(Client* client, SideIronPricingWindow* caller, int index, ComponentInsert::PriceMode priceMode, SideIronPrice sideIronPrice, std::tuple<unsigned, float, float, unsigned, bool> pricing, QWidget* parent)
-	: QDialog(parent), ui(new Ui::AddSideIronPriceWindow()) {
-
+AddSideIronPriceWindow::AddSideIronPriceWindow(Client* client, ComponentInsert::PriceMode priceMode, const SideIronPrice& price, QWidget* parent)
+: QDialog(parent), ui(new Ui::AddSideIronPriceWindow()) {
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
-	sideIronNameComboBox = ui->sideIronNameComboBox;
-
-	sideIronNameComboBox->setManualIndexFunc([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); comboBox->setDisabled(true); });
-
-	sideIronNameComboBox->setDataSource(sideIronPriceSource);
-	DrawingComponentManager<SideIronPrice>::addCallback([this]() { sideIronPriceSource.updateSource(); });
-	sideIronPriceSource.updateSource();
-
-	QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-
-	QLineEdit* lengthEdit = ui->lengthEdit;
-	lengthEdit->setText(QString::number(std::get<1>(pricing), 'f', 2));
-	QLineEdit* priceEdit = ui->priceEdit;
-	priceEdit->setText(QString::number(std::get<2>(pricing), 'f', 2));
-	QLineEdit* screwsEdit = ui->screwsEdit;
-	screwsEdit->setText(QString::number(std::get<3>(pricing), 'f', 0));
-	lengthEdit->setValidator(validator);
-	priceEdit->setValidator(validator);
-	screwsEdit->setValidator(validator);
-	QComboBox* extraflex = ui->extraflexCombobox;
-	extraflex->setCurrentIndex((int)std::get<4>(pricing));
-
-
-
 	switch (priceMode) {
-		case (ComponentInsert::PriceMode::UPDATE):
-			this->setWindowTitle("Update Side Iron Price");
-			ui->AddPriceTitleLabel->setText("Update Side Iron Price");
-
-			for (QAbstractButton* button : ui->acceptButtons->buttons()) {
-				if (button->text() == "OK") {
-					button->setText("Update");
-				}
-			}
-
-			connect(this, &QDialog::accepted, [lengthEdit, priceEdit, screwsEdit, extraflex, caller, client, this, index, pricing]() {
-				if (DrawingComponentManager<SideIron>::validComponentHandle(sideIronNameComboBox->currentIndex() && lengthEdit->text().size() > 0 && priceEdit->text().size() > 0)) {
-
-					ComponentInsert insert;
-
-					insert.setComponentData<ComponentInsert::SideIronPriceData>({
-						(SideIronType)(sideIronNameComboBox->currentIndex() + 1),
-						(bool)extraflex->currentIndex(),
-						lengthEdit->text().toFloat(),
-						priceEdit->text().toFloat(),
-						screwsEdit->text().toUInt(),
-						ComponentInsert::PriceMode::UPDATE,
-						std::get<0>(pricing)
-						});
-
-					unsigned bufferSize = insert.serialisedSize();
-					void* buffer = alloca(bufferSize);
-					insert.serialise(buffer);
-					client->addMessageToSendQueue(buffer, bufferSize);
-
-					caller->setComboboxCallback([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); });
-					caller->update(client, index);
-				}
-				else {
-					QMessageBox* box = new QMessageBox(caller);
-					box->setText("Invalid inputs, check that all fields are filled in correctly.");
-					box->exec();
-				}
-				});
-
-			break;
-
-		case (ComponentInsert::PriceMode::REMOVE):
-			this->setWindowTitle("Remove Side Iron Price");
-			ui->AddPriceTitleLabel->setText("Remove Side Iron Price");
-
-			for (QAbstractButton* button : ui->acceptButtons->buttons()) {
-				if (button->text() == "OK") {
-					button->setText("Remove");
-				}
-			}
-
-			lengthEdit->setDisabled(true);
-			priceEdit->setDisabled(true);
-			screwsEdit->setDisabled(true);
-
-			connect(this, &QDialog::accepted, [lengthEdit, priceEdit, screwsEdit, extraflex, caller, client, this, index, pricing]() {
-				if (DrawingComponentManager<SideIron>::validComponentHandle(sideIronNameComboBox->currentIndex() && lengthEdit->text().size() > 0 && priceEdit->text().size() > 0)) {
-
-					ComponentInsert insert;
-
-					insert.setComponentData<ComponentInsert::SideIronPriceData>({
-						(SideIronType)(sideIronNameComboBox->currentIndex() + 1),
-						(bool)extraflex->currentIndex(),
-						lengthEdit->text().toFloat(),
-						priceEdit->text().toFloat(),
-						screwsEdit->text().toUInt(),
-						ComponentInsert::PriceMode::REMOVE,
-						std::get<0>(pricing)
-						});
-
-					unsigned bufferSize = insert.serialisedSize();
-					void* buffer = alloca(bufferSize);
-					insert.serialise(buffer);
-					client->addMessageToSendQueue(buffer, bufferSize);
-
-					caller->setComboboxCallback([index](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(index); });
-					caller->update(client, index);
-				}
-				else {
-					QMessageBox* box = new QMessageBox(caller);
-					box->setText("Invalid inputs, check that all fields are filled in correctly.");
-					box->exec();
-				}
-				});
-
-			break;
-		default:
-			break;
+	case ComponentInsert::PriceMode::UPDATE:
+		this->setWindowTitle("Update Side Iron Price");
+		ui->AddPriceTitleLabel->setText("Update Side Iron Pirce");
+		ui->acceptButtons->button(QDialogButtonBox::StandardButton::Ok)->setText("Update");
+		break;
+	case ComponentInsert::PriceMode::REMOVE:
+		this->setWindowTitle("Remove Side Iron Price");
+		ui->AddPriceTitleLabel->setText("Remove Side Iron Pirce");
+		ui->acceptButtons->button(QDialogButtonBox::StandardButton::Ok)->setText("Remove");
+		break;
 	}
+
+	QObject::connect(ui->acceptButtons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	QObject::connect(ui->acceptButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+	QDoubleValidator* doubleValidator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
+	QRegExpValidator* numberValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+	ui->lowerLengthEdit->setValidator(numberValidator);
+	ui->upperLengthEdit->setValidator(numberValidator);
+	ui->priceEdit->setValidator(doubleValidator);
+
+	ui->sideIronTypeComboBox->setCurrentIndex((unsigned)price.type);
+	ui->lowerLengthEdit->setText(QString::number(price.lowerLength));
+	ui->upperLengthEdit->setText(QString::number(price.upperLength));
+	ui->priceEdit->setText(QString::number(price.price, 'f', 2));
+	ui->extraflexCheckBox->setChecked(price.extraflex);
+
+	connect(ui->acceptButtons, &QDialogButtonBox::accepted, this, [=]() {
+		ComponentInsert insert;
+		insert.setComponentData<ComponentInsert::SideIronPriceData>({
+			(SideIronType)ui->sideIronTypeComboBox->currentIndex(),
+			ui->lowerLengthEdit->text().toUInt(),
+			ui->upperLengthEdit->text().toUInt(),
+			ui->priceEdit->text().toFloat(),
+			(bool)ui->extraflexCheckBox->checkState(),
+			priceMode,
+			price.componentID()
+			});
+		unsigned bufferSize = insert.serialisedSize();
+		void* buffer = alloca(bufferSize);
+		insert.serialise(buffer);
+		client->addMessageToSendQueue(buffer, bufferSize);
+		});
+
 }

@@ -74,6 +74,10 @@ Aperture::Aperture(unsigned id) : DrawingComponent(id) {
 
 }
 
+ApertureShape& Aperture::getShape() const {
+    return DrawingComponentManager<ApertureShape>::getComponentByHandle(this->apertureShapeID);
+}
+
 Aperture *Aperture::fromSource(unsigned char** buff) {
 
     Aperture *aperture = new Aperture(*((unsigned *) *buff));
@@ -313,6 +317,8 @@ LabourType LabourTime::getType() const {
         return LabourType::DEFLECTORS;
     else if (job == "Dam Bars")
         return LabourType::DAM_BARS;
+    else if (job == "Cut Down")
+        return LabourType::CUT_DOWN;
     return LabourType::ERR;
 }
 
@@ -356,6 +362,34 @@ SideIron::SideIron(unsigned id) : DrawingComponent(id) {
 
 }
 
+std::string PowderCoatingPrice::powderCoatingPrice() const {
+    std::stringstream out;
+    out << "Type " << (char)('A' + this->componentID() - 1);
+    out << ": hook price: " << this->hookPrice << " , strap price:" << this->strapPrice;
+    return out.str();
+}
+
+ComboboxDataElement PowderCoatingPrice::toDataElement(unsigned mode) const {
+    return { powderCoatingPrice(), __handle };
+}
+
+PowderCoatingPrice::PowderCoatingPrice(unsigned id) : DrawingComponent(id) {
+
+}
+
+PowderCoatingPrice* PowderCoatingPrice::fromSource(unsigned char** buff) {
+    PowderCoatingPrice* price = new PowderCoatingPrice(*((unsigned*)*buff));
+    *buff += sizeof(unsigned);
+
+    price->hookPrice = *((float*)(*buff));
+    *buff += sizeof(float);
+
+    price->strapPrice = *((float*)(*buff));
+    *buff += sizeof(float);
+
+    return price;
+}
+
 SideIron *SideIron::fromSource(unsigned char** buff) {
 
     SideIron *sideIron = new SideIron(*((unsigned *) *buff));
@@ -373,6 +407,22 @@ SideIron *SideIron::fromSource(unsigned char** buff) {
     unsigned char hyperlinkSize = *(*buff)++;
     sideIron->hyperlink = std::string((const char *) *buff, hyperlinkSize);
     *buff += hyperlinkSize;
+
+    bool hasPrice = *(*buff)++;
+    if (hasPrice) {
+        sideIron->price = *((float*)(*buff));
+        *buff += sizeof(float);
+    }
+    else
+        sideIron->price = std::nullopt;
+
+    bool hasScrews = *(*buff)++;
+    if (hasScrews) {
+        sideIron->screws = *((unsigned*)(*buff));
+        *buff += sizeof(unsigned);
+    }
+    else
+        sideIron->screws = std::nullopt;
 
     return sideIron;
 }
@@ -444,27 +494,14 @@ SideIronPrice* SideIronPrice::fromSource(unsigned char** buff) {
 
     sideIronPrice->type = *((SideIronType*)(*buff));
     *buff += sizeof(SideIronType);
+    sideIronPrice->lowerLength = *((unsigned*)(*buff));
+    *buff += sizeof(unsigned);
+    sideIronPrice->upperLength = *((unsigned*)(*buff));
+    *buff += sizeof(unsigned);
+    sideIronPrice->extraflex = *(*buff)++;
+    sideIronPrice->price = *((float*)(*buff));
+    *buff += sizeof(float);
 
-    unsigned char priceElements = *(*buff)++;
-
-    for (unsigned char i = 0; i < priceElements; i++) {
-        unsigned item1 = *((unsigned*)(*buff));
-        *buff += sizeof(unsigned);
-
-        float item2 = *((float*)(*buff));
-        *buff += sizeof(float);
-
-        float item3 = *((float*)(*buff));
-        *buff += sizeof(float);
-
-        unsigned item4 = *((unsigned*)(*buff));
-        *buff += sizeof(unsigned);
-
-        bool item5 = *((bool*)(*buff));
-        *buff += sizeof(bool);
-
-        sideIronPrice->prices.push_back({item1, item2, item3, item4, item5});
-    }
 
     return sideIronPrice;
 

@@ -851,6 +851,28 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setPressDrawingHyperlinks(links);
     });
     connect(ui->confirmDrawingButton, &QPushButton::pressed, this, &AddDrawingPageWidget::confirmDrawing);
+
+    connect(ui->leftSideIronTypeInput, qOverload<int>(&QComboBox::currentIndexChanged), this, [=](int index) {
+        switch ((SideIronType)(index + 1)) {
+            case (SideIronType::B):
+                ui->leftSideIronInvertedInput->setDisabled(true);
+                ui->leftSideIronInvertedInput->setCheckState(Qt::CheckState::Unchecked);
+                break;
+            default:
+                ui->leftSideIronInvertedInput->setDisabled(false);
+        }
+        });
+
+    connect(ui->rightSideIronTypeInput, qOverload<int>(&QComboBox::currentIndexChanged), this, [=](int index) {
+        switch ((SideIronType)(index + 1)) {
+        case (SideIronType::B):
+            ui->rightSideIronInvertedInput->setDisabled(true);
+            ui->rightSideIronInvertedInput->setCheckState(Qt::CheckState::Unchecked);
+            break;
+        default:
+            ui->rightSideIronInvertedInput->setDisabled(false);
+        }
+        });
 }
 
 void AddDrawingPageWidget::loadDrawing() {

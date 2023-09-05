@@ -31,7 +31,6 @@
      <property name="font">
       <font>
        <pointsize>15</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -39,9 +38,6 @@
       <string>Side Iron Prices</string>
      </property>
     </widget>
-   </item>
-   <item>
-    <widget class="DynamicComboBox" name="sideIronComboBox"/>
    </item>
    <item>
     <widget class="QScrollArea" name="scrollArea">
@@ -54,7 +50,7 @@
         <x>0</x>
         <y>0</y>
         <width>380</width>
-        <height>324</height>
+        <height>346</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout"/>
@@ -70,46 +66,23 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>DynamicComboBox</class>
-   <extends>QComboBox</extends>
-   <header>widgets/DynamicComboBox.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
-  <connections>
-    <connection>
-      <sender>acceptButtons</sender>
-      <signal>accepted()</signal>
-      <receiver>SideIronlPricingWindow</receiver>
-      <slot>accept()</slot>
-      <hints>
-        <hint type="sourcelabel">
-          <x>248</x>
-          <y>254</y>
-        </hint>
-        <hint type="destinationlabel">
-          <x>157</x>
-          <y>274</y>
-        </hint>
-      </hints>
-    </connection>
-    <connection>
-      <sender>acceptButtons</sender>
-      <signal>rejected()</signal>
-      <receiver>SideIronPricingWindow</receiver>
-      <slot>reject()</slot>
-      <hints>
-        <hint type="sourcelabel">
-          <x>316</x>
-          <y>260</y>
-        </hint>
-        <hint type="destinationlabel">
-          <x>286</x>
-          <y>274</y>
-        </hint>
-      </hints>
-    </connection>
-  </connections>
+ <connections>
+  <connection>
+   <sender>acceptButtons</sender>
+   <signal>rejected()</signal>
+   <receiver>SideIronPricingWindow</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

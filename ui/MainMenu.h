@@ -29,6 +29,8 @@
 #include "SideIronPricingWindow.h"
 #include "ExtraPricingWindow.h"
 #include "LabourTimesWindow.h"
+#include "SpecificSideIronPricingWindow.h"
+#include "PowderCoatingPricingWindow.h"
 
 
 #define DEFAULT_REFRESH_RATE 16

@@ -1208,9 +1208,26 @@ color: rgb(70, 70, 70);
       <item>
        <widget class="QLabel" name="authorLabel">
         <property name="text">
-         <string>Created By Matthew Sirman 2020</string>
+         <string>Created By Matthew Sirman 2020
+&amp; Alistair Sirman 2023</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item>
        <widget class="QLabel" name="loggedInAsLabel">
@@ -1264,8 +1281,10 @@ color: rgb(70, 70, 70);
     </property>
     <addaction name="pricingMenu_materialPricesAction"/>
     <addaction name="pricingMenu_sideIronPricesAction"/>
+    <addaction name="pricingMenu_SpecificSideIronPricesAction"/>
     <addaction name="pricingMenu_extraPricesAction"/>
     <addaction name="pricingMenu_labourTimes"/>
+    <addaction name="pricingMenu_powderCoatingPrices"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
@@ -1326,7 +1345,7 @@ color: rgb(70, 70, 70);
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Side Iron Prices</string>
+    <string>Generic Side Iron Prices</string>
    </property>
   </action>
   <action name="pricingMenu_extraPricesAction">
@@ -1339,12 +1358,22 @@ color: rgb(70, 70, 70);
     <string>Labour Times</string>
    </property>
   </action>
+  <action name="pricingMenu_SpecificSideIronPricesAction">
+   <property name="text">
+    <string>Specific Side Iron Prices</string>
+   </property>
+  </action>
+  <action name="pricingMenu_powderCoatingPrices">
+   <property name="text">
+    <string>Powder Coating Prices</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>DynamicComboBox</class>
    <extends>QComboBox</extends>
-   <header>widgets/DynamicComboBox.h</header>
+   <header location="global">widgets/DynamicComboBox.h</header>
   </customwidget>
   <customwidget>
    <class>ActivatorLabel</class>

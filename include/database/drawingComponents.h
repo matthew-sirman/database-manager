@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <set>
+#include <type_traits>
 
 #include "RequestType.h"
 #include "../networking/NetworkMessage.h"
@@ -111,7 +112,7 @@ public:
     /// <returns>A ComboboxDataElement summary for this Product.</returns>
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     /// <summary>
     /// Private constructor based on the component ID
     /// </summary>
@@ -138,10 +139,24 @@ public:
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     BackingStrip(unsigned id);
 
     static BackingStrip* fromSource(unsigned char** buff);
+};
+
+struct ApertureShape : public DrawingComponent {
+    friend class DrawingComponentManager<ApertureShape>;
+
+public:
+    std::string shape;
+
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+protected:
+    ApertureShape(unsigned id);
+
+    static ApertureShape* fromSource(unsigned char** buff);
 };
 
 /// <summary>
@@ -163,25 +178,15 @@ public:
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+    virtual ApertureShape &getShape() const;
+
+protected:
     Aperture(unsigned id);
 
     static Aperture * fromSource(unsigned char** buff);
 };
 
-struct ApertureShape : public DrawingComponent {
-    friend class DrawingComponentManager<ApertureShape>;
 
-public:
-    std::string shape;
-
-    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
-
-private:
-    ApertureShape(unsigned id);
-
-    static ApertureShape* fromSource(unsigned char** buff);
-};
 
 struct Material : public DrawingComponent {
     friend class DrawingComponentManager<Material>;
@@ -197,7 +202,7 @@ public:
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     Material(unsigned id);
 
     static Material* fromSource(unsigned char** buff);
@@ -250,7 +255,7 @@ public:
     float getPrice(typename ExtraPriceTrait<T>::numType n);
     //float getPrice(float n);
 
-private:
+protected:
     ExtraPrice(unsigned id);
 
     static ExtraPrice* fromSource(unsigned char** buff);
@@ -268,7 +273,7 @@ public:
     LabourType getType() const;
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     LabourTime(unsigned id);
 
     static LabourTime* fromSource(unsigned char** buff);
@@ -283,6 +288,21 @@ enum class SideIronType {
     E
 };
 
+struct PowderCoatingPrice : public DrawingComponent {
+    friend class DrawingComponentManager<PowderCoatingPrice>;
+
+public:
+    float hookPrice, strapPrice;
+
+    std::string powderCoatingPrice() const;
+    ComboboxDataElement toDataElement(unsigned mode = 0) const override;
+
+protected:
+    PowderCoatingPrice(unsigned id);
+
+    static PowderCoatingPrice* fromSource(unsigned char** buff);
+};
+
 struct SideIron : public DrawingComponent {
     friend class DrawingComponentManager<SideIron>;
 
@@ -291,11 +311,13 @@ public:
     unsigned short length{};
     std::string drawingNumber;
     std::string hyperlink;
+    std::optional<float> price;
+    std::optional<unsigned> screws;
 
     std::string sideIronStr() const;
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
-private:
+protected:
     SideIron(unsigned id);
 
     static SideIron* fromSource(unsigned char** buff);
@@ -305,14 +327,23 @@ struct SideIronPrice : DrawingComponent {
     friend class DrawingComponentManager<SideIronPrice>;
 
     SideIronType type;
-    // type, length, price, screws, is_extraflex
-    std::vector<std::tuple<unsigned, float, float, unsigned, bool>> prices;
+    unsigned lowerLength, upperLength;
+    bool extraflex;
+    float price;
 
     std::string sideIronPriceStr() const;
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+    bool operator<(const SideIronPrice& other) const {
+        return price < other.price;
+    }
+
+    bool operator>(const SideIronPrice& other) const {
+        return price > other.price;
+    }
+
+protected:
     SideIronPrice(unsigned id);
 
     static SideIronPrice* fromSource(unsigned char** buff);
@@ -339,7 +370,7 @@ public:
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     Machine(unsigned id);
 
     static Machine* fromSource(unsigned char** buff);
@@ -353,7 +384,7 @@ public:
 
     ComboboxDataElement toDataElement(unsigned mode = 0) const override;
 
-private:
+protected:
     MachineDeck(unsigned id);
 
     static MachineDeck* fromSource(unsigned char** buff);
@@ -459,6 +490,9 @@ public:
 
     static void addCallback(const std::function<void()> &callback);
 
+    // for testing purposes only, do not use
+    static void addComponent(T* component);
+    static void clear();
 private:
     static std::unordered_map<unsigned, T *> componentLookup;
     static std::unordered_map<unsigned, unsigned> handleToIDMap;
@@ -470,7 +504,23 @@ private:
     static unsigned sourceDataSize;
 
     static std::vector<std::function<void()>> updateCallbacks;
+
 };
+
+template<typename T>
+void DrawingComponentManager<T>::addComponent(T* component) {
+    component->__handle = DrawingComponentManager<T>::maximumHandle() + 1;
+    DrawingComponentManager<T>::componentLookup.emplace(component->__handle, component);
+    DrawingComponentManager<T>::handleToIDMap.emplace(component->__handle, component->__componentID);
+    DrawingComponentManager<T>::indexSet.push_back(component->__handle);
+};
+
+template<typename T>
+void DrawingComponentManager<T>::clear() {
+    DrawingComponentManager<T>::componentLookup.clear();
+    DrawingComponentManager<T>::handleToIDMap.clear();
+    DrawingComponentManager<T>::indexSet.clear();
+}
 
 template<typename T>
 std::unordered_map<unsigned, T *> DrawingComponentManager<T>::componentLookup;
@@ -560,8 +610,11 @@ T &DrawingComponentManager<T>::getComponentByHandle(unsigned handle) {
     return *componentLookup[handle];
 }
 
+// returns the highest current handle
 template<typename T>
 unsigned DrawingComponentManager<T>::maximumHandle() {
+    if (indexSet.empty())
+        return 0;
     return *std::max_element(indexSet.begin(), indexSet.end());
 }
 

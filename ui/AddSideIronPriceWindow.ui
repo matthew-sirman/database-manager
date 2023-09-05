@@ -45,59 +45,83 @@
     </widget>
    </item>
    <item>
-    <widget class="DynamicComboBox" name="sideIronNameComboBox"/>
+    <widget class="QComboBox" name="sideIronTypeComboBox">
+     <item>
+      <property name="text">
+       <string>None</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>A</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>B</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>C</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>D</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>E</string>
+      </property>
+     </item>
+    </widget>
    </item>
    <item>
     <widget class="QWidget" name="formLayout" native="true">
      <layout class="QFormLayout" name="formLayout_2">
       <item row="0" column="0">
-       <widget class="QLabel" name="lengthLabel">
+       <widget class="QLabel" name="lowerLengthLabel">
         <property name="text">
-         <string>Length :</string>
+         <string>Lower Length :</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="lengthEdit"/>
+       <widget class="QLineEdit" name="lowerLengthEdit"/>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="priceLabel">
+       <widget class="QLabel" name="upperLengthLabel">
         <property name="text">
-         <string>Price :</string>
+         <string>Upper Length: </string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="priceEdit"/>
+       <widget class="QLineEdit" name="upperLengthEdit"/>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="screwsLabel">
+       <widget class="QLabel" name="priceLabel">
         <property name="text">
-         <string>Screws: </string>
+         <string>Price: </string>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLineEdit" name="screwsEdit"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="extraflexCombobox">
-        <item>
-         <property name="text">
-          <string>Not Extraflex</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Extraflex</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QLineEdit" name="priceEdit"/>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="extraflexLabel">
         <property name="text">
          <string>Extraflex: </string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="extraflexCheckBox">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
@@ -122,13 +146,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>DynamicComboBox</class>
-   <extends>QComboBox</extends>
-   <header>widgets/DynamicComboBox.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>

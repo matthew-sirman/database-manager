@@ -3,7 +3,7 @@
 
 
 SideIronPricingWindow::SideIronPricingWindow(Client* client, QWidget* parent)
-    : QDialog(parent), ui(new Ui::SideIronPricingWindow()) {
+    : QDialog(parent), ui(new Ui::SideIronPricingWindow()), client(client) {
     ui->setupUi(this);
     this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
@@ -13,92 +13,71 @@ SideIronPricingWindow::SideIronPricingWindow(Client* client, QWidget* parent)
     QObject::connect(ui->acceptButtons, SIGNAL(rejected()), this, SLOT(reject()));
 
     QPushButton* button = ui->acceptButtons->addButton(QString("Add"), QDialogButtonBox::ActionRole);
+    connect(button, &QPushButton::pressed, this, [=]() {
+        (new AddSideIronPriceWindow(client, this))->show();
+        });
 
     QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
     sideIronPricingScroll = ui->sideIronPricingScroll;
 
-    sideIronComboBox = ui->sideIronComboBox;
-    sideIronComboBox->setDataSource(sideIronPriceSource);
-    DrawingComponentManager<SideIronPrice>::addCallback([this]() { sideIronPriceSource.updateSource(); });
-    sideIronPriceSource.updateSource();
-
-    connect(button, &QPushButton::clicked, [client, this]() {
-        (new AddSideIronPriceWindow(client, this, sideIronComboBox->currentIndex()))->show();
-        });
-    connect(sideIronComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index) {
-        update(client, index);
-        });
-    update(client, 0);
+    update();
 }
 
-void SideIronPricingWindow::update(Client* client, int index) {
-    if (!sideIronPriceSource.empty()) {
-        for (int _ = 0; _ < 5; _++) {
-            for (int i = 0; i < sideIronPricingScroll->layout()->count(); ++i) {
-                QWidget* widget = sideIronPricingScroll->layout()->takeAt(i)->widget();
-                if (widget != NULL) {
-                    delete widget;
-                }
-            }
-        }
+void SideIronPricingWindow::update() {
+    QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
 
-        delete sideIronPricingScroll->layout();
-        QFormLayout* layout = new QFormLayout();
-        QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
+    for (unsigned i : DrawingComponentManager<SideIronPrice>::dataIndexSet()) {
+        std::cout << "asadasdas" << std::endl;
+        SideIronPrice price = DrawingComponentManager<SideIronPrice>::getComponentByHandle(i);
+        QWidget* priceContainer = new QWidget();
+        ui->sideIronPricingScroll->layout()->addWidget(priceContainer);
+        QFormLayout* containerLayout = new QFormLayout();
+        priceContainer->setLayout(containerLayout);
 
-        SideIronPrice& sideIronPrice = DrawingComponentManager<SideIronPrice>::getComponentByHandle(sideIronComboBox->itemData(index).toInt());
-        QFrame* lastLine = nullptr;
-        for (std::tuple<unsigned, float, float, unsigned, bool> prices : sideIronPrice.prices) {
-            QLineEdit* lengthTextbox = new QLineEdit(QString::number(std::get<1>(prices), 'f', 2));
-            lengthTextbox->setReadOnly(true);
-            lengthTextbox->setValidator(validator);
-            layout->addRow("Length: ", lengthTextbox);
-            QLineEdit* priceTextbox = new QLineEdit(QString::number(std::get<2>(prices), 'f', 2));
-            priceTextbox->setReadOnly(true);
-            priceTextbox->setValidator(validator);
-            layout->addRow("Price: ", priceTextbox);
-            QLineEdit* screwsTextbox = new QLineEdit(QString::number(std::get<3>(prices), 'f', 0));
-            screwsTextbox->setReadOnly(true);
-            screwsTextbox->setValidator(validator);
-            layout->addRow("Screws: ", screwsTextbox);
+        QComboBox* typeComboBox = new QComboBox();
+        typeComboBox->addItem("None");
+        typeComboBox->addItem("A");
+        typeComboBox->addItem("B");
+        typeComboBox->addItem("C");
+        typeComboBox->addItem("D");
+        typeComboBox->addItem("E");
+        typeComboBox->setDisabled(true);
+        typeComboBox->setCurrentIndex((unsigned)price.type);
+        containerLayout->addRow("Type: ", typeComboBox);
 
-            QComboBox* extraflexBox = new QComboBox();
-            extraflexBox->addItem("Not Extraflex");
-            extraflexBox->addItem("Extraflex");
-            extraflexBox->setCurrentIndex((int)(std::get<4>(prices)));
-            extraflexBox->setDisabled(true);
-            layout->addRow("Extraflex: ", extraflexBox);
+        QLineEdit* lowerLengthLineEdit = new QLineEdit();
+        lowerLengthLineEdit->setDisabled(true);
+        lowerLengthLineEdit->setText(QString::number(price.lowerLength));
+        containerLayout->addRow("Lower Length: ", lowerLengthLineEdit);
 
-            QPushButton* remove = new QPushButton("Remove");
-            QPushButton* edit = new QPushButton("Edit");
-            layout->addRow(remove, edit);
-            QFrame* line;
-            line = new QFrame();
-            line->setFrameShape(QFrame::HLine);
-            line->setFrameShadow(QFrame::Sunken);
-            layout->addRow(line);
-            lastLine = line;
+        QLineEdit* upperLengthLineEdit = new QLineEdit();
+        upperLengthLineEdit->setDisabled(true);
+        upperLengthLineEdit->setText(QString::number(price.upperLength));
+        containerLayout->addRow("Upper Length: ", upperLengthLineEdit);
 
-            connect(edit, &QPushButton::clicked, [client, this, sideIronPrice, prices]() {
-                (new AddSideIronPriceWindow(client, this, sideIronComboBox->currentIndex(), ComponentInsert::PriceMode::UPDATE, sideIronPrice, prices))->show();
-                });
-            connect(remove, &QPushButton::clicked, [client, this, sideIronPrice, prices]() {
-                (new AddSideIronPriceWindow(client, this, sideIronComboBox->currentIndex(), ComponentInsert::PriceMode::REMOVE, sideIronPrice, prices))->show();
-                });
-        }
-        if (lastLine != nullptr) {
-            layout->removeWidget(lastLine);
-        }
-        sideIronPricingScroll->setLayout(layout);
+        QCheckBox* extraflexCheckBox = new QCheckBox();
+        extraflexCheckBox->setDisabled(true);
+        extraflexCheckBox->setChecked(price.extraflex);
+        containerLayout->addRow("Extraflex: ", extraflexCheckBox);
+
+        QLineEdit* priceLineEdit = new QLineEdit();
+        priceLineEdit->setDisabled(true);
+        priceLineEdit->setValidator(validator);
+        priceLineEdit->setText(QString::number(price.price, 'f', 2));
+        containerLayout->addRow("Price: ", priceLineEdit);
+
+        QHBoxLayout* buttons = new QHBoxLayout();
+        QPushButton* editButton = new QPushButton("Edit");
+        QPushButton* removeButton = new QPushButton("Remove");
+        buttons->addWidget(editButton);
+        buttons->addWidget(removeButton);
+        containerLayout->addRow(buttons);
+
+        connect(editButton, &QPushButton::pressed, this, [=]() {
+            (new AddSideIronPriceWindow(client, ComponentInsert::PriceMode::UPDATE, price, this))->show();
+            });
+        connect(removeButton, &QPushButton::pressed, this, [=]() {
+            (new AddSideIronPriceWindow(client, ComponentInsert::PriceMode::REMOVE, price, this))->show();
+            });
     }
-    else {
-        reject();
-        QMessageBox* popup = new QMessageBox(this);
-        popup->setText("No Side Irons loaded, try again in a few seconds.");
-        popup->show();
-    }
-}
-
-void SideIronPricingWindow::setComboboxCallback(std::function<void(DynamicComboBox*)> func) {
-    sideIronComboBox->setManualIndexFunc(func);
 }

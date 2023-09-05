@@ -14,6 +14,9 @@
 #include <tuple>
 #include <variant>
 #include <PricingPackage.h>
+#include <regex>
+#include <stdio.h>
+#include <string.h>
 
 #include <filesystem>
 
@@ -50,7 +53,13 @@ private:
     QPdfView *pdfViewer = nullptr;
     QPdfDocument *pdfDocument = nullptr;
 
-    static std::filesystem::path punchProgramPathForDrawing(const std::string &drawingNumber);
+    static std::vector<std::filesystem::path> punchProgramPathForDrawing(const std::string &drawingNumber);
+
+    std::vector<QLineEdit*> subtotalEdits, labourEdits;
+
+    QLineEdit *subtotal_lineEdit, *labour_cost_lineEdit, *totalTimeEdit, *total_lineEdit, *sales_total, *sales_increase, *extraBox, *extraTimeEdit;
+
+    void updateTotals() const;
 };
 
 

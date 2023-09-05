@@ -267,7 +267,7 @@ void Drawing::setProduct(const Product &prod) {
     invokeUpdateCallbacks();
 }
 
-Aperture Drawing::aperture() const {
+Aperture &Drawing::aperture() const {
     return DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle);
 }
 
@@ -638,6 +638,10 @@ std::vector<Drawing::ImpactPad> Drawing::impactPads() const {
 }
 
 Drawing::ImpactPad &Drawing::impactPad(unsigned index) {
+    return __impactPads[index];
+}
+
+const Drawing::ImpactPad& Drawing::safeImpactPad(unsigned index) const {
     return __impactPads[index];
 }
 

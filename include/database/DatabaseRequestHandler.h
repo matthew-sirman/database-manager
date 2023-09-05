@@ -166,10 +166,16 @@ private:
 
 	struct SideIronPriceData : TableSourceData {
 		typedef SideIronPrice ComponentType;
-
 		SideIronType type;
-		// length, price
-		std::vector<std::tuple<unsigned, float, float, unsigned, bool>> prices;
+		unsigned lowerLength, upperLength;
+		float price;
+		bool extraflex;
+	};
+
+	struct PowderCoatingPriceData : TableSourceData {
+		typedef PowderCoatingPrice ComponentType;
+
+		float hookPrice, strapPrice;
 	};
 
 	/// <summary>
@@ -189,6 +195,9 @@ private:
 		std::string drawingNumber;
 		// The hyperlink to the drawing for this side iron
 		std::string hyperlink;
+
+		std::optional<float> price = std::nullopt;
+		std::optional<unsigned> screws = std::nullopt;
 	};
 
 	/// <summary>

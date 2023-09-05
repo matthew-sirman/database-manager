@@ -227,6 +227,12 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     connect(ui->pricingMenu_sideIronPricesAction, &QAction::triggered, [this]() {
         (new SideIronPricingWindow(client))->show();
         });
+    connect(ui->pricingMenu_SpecificSideIronPricesAction, &QAction::triggered, [this]() {
+        (new SpecificSideIronPricingWindow(client))->show();
+        });
+    connect(ui->pricingMenu_powderCoatingPrices, &QAction::triggered, [this]() {
+        (new PowderCoatingPricingWindow(client))->show();
+        });
     connect(ui->pricingMenu_extraPricesAction, &QAction::triggered, [this]() {
         (new ExtraPricingWindow(client))->show();
     });
@@ -350,6 +356,7 @@ void MainMenu::sendSourceTableRequests() const {
     sourceTable(RequestType::SOURCE_EXTRA_PRICES_TABLE);
     sourceTable(RequestType::SOURCE_BACKING_STRIPS_TABLE);
     sourceTable(RequestType::SOURCE_LABOUR_TIMES_TABLE);
+    sourceTable(RequestType::SOURCE_POWDER_COATING_TABLE);
 }
 
 void MainMenu::sourceTable(RequestType requestType) const {

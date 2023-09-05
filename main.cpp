@@ -546,21 +546,8 @@ int main(int argc, char *argv[]) {
             runServer(metaFilePath, user, dev);
             break;
         case CLIENT:
-            try {
-                return runClient(metaFilePath, argc, argv);
-            }
-            catch (std::exception e) {
-                auto now = std::chrono::system_clock::now();
-                std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-                std::ostringstream oss;
-                oss << std::put_time(std::gmtime(&currentTime), "%Y-%m-%d %H:%M:%S");
-                std::string formattedTime = oss.str();
-                std::ofstream outputFile;
-                outputFile.open("U:\\SCS Screen Mat Database\\client\\errorlogs\\" + formattedTime + ".err");
-                //outputFile << ErrorTracker::getTracker()->get();
-                outputFile.close();
-                throw e;
-            }
+             return runClient(metaFilePath, argc, argv);
+             break;
         case SETUP:
             setupServerKeys(metaFilePath);
             break;

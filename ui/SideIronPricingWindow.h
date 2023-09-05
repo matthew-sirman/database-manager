@@ -14,8 +14,10 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QPushButton>
+#include <QButtonGroup>
 #include <QFormLayout>
 #include <QInputEvent>
+#include <QCheckBox>
 
 namespace Ui {
     class SideIronPricingWindow;
@@ -26,16 +28,11 @@ class SideIronPricingWindow : public QDialog {
 public:
     explicit SideIronPricingWindow(Client* client, QWidget* parent = nullptr);
 
-    void update(Client* client, int index);
-
-    void setComboboxCallback(std::function<void(DynamicComboBox*)>);
+    void update();
 private:
     Ui::SideIronPricingWindow* ui = nullptr;
 
     QWidget* sideIronPricingScroll;
-
-    DynamicComboBox* sideIronComboBox;
-
-    ComboboxComponentDataSource<SideIronPrice> sideIronPriceSource;
+    Client* client;
 };
 #endif // SIDEIRONPRICINGWINDOW_H

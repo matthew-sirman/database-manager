@@ -57,6 +57,9 @@ void DatabaseResponseHandler::onMessageReceived(void *message, unsigned int mess
     case RequestType::SOURCE_LABOUR_TIMES_TABLE:
         DrawingComponentManager<LabourTime>::sourceComponentTable(message, messageSize);
         break;
+    case RequestType::SOURCE_POWDER_COATING_TABLE:
+        DrawingComponentManager<PowderCoatingPrice>::sourceComponentTable(message, messageSize);
+        break;
     case RequestType::SOURCE_SIDE_IRON_TABLE:
         DrawingComponentManager<SideIron>::sourceComponentTable(message, messageSize);
         break;

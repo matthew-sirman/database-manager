@@ -24,7 +24,8 @@ enum class RequestType {
     ADD_NEW_COMPONENT,
     GET_NEXT_DRAWING_NUMBER,
     CREATE_DATABASE_BACKUP,
-    SOURCE_LABOUR_TIMES_TABLE
+    SOURCE_LABOUR_TIMES_TABLE,
+    SOURCE_POWDER_COATING_TABLE
 };
 
 enum class MaterialPricingType {
@@ -57,6 +58,7 @@ enum class LabourType {
     DIVERTORS,
     DEFLECTORS,
     DAM_BARS,
+    CUT_DOWN,
     ERR
 };
 #endif //DATABASE_MANAGER_REQUESTTYPE_H
