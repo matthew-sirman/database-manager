@@ -2,8 +2,9 @@
 #include "../build/ui_AddExtraPriceWindow.h"
 #include "ExtraPricingWindow.h"
 
+// TODO: check this works
 AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
-										 ExtraPrice& price, int index, QWidget* parent)
+										 ExtraPrice& price, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddExtraPriceWindow()) {
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
@@ -77,7 +78,7 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
             break;
     }
 
-    connect(this, &QDialog::accepted, [this, extraPrice, values, client, index]() {
+    connect(this, &QDialog::accepted, [this, extraPrice, values, client]() {
         ComponentInsert insert;
 
         ComponentInsert::ExtraPriceData* priceData = nullptr;

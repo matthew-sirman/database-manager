@@ -3,7 +3,7 @@
 #include "LabourTimesWindow.h"
 
 AddLabourTimesWindow::AddLabourTimesWindow(Client* client,
-										 LabourTime& times, int index, QWidget* parent)
+										 LabourTime& times, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddLabourTimesWindow()) {
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);

@@ -1,6 +1,19 @@
 <!DOCTYPE RCC><RCC version="1.0">
   <qresource>
 	  <file>scs_logo.png</file>
+	  <file>scs_logo.ico</file>
     <file>drawing_pdf_base_template.svg</file>
+	  <file>Roboto-Black.ttf</file>
+	  <file>Roboto-BlackItalic.ttf</file>
+	  <file>Roboto-Bold.ttf</file>
+	  <file>Roboto-BoldItalic.ttf</file>
+	  <file>Roboto-Italic.ttf</file>
+	  <file>Roboto-Light.ttf</file>
+	  <file>Roboto-LightItalic.ttf</file>
+	  <file>Roboto-Medium.ttf</file>
+	  <file>Roboto-MediumItalic.ttf</file>
+	  <file>Roboto-Regular.ttf</file>
+	  <file>Roboto-Thin.ttf</file>
+	  <file>Roboto-ThinItalic.ttf</file>
   </qresource>
 </RCC>

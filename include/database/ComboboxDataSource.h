@@ -11,7 +11,7 @@
 
 #include "DataSource.h"
 
-/// <summary>
+/// <summary>\ingroup database
 /// ComboboxDataElement
 /// Stores a single data element for a ComboBox data source.
 /// An element contains a string to be displayed and an associated index
@@ -45,7 +45,7 @@ struct ComboboxDataElement {
     bool operator!=(const ComboboxDataElement &other) const;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// ComboboxDataSource
 /// This is the type for the base datasource which uses a vector of unsigned
 /// values as the base iterator, and adapts them to the type of ComboboxDataElement

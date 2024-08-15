@@ -71,8 +71,6 @@ AddLapWidget::AddLapWidget(QGraphicsScene *scene, QRectF hoverBounds, DimensionL
 }
 
 AddLapWidget::~AddLapWidget() {
-    delete widthInput;
-    delete widthDimension;
 }
 
 void AddLapWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {

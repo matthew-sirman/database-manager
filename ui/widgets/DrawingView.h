@@ -13,46 +13,97 @@
 #include "Inspector.h"
 #include "DimensionLine.h"
 #include "AddLapWidget.h"
-#include "addons/ImpactPadGraphicsItem.h"
-#include "addons/BlankSpaceGraphicsItem.h"
-#include "addons/ExtraApertureGraphicsItem.h"
-#include "addons/DamBarGraphicsItem.h"
-#include "addons/CentreHoleSetGraphicsItem.h"
-#include "addons/DivertorSetGraphicsItem.h"
-#include "addons/DeflectorSetGraphicsItem.h"
+#include "addons/AreaGraphicsItem.h"
+#include "addons/GroupGraphicsItem.h"
 #include "../../include/database/Drawing.h"
 
+/// <summary>
+/// DrawingView inherits QGraphicsView
+/// DrawingView displays and allows editing a drawing
+/// </summary>
 class DrawingView : public QGraphicsView {
     Q_OBJECT
 
 public:
+    /// <summary>
+    /// Constructs a new DrawingView.
+    /// </summary>
+    /// <param name="parent">This widgets parent.</param>
     explicit DrawingView(QWidget *parent = nullptr);
 
+    /// <summary>
+    /// Default destructor with cleanup.
+    /// </summary>
     ~DrawingView() override;
 
+    /// <summary>
+    /// Specifies drawing to render.
+    /// </summary>
+    /// <param name="d">The drawing to render.</param>
     void setDrawing(Drawing &d);
 
+    /// <summary>
+    /// Sets the number of bars.
+    /// </summary>
+    /// <param name="bars">The new number of bars.</param>
     void setNumberOfBars(unsigned bars);
 
+    /// <summary>
+    /// Enables the laps on the drawing.
+    /// </summary>
     void enableLaps();
 
+    /// <summary>
+    /// Disables the laps on the drawing.
+    /// </summary>
     void disableLaps();
 
+    /// <summary>
+    /// Makes the drawing get redrawn ASAP.
+    /// </summary>
     void setRedrawRequired();
 
+    /// <summary>
+    /// Sets the insepctor for more details.
+    /// </summary>
+    /// <param name="inspector">The inespector to set.</param>
     void setInspector(Inspector *inspector);
 
 protected:
+    /// <summary>
+    /// Overridden paint function to redraw scene if required. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void paintEvent(QPaintEvent *event) override;
 
+    /// <summary>
+    /// overriden resize event to force a redraw. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void resizeEvent(QResizeEvent *event) override;
 
+    /// <summary>
+    /// Overriden context menu event for custom context menu. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void contextMenuEvent(QContextMenuEvent *event) override;
 
+    /// <summary>
+    /// Overriden to allow for additions to drawings. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void mousePressEvent(QMouseEvent *event) override;
 
+    /// <summary>
+    /// Overriden mouse move event to snap drawing zones on drawing. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void mouseMoveEvent(QMouseEvent *event) override;
 
+    /// <summary>
+    /// Overriden mouse release event. Propogates event.
+    /// </summary>
+    /// <param name="event">The triggering event</param>
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
@@ -101,11 +152,18 @@ private:
     std::vector<QGraphicsProxyWidget *> spacingProxies, barProxies;
     std::vector<WidgetDimensionLine *> spacingDimensions, barDimensions;
     std::vector<QGraphicsRectItem *> matSectionRects;
-    std::vector<ImpactPadGraphicsItem *> impactPadRegions;
-    std::vector<BlankSpaceGraphicsItem*> blankSpaceReigons;
-    std::vector<ExtraApertureGraphicsItem*> extraApertureReigons;
-    std::vector<DamBarGraphicsItem*> damBarReigons;
-    CentreHoleSetGraphicsItem *centreHoleSet = nullptr;
+    typedef AreaGraphicsItem<Drawing::ImpactPad, Material, Aperture> ImpactPadGraphicsItem;
+    typedef AreaGraphicsItem<Drawing::BlankSpace> BlankSpaceGraphicsItem;
+    typedef AreaGraphicsItem<Drawing::ExtraAperture, Aperture> ExtraApertureGraphicsItem;
+    typedef AreaGraphicsItem<Drawing::DamBar, Material> DamBarGraphicsItem;
+    std::vector<ImpactPadGraphicsItem*> impactPadRegions;
+    std::vector<BlankSpaceGraphicsItem*> blankSpaceRegions;
+    std::vector<ExtraApertureGraphicsItem*> extraApertureRegions;
+    std::vector<DamBarGraphicsItem*> damBarRegions;
+    typedef GroupGraphicsItem<Drawing::CentreHole, Aperture> CentreHoleSetGraphicsItem;
+    typedef GroupGraphicsItem<Drawing::Deflector, Material> DeflectorSetGraphicsItem;
+    typedef GroupGraphicsItem<Drawing::Divertor, Material> DivertorSetGraphicsItem;
+    CentreHoleSetGraphicsItem* centreHoleSet = nullptr;
     DeflectorSetGraphicsItem *deflectorSet = nullptr;
     DivertorSetGraphicsItem *divertorSet = nullptr;
 
@@ -123,9 +181,9 @@ private:
     };
 
     QRubberBand *impactPadRegionSelector = nullptr;
-    QRubberBand* blankSpaceReigonSelector = nullptr;
-    QRubberBand* extraApertureReigonSelector = nullptr;
-    QRubberBand* damBarReigonSelector = nullptr;
+    QRubberBand* blankSpaceRegionSelector = nullptr;
+    QRubberBand* extraApertureRegionSelector = nullptr;
+    QRubberBand* damBarRegionSelector = nullptr;
     QPoint impactPadAnchorPoint;
     QPoint blankSpaceAnchorPoint;
     QPoint extraApertureAnchorPoint;

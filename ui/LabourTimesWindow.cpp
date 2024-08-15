@@ -3,7 +3,7 @@
 #include "../build/ui_LabourTimesWindow.h"
 
 LabourTimesWindow::LabourTimesWindow(Client* client, QWidget* parent)
-    : QDialog(parent), ui(new Ui::LabourTimesWindow()) {
+    : QDialog(parent), ui(new Ui::LabourTimesWindow()), client(client) {
     ui->setupUi(this);
     this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
@@ -15,7 +15,7 @@ LabourTimesWindow::LabourTimesWindow(Client* client, QWidget* parent)
     labourTimesScroll = ui->labourTimesScroll;
     labourTimesComboBox = ui->labourTimesComboBox;
 
-    DrawingComponentManager<LabourTime>::addCallback([this]() { labourTimesSource.updateSource(); });
+    DrawingComponentManager<LabourTime>::addCallback([this]() { labourTimesSource.updateSource(); this->setUpdateRequired(); });
     labourTimesSource.updateSource();
 
     connect(labourTimesComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index) {
@@ -57,7 +57,7 @@ void LabourTimesWindow::update(Client* client) {
 
 
             connect(edit, &QPushButton::clicked, [client, this, labourTime, timeTextBox]() mutable {
-                AddLabourTimesWindow* window = new AddLabourTimesWindow(client, labourTime, labourTimesComboBox->currentIndex());
+                AddLabourTimesWindow* window = new AddLabourTimesWindow(client, labourTime);
                 connect(window, &AddLabourTimesWindow::updateParent, this, [this, timeTextBox, client](QString s) {
                     DrawingComponentManager<LabourTime>::getComponentByHandle(labourTimesComboBox->currentData().toInt()).time = s.toFloat();
                     labourTimesSource.updateSource();
@@ -79,4 +79,16 @@ void LabourTimesWindow::update(Client* client) {
 
 void LabourTimesWindow::setComboboxCallback(std::function<void(DynamicComboBox*)> func) {
     labourTimesComboBox->setManualIndexFunc(func);
+}
+
+void LabourTimesWindow::setUpdateRequired() {
+    updateRequired = true;
+}
+
+void LabourTimesWindow::paintEvent(QPaintEvent* event) {
+    if (updateRequired) {
+        update(client);
+        updateRequired = false;
+    }
+    QDialog::paintEvent(event);
 }

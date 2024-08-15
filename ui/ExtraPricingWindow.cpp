@@ -2,7 +2,7 @@
 #include "../build/ui_ExtraPricingWindow.h"
 
 ExtraPricingWindow::ExtraPricingWindow(Client* client, QWidget* parent)
-    : QDialog(parent), ui(new Ui::ExtraPricingWindow()) {
+    : QDialog(parent), ui(new Ui::ExtraPricingWindow()), client(client) {
     ui->setupUi(this);
     this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
@@ -85,7 +85,7 @@ void ExtraPricingWindow::update(Client* client) {
             layout->addRow(edit);
 
             connect(edit, &QPushButton::clicked, [client, this, extraPrice, priceTextbox, amountTextbox]() mutable {
-                AddExtraPriceWindow* window = new AddExtraPriceWindow(client, extraPrice, extraPriceComboBox->currentIndex());
+                AddExtraPriceWindow* window = new AddExtraPriceWindow(client, extraPrice);
                 connect(window, &AddExtraPriceWindow::updateParent, this, [this, priceTextbox, amountTextbox](QString val1, std::optional<QString> val2) {
                     priceTextbox->setText(val1);
                     if (val2.has_value() && amountTextbox != nullptr) {
@@ -114,3 +114,14 @@ void ExtraPricingWindow::updateSource() {
     extraPriceSource.updateSource();
 }
 
+void ExtraPricingWindow::setUpdateRequired() {
+    updateRequired = true;
+}
+
+void ExtraPricingWindow::paintEvent(QPaintEvent* event) {
+    if (updateRequired) {
+        update(client);
+        updateRequired = false;
+    }
+    QDialog::paintEvent(event);
+}

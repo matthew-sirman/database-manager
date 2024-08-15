@@ -15,10 +15,19 @@ namespace Ui {
 	class AddSideIronWindow;
 }
 
+/// <summary>
+/// AddSideIronWindow inherits QDialog
+/// Opens a dialog where a new side iron can be defined, then added to the database.
+/// </summary>
 class AddSideIronWindow : public QDialog {
 	Q_OBJECT
 
 public:
+	/// <summary>
+	/// Constructs a dialog to add a new side iron.
+	/// </summary>
+	/// <param name="client">Network client to update database through.</param>
+	/// <param name="parent">The parent of this widget.</param>
 	AddSideIronWindow(Client *client, QWidget *parent = nullptr);
 
 private:

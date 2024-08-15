@@ -12,7 +12,7 @@
 template<typename T, typename IType>
 class DataSource;
 
-/// <summary>
+/// <summary>\ingroup database
 /// SourceFilter
 /// Base type for an installable filter object on a DataSource. The filter should be extended to
 /// suit a particular data source. This will filter a data source based on an arbitrary set of 
@@ -93,7 +93,7 @@ inline void SourceFilter<IType>::attachFilterUpdateCallback(const std::function<
     filterUpdateCallback = callback;
 }
 
-/// <summary>
+/// <summary>\ingroup database
 /// DataSourceIterator
 /// The iterator object for the datasource itself. Acts as a wrapper for an iterator of type
 /// IType and acts on a set of type T. The iterator has the ability to be filtered and adapted.
@@ -163,7 +163,6 @@ public:
     /// <summary>
     /// Post increment operator
     /// </summary>
-    /// <param name=""></param>
     /// <returns>The value of the iterator before incrementing.</returns>
     DataHolder operator++(int);
 
@@ -311,7 +310,7 @@ void DataSourceIterator<T, IType>::setAdapter(const std::function<T(IType)> &ada
     __adapter = adapter;
 }
 
-/// <summary>
+/// <summary>\ingroup database
 /// DataSource
 /// Represents an iterable data source of arbitrary type. This iterable is based on an adapter model
 /// from an underlying iterator type.
@@ -340,7 +339,7 @@ public:
 
     /// <summary>
     /// Getter for the begin point. This is used in C++ range based for loops.
-    /// </summary>.
+    /// </summary>
     /// <returns>The iterator for the start of the set.</returns>
     DataSourceIterator<T, IType> begin() const;
 

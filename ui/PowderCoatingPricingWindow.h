@@ -13,9 +13,18 @@ namespace Ui {
 	class PowderCoatingPricingWindow;
 }
 
+/// <summary>
+/// PowderCoatingPricingWindow inherits QDialog
+/// A window to view and edit the powder coating prices.
+/// </summary>
 class PowderCoatingPricingWindow : public QDialog {
 	Q_OBJECT
 public:
+	/// <summary>
+	/// Opens a new window to view and edit powder coating prices.
+	/// </summary>
+	/// <param name="client">Network client to update database through.</param>
+	/// <param name="parent">The parent of this widget.</param>
 	explicit PowderCoatingPricingWindow(Client* client, QWidget *parent = nullptr);
 
 private:

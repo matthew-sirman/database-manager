@@ -10,7 +10,7 @@ AddSpecificSideIronPriceWindow::AddSpecificSideIronPriceWindow(Client* client, S
 	ui->sideIronComboBox->setDataSource(sideIronSource);
 
 	QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-	QRegExpValidator* intValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+	QRegularExpressionValidator* intValidator = new QRegularExpressionValidator(QRegularExpression("[1-9][0-9]*"));
 	ui->priceEdit->setValidator(validator);
 	ui->screwsEdit->setValidator(intValidator);
 	sideIronComboBox = ui->sideIronComboBox;

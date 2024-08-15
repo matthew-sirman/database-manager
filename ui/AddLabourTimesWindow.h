@@ -15,12 +15,20 @@ namespace Ui {
     class AddLabourTimesWindow;
 }
 
-class LabourTimesWindow;
-
+/// <summary>
+/// AddLabourTimesWindow inherits QDialog
+/// Opens a new dialog that allows edits to be made to any labour times.
+/// </summary>
 class AddLabourTimesWindow : public QDialog {
     Q_OBJECT
 public:
-    explicit AddLabourTimesWindow(Client* client, LabourTime& times, int index, QWidget* parent = nullptr); // Update
+    /// <summary>
+    /// Creates a new window to edit labour times.
+    /// </summary>
+    /// <param name="client">The network client for updating the database through.</param>
+    /// <param name="times">The labour time to be editted.</param>
+    /// <param name="parent">The parent of this widget.</param>
+    explicit AddLabourTimesWindow(Client* client, LabourTime& times, QWidget* parent = nullptr); // Update
 private:
     Ui::AddLabourTimesWindow* ui = nullptr;
 signals:

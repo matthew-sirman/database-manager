@@ -10,18 +10,12 @@ DrawingPDFWriter::DrawingPDFWriter() {
 
 bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const Drawing &drawing,
                                  const std::string &drawnByInitials) const {
-    std::string productName = drawing.product().productName;
-
-    if (productName == "Rubber Modules and Panels") {
-        QMessageBox::about(nullptr, "Unsupported Type", "Rubber Modules and Panels PDF generation is not supported.");
-        return false;
-    }
 
     QPdfWriter writer(pdfFilePath.string().c_str());
 
-    writer.setPageSize(QPagedPaintDevice::A4);
+    writer.setPageSize(QPageSize::A4);
     writer.setPageOrientation(QPageLayout::Landscape);
-    writer.setPageMargins(QMargins(30, 15, 30, 15));
+    writer.setPageMargins(QMargins(10, 5, 10, 5));
 
     QSvgRenderer svgTemplateRenderer(QString(":/drawing_pdf_base_template.svg"));
 
@@ -30,7 +24,22 @@ bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const
     if (!painter.begin(&writer)) {
         return false;
     }
+    QFontDatabase::addApplicationFont(":/fonts/Helvetica.ttf");
+    QFontDatabase::addApplicationFont(":/fonts/Arial.ttf");
 
+    QFont font("Roboto, Arial, sans-serif");
+    font.setPointSize(150); // Adjust as needed
+    painter.setFont(font);
+    //bool ok;
+    //QFont font = QFontDialog::getFont(&ok);
+    //if (ok) {
+    //    painter.setFont(font);
+    //}
+
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    
     drawStandardTemplate(painter, svgTemplateRenderer);
 
     drawTextDetails(painter, svgTemplateRenderer, drawing, drawnByInitials);
@@ -43,11 +52,12 @@ bool DrawingPDFWriter::createPDF(const std::filesystem::path &pdfFilePath, const
 void DrawingPDFWriter::drawStandardTemplate(QPainter &painter, QSvgRenderer &svgTemplateRenderer) const {
     QRect viewport = painter.viewport();
 
+    svgTemplateRenderer.render(&painter);
+
     painter.setPen(QPen(Qt::black, 5));
 
     painter.drawRect(viewport);
 
-    svgTemplateRenderer.render(&painter);
 }
 
 void DrawingPDFWriter::drawLabelAndField(QPainter &painter, double left, double &top, const QString &label,
@@ -81,6 +91,8 @@ void DrawingPDFWriter::drawLabelAndField(QPainter &painter, double left, double 
 void
 DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRenderer, const Drawing &drawing,
                                   const std::string &drawnByInitials) const {
+
+    QRect viewport = painter.viewport();
     painter.save();
 
     const double horizontalOffset = 50.0, verticalOffset = 40.0;
@@ -174,12 +186,13 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
                       fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-    labelText = "Side Irons";
+    if (drawing.product().productName != "Rubber Modules and Panels") {
+        labelText = "Side Irons";
 
-    std::stringstream sideIronText;
-    SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
-    sideIronText << leftSideIron.length << "mm ";
-    switch (leftSideIron.type) {
+        std::stringstream sideIronText;
+        SideIron leftSideIron = drawing.sideIron(Drawing::LEFT), rightSideIron = drawing.sideIron(Drawing::RIGHT);
+        sideIronText << leftSideIron.length << "mm ";
+        switch (leftSideIron.type) {
         case SideIronType::A:
             sideIronText << "Type A ";
             break;
@@ -198,24 +211,24 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         case SideIronType::None:
             sideIronText << "None";
             break;
-    }
+        }
 
-    if (drawing.sideIronInverted(Drawing::LEFT)) {
-        sideIronText << "Inverted ";
-    }
+        if (drawing.sideIronInverted(Drawing::LEFT)) {
+            sideIronText << "Inverted ";
+        }
 
-    if (drawing.sideIronCutDown(Drawing::LEFT)) {
-        sideIronText << "Cut Down ";
-    }
+        if (drawing.sideIronCutDown(Drawing::LEFT)) {
+            sideIronText << "Cut Down ";
+        }
 
-    if (leftSideIron.type != SideIronType::None) {
-        sideIronText << leftSideIron.drawingNumber << " ";
-    }
+        if (leftSideIron.type != SideIronType::None) {
+            sideIronText << leftSideIron.drawingNumber << " ";
+        }
 
-    if (leftSideIron.handle() != rightSideIron.handle()) {
-        sideIronText << ",\n";
-        sideIronText << rightSideIron.length << "mm ";
-        switch (rightSideIron.type) {
+        if (leftSideIron.handle() != rightSideIron.handle()) {
+            sideIronText << ",\n";
+            sideIronText << rightSideIron.length << "mm ";
+            switch (rightSideIron.type) {
             case SideIronType::A:
                 sideIronText << "Type A ";
                 break;
@@ -234,87 +247,87 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
             case SideIronType::None:
                 sideIronText << "None";
                 break;
+            }
+
+            if (drawing.sideIronInverted(Drawing::RIGHT)) {
+                sideIronText << "Inverted ";
+            }
+
+            if (drawing.sideIronCutDown(Drawing::RIGHT)) {
+                sideIronText << "Cut Down ";
+            }
+
+            if (rightSideIron.type != SideIronType::None) {
+                sideIronText << rightSideIron.drawingNumber << " ";
+            }
         }
 
-        if (drawing.sideIronInverted(Drawing::RIGHT)) {
-            sideIronText << "Inverted ";
-        }
+        fieldText = sideIronText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
-        if (drawing.sideIronCutDown(Drawing::RIGHT)) {
-            sideIronText << "Cut Down ";
-        }
+        labelText = "Overlaps";
 
-        if (rightSideIron.type != SideIronType::None) {
-            sideIronText << rightSideIron.drawingNumber << " ";
-        }
-    }
+        std::stringstream sideOverlapsText;
 
-    fieldText = sideIronText.str().c_str();
-    std::cout << fieldText.toStdString() << std::endl;
-    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
-
-    labelText = "Overlaps";
-
-    std::stringstream sideOverlapsText;
-
-    if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
-        std::optional<Drawing::Lap>
+        if (drawing.hasOverlaps() || drawing.hasSidelaps()) {
+            std::optional<Drawing::Lap>
                 leftOverlap = drawing.overlap(Drawing::LEFT),
                 rightOverlap = drawing.overlap(Drawing::RIGHT),
                 leftSidelap = drawing.sidelap(Drawing::LEFT),
                 rightSidelap = drawing.sidelap(Drawing::RIGHT);
 
-        std::vector<std::string> lapStrings;
-        std::stringstream lapString;
+            std::vector<std::string> lapStrings;
+            std::stringstream lapString;
 
-        if (leftOverlap.has_value()) {
-            lapString.str(std::string());
-            lapString << leftOverlap->width << "mm";
-            if (leftOverlap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (" << leftOverlap->material().materialName << " " << leftOverlap->material().materialName << "mm)";
+            if (leftOverlap.has_value()) {
+                lapString.str(std::string());
+                lapString << leftOverlap->width << "mm";
+                if (leftOverlap->attachmentType == LapAttachment::BONDED) {
+                    lapString << " (" << leftOverlap->material().materialName << " " << leftOverlap->material().materialName << "mm)";
+                }
+                lapStrings.push_back(lapString.str());
             }
-            lapStrings.push_back(lapString.str());
+            if (rightOverlap.has_value()) {
+                lapString.str(std::string());
+                lapString << rightOverlap->width << "mm";
+                if (rightOverlap->attachmentType == LapAttachment::BONDED) {
+                    lapString << " (" << rightOverlap->material().materialName << " " << rightOverlap->material().thickness << "mm)";
+                }
+                lapStrings.push_back(lapString.str());
+            }
+            if (leftSidelap.has_value()) {
+                lapString.str(std::string());
+                lapString << leftSidelap->width << "mm";
+                if (leftSidelap->attachmentType == LapAttachment::BONDED) {
+                    lapString << " (" << leftSidelap->material().materialName << " " << leftSidelap->material().thickness << "mm)";
+                }
+                lapStrings.push_back(lapString.str());
+            }
+            if (rightSidelap.has_value()) {
+                lapString.str(std::string());
+                lapString << rightSidelap->width << "mm";
+                if (rightSidelap->attachmentType == LapAttachment::BONDED) {
+                    lapString << " (" << rightSidelap->material().materialName << " " << rightSidelap->material().thickness << "mm)";
+                }
+                lapStrings.push_back(lapString.str());
+            }
+
+            for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
+                sideOverlapsText << *it;
+                if (it != lapStrings.end() - 1) {
+                    sideOverlapsText << ", ";
+                }
+            }
         }
-        if (rightOverlap.has_value()) {
-            lapString.str(std::string());
-            lapString << rightOverlap->width << "mm";
-            if (rightOverlap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (" << rightOverlap->material().materialName << " " << rightOverlap->material().thickness << "mm)";
-            }
-            lapStrings.push_back(lapString.str());
-        }
-        if (leftSidelap.has_value()) {
-            lapString.str(std::string());
-            lapString << leftSidelap->width << "mm";
-            if (leftSidelap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (" << leftSidelap->material().materialName << " " << leftSidelap->material().thickness << "mm)";
-            }
-            lapStrings.push_back(lapString.str());
-        }
-        if (rightSidelap.has_value()) {
-            lapString.str(std::string());
-            lapString << rightSidelap->width << "mm";
-            if (rightSidelap->attachmentType == LapAttachment::BONDED) {
-                lapString << " (" << rightSidelap->material().materialName << " " <<  rightSidelap->material().thickness << "mm)";
-            }
-            lapStrings.push_back(lapString.str());
+        else {
+            sideOverlapsText << "No";
         }
 
-        for (std::vector<std::string>::const_iterator it = lapStrings.begin(); it != lapStrings.end(); it++) {
-            sideOverlapsText << *it;
-            if (it != lapStrings.end() - 1) {
-                sideOverlapsText << ", ";
-            }
-        }
-    } else {
-        sideOverlapsText << "No";
+        fieldText = sideOverlapsText.str().c_str();
+        drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
+            fieldText, fieldWidth, horizontalOffset, verticalOffset);
     }
-
-    fieldText = sideOverlapsText.str().c_str();
-    drawLabelAndField(painter, generalDetailsBox.left(), currentVPos, labelText, labelWidth,
-                      fieldText, fieldWidth, horizontalOffset, verticalOffset);
-
     std::string productName = drawing.product().productName;
 
     if (productName == "Rubber Screen Cloth") {
@@ -394,7 +407,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         for (unsigned i = 0; i < apertures.size(); i++) {
             Drawing::ExtraAperture aperture = apertures[i];
 
-            ExtraAperturesFieldText << DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName() << " Aperture across " << aperture.width << "x" << aperture.length << " at " << "(" << aperture.pos.x << ", " << aperture.pos.y
+            ExtraAperturesFieldText << aperture.aperture().apertureName() << " Aperture across " << aperture.width << "x" << aperture.length << " at " << "(" << aperture.pos.x << ", " << aperture.pos.y
                 << ") ";
 
             if (i != apertures.size() - 1) {
@@ -416,6 +429,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
             damBarTextField << bar.width << "x" << bar.length << " at " << "(" << bar.pos.x << ", " << bar.pos.y
                 << ") ";
+            damBarTextField << "Material " << bar.material().materialName;
 
             if (i != bars.size() - 1) {
                 damBarTextField << ", ";
@@ -430,8 +444,8 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     if (drawing.numberOfCentreHoles()) {
         std::stringstream centreHolesFieldText;
-        std::vector<Drawing::CentreHole> holes = drawing.centreHoles();
-        Aperture aperture = DrawingComponentManager<Aperture>::findComponentByID(holes.front().apertureID);
+        const std::vector<Drawing::CentreHole> &holes = drawing.centreHoles();
+        Aperture aperture = holes.front().aperture();
         std::string shape = DrawingComponentManager<ApertureShape>::findComponentByID(aperture.apertureShapeID).shape;
 
         centreHolesFieldText << aperture.apertureName();
@@ -441,7 +455,6 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
         float total = 0;
         float oldY = 0;
         for (const Drawing::CentreHole &hole : holes) {
-            std::cout << oldY << " " << hole.pos.y << std::endl;
             if (hole.pos.y < oldY) {
                 centreHolesFieldText << (drawing.length() - total) << "\n";
                 total = 0;
@@ -460,7 +473,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     if (drawing.numberOfDeflectors()) {
         std::stringstream deflectorsFieldText;
-        std::vector<Drawing::Deflector> deflectors = drawing.deflectors();
+        const std::vector<Drawing::Deflector> &deflectors = drawing.deflectors();
 
         Material &mat = deflectors.front().material();
 
@@ -481,7 +494,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     if (drawing.numberOfDivertors()) {
         std::stringstream divertorsFieldText;
-        std::vector<Drawing::Divertor> divertors = drawing.divertors();
+        const std::vector<Drawing::Divertor> &divertors = drawing.divertors();
 
         Material& mat = divertors.front().material();
 
@@ -598,17 +611,19 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
                       fieldText, fieldWidth, horizontalOffset, verticalOffset);
 
     QRectF
-            fieldDrawingNumberBox = svgTemplateRenderer.boundsOnElement("field_drawing_number"),
-            fieldTitleBox = svgTemplateRenderer.boundsOnElement("field_title"),
-            fieldDateBox = svgTemplateRenderer.boundsOnElement("field_date"),
-            fieldDrawnByBox = svgTemplateRenderer.boundsOnElement("field_drawn_by"),
-            fieldSCSLogoBox = svgTemplateRenderer.boundsOnElement("field_scs_logo"),
-            fieldSCSDetailsBox = svgTemplateRenderer.boundsOnElement("field_scs_details");
+            fieldDrawingNumberBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_drawing_number")),
+            fieldTitleBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_title")),
+            fieldDateBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_date")),
+            fieldDrawnByBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_drawn_by")),
+            fieldSCSLogoBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_scs_logo")),
+            fieldSCSDetailsBox = DrawingPDFWriter::adjustRect(svgTemplateRenderer.boundsOnElement("field_scs_details"));
 
     std::stringstream title;
     title << drawing.product().productName;
 
-    if (drawing.product().productName != "Bivitec" && drawing.product().productName != "Flip Flow") {
+    if (drawing.product().productName != "Bivitec" &&
+        drawing.product().productName != "Flip Flow" &&
+        drawing.product().productName != "Rubber Modules and Panels") {
         title << " " + to_str(drawing.numberOfBars()) + " Support Bar" + (drawing.numberOfBars() == 1 ? "" : "s");
     }
 
@@ -618,6 +633,7 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
 
     painter.drawText(fieldDrawnByBox, drawnByInitials.c_str(), centreAlignedText);
 
+    fieldSCSLogoBox.adjust(30, 30, 55, 30);
     painter.drawImage(fieldSCSLogoBox, QImage(":/scs_logo.png"));
 
     std::stringstream details;
@@ -633,10 +649,14 @@ DrawingPDFWriter::drawTextDetails(QPainter &painter, QSvgRenderer &svgTemplateRe
     font.setPointSize(5);
     painter.setFont(font);
 
+    fieldSCSDetailsBox.adjust(25, 25, 35, 20);
+    //painter.fillRect(fieldSCSDetailsBox, Qt::GlobalColor::yellow);
     painter.drawText(fieldSCSDetailsBox, details.str().c_str(), centreAlignedText);
 
     font.setPointSize(18);
     painter.setFont(font);
+    fieldDrawingNumberBox.adjust(20, 65, 40, 60);
+    //painter.fillRect(fieldDrawingNumberBox, Qt::GlobalColor::blue);
     painter.drawText(fieldDrawingNumberBox, drawing.drawingNumber().c_str(), centreAlignedText);
 
     painter.restore();
@@ -1095,11 +1115,13 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
             if (spacingDimension != drawing.numberOfBars()) {
                 barWidthTotal += drawing.barSpacing(spacingDimension);
                 QString runningTotal = QString::number(((int)(barWidthTotal * 10)) / 10.0f);
-                QRectF rect = QFontMetricsF(painter.font()).boundingRect(runningTotal);
-                rect.moveCenter(QPoint((nextSpacingPosition / widthDim.rCentre) * matBoundingRegion.width() +
-                                       matBoundingRegion.left(),
-                                       (0.5 * (1.0 + pLength)) * regionHeight + drawingRegion.top() + rect.height() * 2));
-                painter.drawText(rect, runningTotal);
+                QPointF topCenter((nextSpacingPosition / widthDim.rCentre)* matBoundingRegion.width() +
+                    matBoundingRegion.left(),
+                    (0.5 * (1.0 + pLength))* regionHeight + drawingRegion.top() + longDimensionLineSize * regionHeight);
+                drawText(painter, topCenter, runningTotal, 1, [](QRectF& rect, const QPointF& point) {
+                    rect.moveCenter(point);
+                    rect.moveTop(point.y());
+                    });
             }
 
         }
@@ -1174,7 +1196,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
         painter.drawRect(apertureRegion);
 
         painter.setBrush(QBrush(QColor(0, 0, 0, 255)));
-        painter.drawText(apertureRegion, Qt::AlignHCenter | Qt::AlignVCenter, DrawingComponentManager<Aperture>::findComponentByID(aperture.apertureID).apertureName().c_str());
+        painter.drawText(apertureRegion, Qt::AlignHCenter | Qt::AlignVCenter, aperture.aperture().apertureName().c_str());
     }
     for (const Drawing::DamBar& bar : drawing.damBars()) {
         QRectF padRegion(
@@ -1225,23 +1247,23 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
         //}
         QRectF verticalHoleBounds = QRectF(
                 QPointF(matBoundingRegion.left() +
-                        ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
+                        ((hole.pos.x - hole.aperture().width / 2) / widthDim.rCentre) * matBoundingRegion.width(),
                         matBoundingRegion.top() +
-                        ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height()),
-                QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width(),
-                       (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height())
+                        ((hole.pos.y - hole.aperture().length / 2) / lengthDim.rCentre) * matBoundingRegion.height()),
+                QSizeF((hole.aperture().width / widthDim.rCentre) * matBoundingRegion.width(),
+                       (hole.aperture().length / lengthDim.rCentre) * matBoundingRegion.height())
         );
         QRectF horizontalHoleBounds = QRectF(
         QPointF(matBoundingRegion.left() +
-                ((hole.pos.x - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / 2) / lengthDim.rCentre) * matBoundingRegion.height(),
+                ((hole.pos.x - hole.aperture().length / 2) / lengthDim.rCentre) * matBoundingRegion.height(),
                 matBoundingRegion.top() +
-                ((hole.pos.y - DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / 2) / widthDim.rCentre) * matBoundingRegion.width()),
-        QSizeF((DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length / lengthDim.rCentre) * matBoundingRegion.height(),
-               (DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width / widthDim.rCentre) * matBoundingRegion.width())
+                ((hole.pos.y - hole.aperture().width / 2) / widthDim.rCentre) * matBoundingRegion.width()),
+        QSizeF((hole.aperture().length / lengthDim.rCentre) * matBoundingRegion.height(),
+               (hole.aperture().width / widthDim.rCentre) * matBoundingRegion.width())
         );
 
         painter.setPen(Qt::red);
-        ApertureShape shape = DrawingComponentManager<ApertureShape>::findComponentByID(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).apertureShapeID);
+        ApertureShape shape = DrawingComponentManager<ApertureShape>::findComponentByID(hole.aperture().apertureShapeID);
         if (shape.shape == "SQ" || shape.shape == "SL") {
             painter.drawRect(verticalHoleBounds);
             painter.setPen(Qt::DashDotLine);
@@ -1261,7 +1283,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
         else if (shape.shape == "DIA") {
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
-            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            double radius = (std::min(hole.aperture().width, hole.aperture().length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
             roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
             painter.drawPath(roundedRectPath);
             painter.setPen(Qt::DashDotLine);
@@ -1273,7 +1295,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
         else if (shape.shape == "RL") {
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
-            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            double radius = (std::min(hole.aperture().width, hole.aperture().length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
             roundedRectPath.addRoundedRect(verticalHoleBounds, radius, radius);
             painter.drawPath(roundedRectPath);
             painter.setPen(Qt::DashDotLine);
@@ -1285,7 +1307,7 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter& painter, QRectF drawingRe
         else if (shape.shape == "RT") {
             painter.setRenderHint(QPainter::Antialiasing);
             QPainterPath roundedRectPath;
-            double radius = (std::min(DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).width, DrawingComponentManager<Aperture>::findComponentByID(hole.apertureID).length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
+            double radius = (std::min(hole.aperture().width, hole.aperture().length) / 2.0) / widthDim.rCentre * matBoundingRegion.width();
             roundedRectPath.addRoundedRect(horizontalHoleBounds, radius, radius);
             painter.drawPath(roundedRectPath);
             painter.setPen(Qt::DashDotLine);
@@ -1409,6 +1431,9 @@ void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, co
 
         QTextOption centreAlignedText;
         centreAlignedText.setAlignment(Qt::AlignCenter);
+        if (lines == 1) {
+            centreAlignedText.setWrapMode(QTextOption::NoWrap);
+        }
 
         QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding ,
                                                                                         padding);
@@ -1472,3 +1497,26 @@ void DrawingPDFWriter::drawArrow(QPainter &painter, QPointF from, QPointF to, co
 
     painter.restore();
 }
+
+QRectF DrawingPDFWriter::adjustRect(const QRectF& rect) {
+    return QRectF(rect);
+    //return QRectF(rect.x() * 1.0504, rect.y() * 1.0143+ 30, rect.width() * 1.0504, rect.height() * 1.0143 + 30);
+}
+
+void DrawingPDFWriter::drawText(QPainter& painter, QPointF start, const QString& label, unsigned lines, std::function<void(QRectF&, const QPointF&)> move) {
+	const double padding = 10;
+
+	QTextOption centreAlignedText;
+    centreAlignedText.setAlignment(Qt::AlignCenter);
+	if (lines == 1) {
+		centreAlignedText.setWrapMode(QTextOption::NoWrap);
+	}
+
+	QRectF labelBounds = QFontMetricsF(painter.font()).boundingRect(label).adjusted(-padding, -padding, padding ,
+																					padding);
+	labelBounds.setHeight(labelBounds.height() * lines);
+
+    move(labelBounds, start);
+
+    painter.drawText(labelBounds, label, centreAlignedText);
+};

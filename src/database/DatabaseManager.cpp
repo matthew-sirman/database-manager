@@ -4,7 +4,7 @@
 
 #include "../../include/database/DatabaseManager.h"
 
-/// Constructor taking the connection information
+// Constructor taking the connection information
 DatabaseManager::DatabaseManager(const std::string &database, const std::string &user, const std::string &password,
 	const std::string &host) : sess(host, 33060, user, password) {
 	this->username = user;
@@ -16,7 +16,8 @@ DatabaseManager::DatabaseManager(const std::string &database, const std::string 
 
 // Method to generate details for the DrawingSummaryCompressionSchema used in compression with summaries for a search
 void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize,
-												  unsigned char &maxBarSpacingCount, float &maxBarSpacing, unsigned char &maxDrawingLength) {
+												  unsigned char &maxBarSpacingCount, float &maxBarSpacing,
+												  unsigned char &maxDrawingLength, unsigned char &maxExtraApertureCount) {
 	// Wrapped in a try statement to catch any MySQL errors.
 	try {
 		// Select the maximum mat_id from the drawings table
@@ -39,6 +40,9 @@ void DatabaseManager::getCompressionSchemaDetails(unsigned &maxMatID, float &max
 
 		// Select the length of the longest drawing number from the drawings table
 		maxDrawingLength = sess.sql("SELECT MAX(LENGTH(drawing_number)) FROM " + database + ".drawings").execute().fetchOne()[0].get<unsigned>();
+
+		maxExtraApertureCount = sess.sql("SELECT MAX(count.c) FROM (SELECT COUNT(aperture_id) AS c FROM " + database + ".extra_apertures GROUP BY mat_id) AS count").execute().fetchOne()[0].get<unsigned>();
+
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console and exit the program.
 		// This error is fatal - if we are unable to create a compression schema, the database cannot
@@ -55,7 +59,8 @@ std::vector<DrawingSummary> DatabaseManager::executeSearchQuery(const DatabaseSe
 		// Then, call the static DatabaseSearchQuery method to convert each row into a summary
 		// object.
 		// Finally, return this list of summaries
-		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(Format::format(query.toSQLQueryString(), database)).execute());
+		std::string s = Format::format(query.toSQLQueryString(), database);
+		return DatabaseSearchQuery::getQueryResultSummaries(sess.sql(s).execute());
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error simply return an empty set.
@@ -389,14 +394,14 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			aperture.length = row[1].get<float>();
 			aperture.pos.x = row[2].get<float>();
 			aperture.pos.y = row[3].get<float>();
-			aperture.apertureID = row[4].get<unsigned>();
+			aperture.setAperture(DrawingComponentManager<Aperture>::findComponentByID(row[4].get<unsigned>()));
 
 			drawing->addExtraAperture(aperture);
 		}
 
 		// Dam Bars
 		mysqlx::RowResult damBarResults = sess.getSchema(database).getTable("dam_bars")
-			.select("width", "length", "x_coord", "y_coord")
+			.select("width", "length", "x_coord", "y_coord", "material_id")
 			.where("mat_id=:matID").bind("matID", query.matID).execute();
 
 		for (const mysqlx::Row& row : damBarResults) {
@@ -406,6 +411,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			bar.length = row[1].get<float>();
 			bar.pos.x = row[2].get<float>();
 			bar.pos.y = row[3].get<float>();
+			bar.setMaterial(DrawingComponentManager<Material>::findComponentByID(row[4]));
 
 			drawing->addDamBar(bar);
 		}
@@ -419,13 +425,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
 			Drawing::CentreHole hole;
 			hole.pos.x = row[0].get<float>();
 			hole.pos.y = row[1].get<float>();
-			try {
-				hole.apertureID = row[2].get<unsigned>();
-			}
-			catch (mysqlx::Error& e) {
-				drawing->setLoadWarning(Drawing::LoadWarning::INVALID_CENTRE_HOLE_DETECTED);
-				continue;
-			}
+			hole.setAperture(DrawingComponentManager<Aperture>::findComponentByID(row[2].get<unsigned>()));
 
 			drawing->addCentreHole(hole);
 		}
@@ -640,6 +640,7 @@ bool DatabaseManager::insertDrawing(const DrawingInsert &insert) {
 	} catch (mysqlx::Error &e) {
 		// If there was an error, print it to the console.
 		// This is not considered a fatal error; if there was an error we just return that insertion failed
+		std::cout << Format::lastFormat << std::endl;
         logError(e, __LINE__);
 		sess.rollback();
 		return false;

@@ -47,7 +47,6 @@ void Server::initialiseServer(unsigned short serverPort) {
     serverSocket.setAcceptCallback([this](TCPSocket &&s) {
         std::future<void> acceptAsync = std::async(std::launch::async, &Server::acceptClient, this, std::ref(s));
 
-        // TODO: Make non constant
         if (acceptAsync.wait_for(std::chrono::milliseconds(60000)) != std::future_status::ready) {
             s.closeSocket();
         }
@@ -141,18 +140,20 @@ void Server::startServer() {
                 // Get the message and decrypt it with this client's key
                 uint8* decryptedMessage = (uint8*)message.decryptMessageData(connectedClient.clientSessionKey);
                 uint64 messageToken = *((uint64 *) decryptedMessage);
-
+                // We create a rvalue reference to indicate ownership, and we fill it with the message - the token.
+                void*&& msg = malloc(message.getMessageSize() - sizeof(uint64));
+                std::memmove(msg, decryptedMessage + sizeof(uint64), message.getMessageSize() - sizeof(uint64));
+                free(decryptedMessage);
                 // If the message starts with the client's secret session token, the message is valid
                 if (messageToken == connectedClient.clientSessionToken) {
                     // Assuming we have set an appropriate handler, call it with the decrypted message
                     if (requestHandler) {
                         requestHandler->onMessageReceived(*this, connectedClient.handle,
-                                                          decryptedMessage + sizeof(uint64),
+                                                          std::move(msg),
                                                           message.getMessageSize() - sizeof(uint64));
                     }
                 }
 
-                delete decryptedMessage;
             }
         }
 

@@ -11,7 +11,7 @@
 #include "../../packer.h"
 #include <map>
 
-/// <summary>
+/// <summary>\ingroup database
 /// DatabaseRequestHandler
 /// Inherits from ServerRequestHandler. This class is responsible for managing
 /// requests from the client to access database resources. It acts as a "middle man"
@@ -22,7 +22,6 @@ public:
 	/// <summary>
 	/// Constructor for DatabaseRequestHandler
 	/// </summary>
-	/// <returns></returns>
 	DatabaseRequestHandler();
 
 	/// <summary>
@@ -33,15 +32,18 @@ public:
 	/// <param name="caller">A reference to the server object which called this function.</param>
 	/// <param name="clientHandle">A handle to the client who sent the message so it is possible to formulate 
 	/// a response for the server to return to them.</param>
-	/// <param name="message">The message data itself.</param>
+	/// <param name="message">The message data itself, as a rvalue reference to indicate transfer
+	/// of ownership..</param>
 	/// <param name="messageSize">The length (in bytes) of the message data received.</param>
-	void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message, unsigned int messageSize) override;
+	void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void*&& message, unsigned int messageSize) override;
 
 	// The filepath to create backups under. Should be set in the server's meta file.
 	std::filesystem::path backupPath;
 
 private:
-
+	/// <summary>
+	/// A map for finding relevant prices for materials
+	/// </summary>
 	std::map<std::string, MaterialPricingType> pricingMap;
 
 	/// <summary>
@@ -145,10 +147,15 @@ private:
 		// The hardness and thickness of this material
 		unsigned short hardness{}, thickness{};
 
-		std::vector<std::tuple<float, float, float, MaterialPricingType>> materialPrices;
+		std::vector<Material::MaterialPrice> materialPrices;
 	};
-
+	/// <summary>
+	/// ExtraPriceData
+	/// Inhertis from TableSourceData. This object is for storing data about extra prices
+	/// read from the database
+	/// </summary>
 	struct ExtraPriceData : TableSourceData {
+		// Typedef for the ComponentType. This is used for accessing the appropriate DrawingComponentManager.
 		typedef ExtraPrice ComponentType;
 
 		ExtraPriceType type;
@@ -156,7 +163,11 @@ private:
 		std::optional<float> squareMetres;
 		std::optional<unsigned> amount;
 	};
-
+	/// <summary>
+	/// LabourTimeData
+	/// Inhertis from TableSourceData. This object is for storing data about labour time
+	/// read from the database
+	/// </summary>
 	struct LabourTimeData : TableSourceData {
 		typedef LabourTime ComponentType;
 
@@ -164,6 +175,11 @@ private:
 		unsigned time;
 	};
 
+	/// <summary>
+	/// SideIronPriceData 
+	/// Inhertis from TableSourceData. This object is for storing data about side irons
+	/// read from the database
+	/// </summary>
 	struct SideIronPriceData : TableSourceData {
 		typedef SideIronPrice ComponentType;
 		SideIronType type;
@@ -172,6 +188,11 @@ private:
 		bool extraflex;
 	};
 
+	/// <summary>
+	/// PowderCoatingPriceData
+	/// Inhertis from TableSourceData. This object is for storing data about powder coating
+	/// read from the database
+	/// </summary>
 	struct PowderCoatingPriceData : TableSourceData {
 		typedef PowderCoatingPrice ComponentType;
 
@@ -336,7 +357,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 	// Finally, once the buffer has been constructed, we send the buffer to the DrawingComponentManager of the correct type.
 	// This is where we use the T::ComponentType which will be the "true" type for each data type above. (e.g. ProductData -> Product)
-	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(sourceBuffer, bufferSize + 4);
+	DrawingComponentManager<typename T::ComponentType>::sourceComponentTable(std::move(sourceBuffer), bufferSize + 4);
 }
 
 

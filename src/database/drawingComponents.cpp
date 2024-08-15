@@ -130,6 +130,18 @@ ComboboxDataElement Aperture::toDataElement(unsigned mode) const {
     return { apertureName(), __handle };
 }
 
+bool Aperture::operator<(const Aperture& other) const {
+    if (this->apertureShapeID != other.apertureShapeID) {
+        const unsigned int ap1 = ApertureShape::shapeOrder.at(this->apertureShapeID);
+        const unsigned int ap2 = ApertureShape::shapeOrder.at(other.apertureShapeID);
+        return ap1 < ap2;
+    }
+    return this->width < other.width;
+}
+
+const std::function<bool(const Aperture&, const Aperture&)>  Aperture::apertureComparator =
+    [](const Aperture& a, const Aperture& b) {return a < b; };
+
 ApertureShape::ApertureShape(unsigned id) : DrawingComponent(id) {
 
 }
@@ -150,39 +162,62 @@ ComboboxDataElement ApertureShape::toDataElement(unsigned mode) const {
     return { shape, __handle };
 }
 
+const std::unordered_map<unsigned int, unsigned int> ApertureShape::shapeOrder = {
+            {1, 1},
+            {2, 4},
+            {3, 2},
+            {4, 3},
+            {5, 5},
+            {6, 0},
+			{7, 6},
+            {8, 7}
+    };
+
 Material::Material(unsigned id) : DrawingComponent(id) {
 
 }
 
-Material *Material::fromSource(unsigned char ** buff) {
+Material* Material::fromSource(unsigned char** buff) {
 
-    Material *material = new Material(*((unsigned *) *buff));
+    Material* material = new Material(*((unsigned*)*buff));
     *buff += sizeof(unsigned);
 
-    material->hardness = *((unsigned short *) (*buff));
+    material->hardness = *((unsigned short*)(*buff));
     *buff += sizeof(unsigned short);
 
-    material->thickness = *((unsigned short *) (*buff));
+    material->thickness = *((unsigned short*)(*buff));
     *buff += sizeof(unsigned short);
 
-    
+
     unsigned char nameSize = *(*buff)++;
 
-    material->materialName = std::string((const char *) *buff, nameSize);
+    material->materialName = std::string((const char*)*buff, nameSize);
     *buff += nameSize;
 
     unsigned char priceElements = *(*buff)++;
     for (unsigned char i = 0; i < priceElements; i++) {
-        float item1 = *((float*)(*buff));
+        unsigned material_price_id = *((unsigned*)(*buff));
+        *buff += sizeof(unsigned);
+        float width = *((float*)(*buff));
         *buff += sizeof(float);
-        float item2 = *((float*)(*buff));
+        float length = *((float*)(*buff));
         *buff += sizeof(float);
-        float item3 = *((float*)(*buff));
+        float price = *((float*)(*buff));
         *buff += sizeof(float);
         MaterialPricingType pricingType = *((MaterialPricingType*)(*buff));
         *buff += sizeof(MaterialPricingType);
-        material->materialPrices.push_back({item1, item2, item3, pricingType });
+        material->materialPrices.push_back({ material_price_id, width, length, price, pricingType });
     }
+    std::function<bool(const MaterialPrice&,
+        const MaterialPrice&)> materialPriceComparator =
+        [](const MaterialPrice& t1,
+            const MaterialPrice& t2) {
+                if (std::get<1>(t1) != std::get<1>(t2)) {
+                    return std::get<1>(t1) < std::get<1>(t2);
+                }
+                return std::get<3>(t1) < std::get<3>(t2);
+        };
+    sort(material->materialPrices.begin(), material->materialPrices.end(), materialPriceComparator);
 
     return material;
 }

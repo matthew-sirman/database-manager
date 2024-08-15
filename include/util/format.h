@@ -8,7 +8,12 @@
 #include <string>
 #include <stdexcept>
 
+/// <summary>
+/// Holds format function
+/// </summary>
 namespace Format {
+
+	inline std::string lastFormat;
 
 	template<typename...Args>
 	std::string format(std::string fmt, const Args&... args);
@@ -33,6 +38,13 @@ namespace Format {
 		return __get_format_arg(index - 1, args...);
 	}
 
+	/// <summary>
+	/// Formats a given string, replacing {#} with the \#th varg.
+	/// </summary>
+	/// <typeparam name="...Args">The types of the vargs.</typeparam>
+	/// <param name="fmt">The strings to be formatted.</param>
+	/// <param name="...args">The vargs.</param>
+	/// <returns>Formatted string</returns>
 	template<typename ...Args>
 	inline std::string format(std::string fmt, const Args & ...args) {
 		std::stringstream ss;
@@ -63,6 +75,7 @@ namespace Format {
 			}
 		}
 		ss << fmt;
+		lastFormat = ss.str();
 		return ss.str();
 	}
 }

@@ -23,7 +23,7 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
-/// <summary>
+/// <summary>\ingroup database
 /// ValueRange
 /// A range of some type of value, such as an integer or a date
 /// </summary>
@@ -86,7 +86,10 @@ unsigned ValueRange<T>::serialisedSize() const {
     return 2 * sizeof(T);
 }
 
-/// <summary>
+// TODO: make DatabaseQuery templated on its child classes to implement deserialise
+// as a requirement of all children, and to require a void*&&.
+
+/// <summary>\ingroup database
 /// DatabaseQuery
 /// A base class for different types of queries to the database
 /// </summary>
@@ -95,7 +98,6 @@ public:
     /// <summary>
     /// Constructor for DatabaseQuery
     /// </summary>
-    /// <returns>Constructs a new DatabaseQuery object</returns>
     DatabaseQuery();
 
     /// <summary>
@@ -124,18 +126,28 @@ public:
     void *createBuffer(unsigned &size) const;
 };
 
-class DatabasePriceQuery: public DatabaseQuery {
+///// <summary>
+///// DatabasePriceQuery
+///// inherits from DatabaseQuery.
+///// This query type is for looking up prices of components.
+///// </summary>
+//class DatabasePriceQuery: public DatabaseQuery {
+//
+//    /// <summary>
+//    /// Constructor for DatabasePriceQuery
+//    /// </summary>
+//    /// <returns>A newly constructed DatabasePriceQuery Object </returns>
+//    DatabasePriceQuery();
+//
+//
+//    void serialise(void* target) const;
+//
+//    unsigned serialisedSize() const;
+//
+//    static DatabasePriceQuery& deserialise(void *data);
+//};
 
-    DatabasePriceQuery();
-
-    void serialise(void* target) const;
-
-    unsigned serialisedSize() const;
-
-    static DatabasePriceQuery& deserialise(void *data);
-};
-
-/// <summary>
+/// <summary>\ingroup database
 /// DatabaseSearchQuery
 /// Inherits from DatabaseQuery. This query type is for searching the database for
 /// drawing summaries (instead of full drawing objects)
@@ -145,7 +157,6 @@ public:
     /// <summary>
     /// Constructor for DatabaseSearchQuery
     /// </summary>
-    /// <returns>A newly constructed DatabaseSearchQuery object.</returns>
     DatabaseSearchQuery();
 
     /// <summary>
@@ -164,10 +175,11 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue reference
+    /// to indicate transfer of ownership.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static DatabaseSearchQuery &deserialise(void *data);
+    static DatabaseSearchQuery &deserialise(void*&& data);
 
     /// <summary>
     /// Constructs an SQL query string from the search parameters defined in this
@@ -248,11 +260,13 @@ private:
     unsigned getSearchParameters() const;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// DrawingRequest
 /// Inherits from DatabaseQuery. This type of query requests all the information about
 /// a single drawing in the database, as opposed to basic information about many
-/// drawings.
+/// drawings. It functions by being constructed with a matID, the object is then serialised and sent to the server,
+/// where the server will populate the drawingData with what it found, and then return the object. The data can then
+/// be read from the drawingData attribute.
 /// </summary>
 class DrawingRequest : public DatabaseQuery {
 public:
@@ -282,10 +296,11 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue reference
+    /// to indicate this object takes ownership of the buffer.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static DrawingRequest &deserialise(void *data);
+    static DrawingRequest &deserialise(void*&& data);
 
     // The database index for the drawing this query is concerned with
     unsigned matID;
@@ -304,7 +319,7 @@ public:
     std::optional<Drawing> drawingData;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// DrawingInsert
 /// Inherits from DatabaseQuery. This type of query is for inserting a new drawing,
 /// or updating an existing drawing, in the database.
@@ -333,6 +348,11 @@ public:
         FAILED,
         DRAWING_EXISTS
     };
+    
+    enum InsertMode {
+        ADD,
+        UPDATE
+    };
 
     /// <summary>
     /// Serialise this object into the target buffer
@@ -350,31 +370,15 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue reference
+    /// to indicate that this takes ownership of buffer.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static DrawingInsert &deserialise(void *data);
+    static DrawingInsert &deserialise(void*&& data);
 
-    /// <summary>
-    /// Set the forcing mode of this insert query
-    /// The forcing mode indicates what to do if the drawing is already present in the database.
-    /// A forcing insert will erase the original drawing and update with a new one.
-    /// A non-forcing insert will return a response flag indicating that a drawing was found,
-    /// leaving it up to the client to respond appropriately.
-    /// </summary>
-    /// <param name="val">The mode to set the query to. True for forcing, false for non-forcing.</param>
     void setForce(bool val);
 
-    /// <summary>
-    /// Getter for the forcing mode.
-    /// The forcing mode indicates what to do if the drawing is already present in the database.
-    /// A forcing insert will erase the original drawing and update with a new one.
-    /// A non-forcing insert will return a response flag indicating that a drawing was found,
-    /// leaving it up to the client to respond appropriately.
-    /// </summary>
-    /// <returns>The mode this query is set to. True for forcing, false for non-forcing.</returns>
     bool forcing() const;
-
     /// <summary>
     /// Constructs an SQL query for inserting the drawing specified in the drawingData
     /// object in this query object.
@@ -416,6 +420,13 @@ public:
     /// <returns>An SQL query string.</returns>
     std::string apertureInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL query for inserting the backing strip specified in the drawingData
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so much be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string.</returns>
     std::string backingStripInsertQuery(unsigned matID) const;
 
     /// <summary>
@@ -472,10 +483,31 @@ public:
     /// <returns>An SQL query string or an empty string if there are no impact pads to insert.</returns>
     std::string impactPadsInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL Query for inserting dam bars specified in the drawingData
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string</returns>
     std::string damBarInsertQuery(unsigned matID) const;
 
+    /// <summary>
+    /// Constructs an SQL Query for inserting blank spaces specified in the drawingData
+    /// object in this query object.
+    /// </summary>
+    /// <param name="matID">The matID which is known only during the insert process, so must be passed
+    /// from the database manager.</param>
+    /// <returns>An SQL query string</returns>
     std::string blankSpaceInsertQuery(unsigned matID) const;
 
+    /// <summary>
+	/// Constructs an SQL Query for inserting extra apertures specified in the drawingData
+	/// object in this query object.
+	/// </summary>
+	/// <param name="matID">The matID which is known only during the insert process, so must be passed
+	/// from the database manager.</param>
+	/// <returns>An SQL query string.</returns>
     std::string extraApertureInsertQuery(unsigned matID) const;
 
     /// <summary>
@@ -519,12 +551,13 @@ public:
     // to a request. This is used to accommodate the asynchronous model used.
     unsigned responseEchoCode;
 
+    InsertMode insertMode = InsertMode::ADD;
 private:
     // Boolean value containing whether or not this drawing insertion is in forcing mode
     bool force = false;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// ComponentInsert
 /// Inherits from DatabaseQuery. This type of query is for inserting a drawing component
 /// into the database, for example to add a new aperture.
@@ -532,6 +565,9 @@ private:
 class ComponentInsert : public DatabaseQuery {
 public:
 
+    /// <summary>
+    /// An enum describing the change being made to a price in the Database.
+    /// </summary>
     enum class PriceMode {
         ADD,
         UPDATE,
@@ -594,6 +630,10 @@ public:
         }
     };
 
+    /// <summary>
+    /// SideIronPriceData
+    /// An object that can find a side iron matching the description stored and modify its price.
+    /// </summary>
     struct SideIronPriceData {
         SideIronType type;
         unsigned lowerLength, upperLength;
@@ -606,7 +646,10 @@ public:
             return sizeof(SideIronType) + sizeof(bool) * 2 + sizeof(float) + sizeof(unsigned) * 3 + sizeof(PriceMode) + (componentID.has_value() ? sizeof(unsigned) : 0);
         }
     };
-
+    /// <summary>
+    /// SpecificSideIronPriceData
+    /// An object that uses a side iron's id to directly modify pricing data about it, specifically how many screws it requires.
+    /// </summary>
     struct SpecificSideIronPriceData {
         PriceMode priceMode;
         unsigned sideIronComponentID;
@@ -631,18 +674,24 @@ public:
             return sizeof(unsigned char) + materialName.size() + sizeof(unsigned) * 2;
         }
     };
-
+    /// <summary>
+    /// MaterialPriceData
+    /// Object to modify the price attached to a specific type of material, needing to know the size the materials are ordered in, their size and the price.
+    /// </summary>
     struct MaterialPriceData {
+        unsigned material_price_id;
         unsigned material_id;
         float width, length, price;
         MaterialPricingType pricingType;
         PriceMode priceMode;
-        float oldWidth = 0, oldLength = 0;
         inline unsigned serialisedSize() const {
-            return sizeof(unsigned) + sizeof(float) * 5 + sizeof(MaterialPricingType) + sizeof(PriceMode);
+            return sizeof(unsigned) * 2 + sizeof(float) * 3 + sizeof(MaterialPricingType) + sizeof(PriceMode);
         }
     };
 
+    /// <summary>
+    /// Allows modification of "extra" prices, prices not directly attributed to any individual object, such as screws or tackyback glue.
+    /// </summary>
     struct ExtraPriceData {
         unsigned priceId;
         ExtraPriceType type;
@@ -665,7 +714,9 @@ public:
             return sizeof(unsigned) + sizeof(ExtraPriceType) + sizeof(float) * 2 + sizeof(unsigned);
         }
     };
-
+    /// <summary>
+    /// Allows modification of the data reflecting costs and time commitment of labour.
+    /// </summary>
     struct LabourTimeData {
         unsigned labourId;
         std::string job;
@@ -683,7 +734,9 @@ public:
 
         
     };
-
+    /// <summary>
+    /// Allows modification of the prices relating to powder coating.
+    /// </summary>
     struct PowderCoatingPriceData {
         unsigned priceID;
         float hookPrice, strapPrice;
@@ -714,7 +767,6 @@ public:
     /// <summary>
     /// Constructor for ComponentInsert
     /// </summary>
-    /// <returns></returns>
     ComponentInsert();
 
     /// <summary>
@@ -733,10 +785,11 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue to indicate transfer
+    /// of ownership.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static ComponentInsert &deserialise(void *data);
+    static ComponentInsert &deserialise(void*&& data);
 
     /// <summary>
     /// Sets the data for the component to be added to the database
@@ -805,7 +858,7 @@ private:
 
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// DatabaseBackup
 /// An object representing a user request to create a backup of the database in the form of a MySQL dump.
 /// The server's DatabaseManager is responsible for creating this backup, and the location to write to is determined
@@ -844,10 +897,11 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue to indicate transfer
+    /// of ownership.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static DatabaseBackup &deserialise(void *data);
+    static DatabaseBackup &deserialise(void*&& data);
 
     // The response code for this object. Defaults to None indicating that the object 
     // represents a reques.
@@ -859,7 +913,7 @@ public:
 private:
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// NextDrawing
 /// A request object to obtain the name of the next drawing that should be added. This can either be
 /// the next automatic drawing or the next manual drawing based on the current database state.
@@ -897,10 +951,11 @@ public:
     /// <summary>
     /// Deserialise this object from the data buffer
     /// </summary>
-    /// <param name="data">The buffer to read this object from</param>
+    /// <param name="data">The buffer to read this object from, as a rvalue to indicate transfer
+    /// of ownership.</param>
     /// <returns>A newly constructed query object equivalent to the one the buffer was
     /// created with.</returns>
-    static NextDrawing &deserialise(void *data);
+    static NextDrawing &deserialise(void*&& data);
     
     // Realisation of the DrawingType. Defaults to automatic, but should probably be set explictitly.
     DrawingType drawingType = DrawingType::AUTOMATIC;

@@ -29,6 +29,16 @@ unsigned Inspector::currentOwner() const {
 	return owner;
 }
 
+void Inspector::clear() {
+	while (contents->count() != 0) {
+		QLayoutItem *toDelete = contents->takeAt(0);
+		delete toDelete->widget();
+		delete toDelete;
+	}
+	currentRow = 0;
+	collapse();
+}
+
 unsigned Inspector::acquire() {
 	while (contents->count() != 0) {
 		QLayoutItem *toDelete = contents->takeAt(0);

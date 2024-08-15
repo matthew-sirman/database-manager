@@ -31,16 +31,35 @@ namespace Ui {
     class DrawingViewWidget;
 }
 
+/// <summary>
+/// DrawingViewWidget inherits QWidget
+/// A widget for viewing all information about a drawing.
+/// </summary>
 class DrawingViewWidget : public QWidget {
     Q_OBJECT
 
 public:
+    /// <summary>
+    /// Creates a new widget with an assigned drawing.
+    /// </summary>
+    /// <param name="drawing"></param>
+    /// <param name="parent"></param>
     explicit DrawingViewWidget(const Drawing &drawing, QWidget *parent = nullptr);
 
+    /// <summary>
+    /// Default destructor
+    /// </summary>
     ~DrawingViewWidget() override;
 
+    /// <summary>
+    /// updates all fields from the drawing.
+    /// </summary>
     void updateFields();
 
+    /// <summary>
+    /// Adds a callback to respond to a edit or clone action.
+    /// </summary>
+    /// <param name="callback"></param>
     void setChangeDrawingCallback(const std::function<void(AddDrawingPageWidget::AddDrawingMode)> &callback);
 
 private:

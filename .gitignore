@@ -1,6 +1,7 @@
 ﻿*
 !ui
 !ui/*
+!ui/widgets/*
 !include
 !include/*
 !src
@@ -14,3 +15,6 @@
 !main.cpp
 !packer.h
 !TODO.txt
+!*.h
+!*.cpp
+!*.ui

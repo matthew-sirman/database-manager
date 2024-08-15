@@ -54,3 +54,15 @@ void SpecificSideIronPricingWindow::update() {
 		ui->screwsEdit->clear();
 	}
 }
+
+void SpecificSideIronPricingWindow::setUpdateRequired() {
+	updateRequired = true;
+}
+
+void SpecificSideIronPricingWindow::paintEvent(QPaintEvent* event) {
+	if (updateRequired) {
+		update();
+		updateRequired = false;
+	}
+	QDialog::paintEvent(event);
+}

@@ -5,6 +5,9 @@
 #ifndef DATABASE_MANAGER_REQUESTTYPE_H
 #define DATABASE_MANAGER_REQUESTTYPE_H
 
+/// <summary>\ingroup database
+/// All allowed request types for the network.
+/// </summary>
 enum class RequestType {
     REPEAT_TOKEN_REQUEST,
     USER_EMAIL_REQUEST,
@@ -28,6 +31,9 @@ enum class RequestType {
     SOURCE_POWDER_COATING_TABLE
 };
 
+/// <summary>\ingroup database
+/// Enum with all ways of pricing materials.
+/// </summary>
 enum class MaterialPricingType {
     RUNNING_M,
     SQUARE_M,
@@ -36,6 +42,9 @@ enum class MaterialPricingType {
     TOTAL
 };
 
+/// <summary>\ingroup database
+/// Enum with all extra prices.
+/// </summary>
 enum class ExtraPriceType {
     SIDE_IRON_NUTS,
     SIDE_IRON_SCREWS,
@@ -44,6 +53,9 @@ enum class ExtraPriceType {
     PRIMER
 };
 
+/// <summary>\ingroup database
+/// Enum with all types of labour.
+/// </summary>
 enum class LabourType {
     CUTTING_AMOUNT,
     TIME_TO_PUNCH,

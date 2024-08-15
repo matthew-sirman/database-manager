@@ -1,6 +1,11 @@
 //
 // Created by matthew on 12/05/2020.
 //
+/// \defgroup networking Networking
+/// Networking test
+
+
+
 
 #ifndef DATABASE_CLIENT_CLIENT_H
 #define DATABASE_CLIENT_CLIENT_H
@@ -20,13 +25,31 @@
 #define CLIENT_APPLICATION_ID "e89163c2-86fd-4675-ad9e-0d0e7632b9a8"
 #define REDIRECT_URL "http://localhost:5000/login/authorize"
 
+/// <summary> \ingroup networking
+/// ClientResponseHandler
+/// A pure virtual class for setting up any response handling for the client.
+/// </summary>
 class ClientResponseHandler {
 public:
-    virtual void onMessageReceived(void *message, unsigned messageSize) = 0;
+    /// <summary>
+    /// Pure virtual method that represents how to handle a message from the server.
+    /// </summary>
+    /// <param name="message">The message to be processed. It is a rvalue reference
+    /// to indicate a transfer of ownership.</param>
+    /// <param name="messageSize">The size of the message.</param>
+    virtual void onMessageReceived(void*&&message, unsigned messageSize) = 0;
 };
 
+/// <summary> \ingroup networking
+/// Client
+/// Controls the client's networking. 
+/// </summary>
 class Client {
 public:
+
+    /// <summary>
+    /// Enum of all connection statuses.
+    /// </summary>
     enum class ConnectionStatus {
         SUCCESS,
         NO_CONNECTION,
@@ -35,37 +58,91 @@ public:
         INVALID_REPEAT_TOKEN
     };
 
+    /// <summary>
+    /// Constructs a new client, but does not initialise any connections.
+    /// </summary>
+    /// <param name="refreshRate"></param>
+    /// <param name="clientKey"></param>
+    /// <param name="serverSignature"></param>
     Client(float refreshRate, RSAKeyPair clientKey, DigitalSignatureKeyPair::Public serverSignature);
 
+    /// <summary>
+    /// Destructor the closes the connection.
+    /// </summary>
     ~Client();
 
-    // Setup the client by crating the non-blocking TCP socket
+    /// <summary>
+    /// Setup the client by crating the non-blocking TCP socket 
+    /// </summary>
     void initialiseClient();
 
-    // Connect to the server. Returns whether the connection was successful
+    /// <summary>
+    /// Connects to the server.
+    /// </summary>
+    /// <param name="ipAddress">The IP of the server.</param>
+    /// <param name="port">The port of the server.</param>
+    /// <param name="authStringCallback">The a callback to open the url for the login page.</param>
+    /// <returns>Returns whether the connection was successful.</returns>
     ConnectionStatus connectToServer(const std::string &ipAddress, unsigned port, const std::function<void(const std::string &)> &authStringCallback);
 
-    // Connect to the server with a repeat token. Returns whether the connection was successful
+    /// <summary>
+    /// Connects to the server using a repeat token.
+    /// </summary>
+    /// <param name="ipAddress">The IP of the server.</param>
+    /// <param name="port">The port of the server.</param>
+    /// <param name="repeatToken">The repeat token to reverify with.</param>
+    /// <returns></returns>
     ConnectionStatus connectWithToken(const std::string &ipAddress, unsigned port, uint256 repeatToken);
-
+    /// <summary>
+    /// Disconnects from the server.
+    /// </summary>
     void disconnect();
 
-    // Begins the client loop in another thread (so applications can run as usual)
+    /// <summary>
+    /// Starts the repeating client loop in another thread.
+    /// </summary>
     void startClientLoop();
 
-    // Force close the client loop thread
+    /// <summary>
+    /// Forces the client loop to close ASAP.
+    /// </summary>
     void stopClientLoop();
 
+    /// <summary>
+    /// Adds a message to be sent ASAP to the server, in the form of a void buffer and length.
+    /// </summary>
+    /// <param name="message">The meassage to be sent.</param>
+    /// <param name="messageLength">The length of the message.</param>
     void addMessageToSendQueue(const void *message, unsigned messageLength);
 
+    /// <summary>
+    /// Adds a message to be sent ASAP to the server, in the form of a string.
+    /// </summary>
+    /// <param name="message">The message to send.</param>
     void addMessageToSendQueue(const std::string &message);
 
+    /// <summary>
+    /// Requests a repeat token from the server.
+    /// </summary>
+    /// <param name="responseCode"></param>
     void requestRepeatToken(unsigned responseCode = 0);
 
+    /// <summary>
+    /// Request the this clients email.
+    /// </summary>
+    /// <param name="responseCode"></param>
     void requestEmailAddress(unsigned responseCode = 0);
 
+    /// <summary>
+    /// Sets the response handler for recieved messages from the server.
+    /// </summary>
+    /// <param name="handler"></param>
     void setResponseHandler(ClientResponseHandler &handler);
 
+
+    /// <summary>
+    /// Sends a heartbeat to verify the server is alive.
+    /// </summary>
     void heartbeat();
 
 private:
@@ -106,4 +183,5 @@ private:
 };
 
 
+/** @}*/
 #endif //DATABASE_CLIENT_CLIENT_H

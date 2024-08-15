@@ -721,7 +721,11 @@ void Drawing::addCentreHole(const CentreHole &centreHole) {
     invokeUpdateCallbacks();
 }
 
-std::vector<Drawing::CentreHole> Drawing::centreHoles() const {
+const std::vector<Drawing::CentreHole> &Drawing::centreHoles() const {
+    return __centreHoles;
+}
+
+std::vector<Drawing::CentreHole>& Drawing::centreHoles() {
     return __centreHoles;
 }
 
@@ -742,7 +746,11 @@ void Drawing::addDeflector(const Deflector &deflector) {
     invokeUpdateCallbacks();
 }
 
-std::vector<Drawing::Deflector> Drawing::deflectors() const {
+const std::vector<Drawing::Deflector> &Drawing::deflectors() const {
+    return __deflectors;
+}
+
+std::vector<Drawing::Deflector>& Drawing::deflectors() {
     return __deflectors;
 }
 
@@ -763,7 +771,11 @@ void Drawing::addDivertor(const Divertor &divertor) {
     invokeUpdateCallbacks();
 }
 
-std::vector<Drawing::Divertor> Drawing::divertors() const {
+std::vector<Drawing::Divertor> &Drawing::divertors() {
+    return __divertors;
+}
+
+const std::vector<Drawing::Divertor>& Drawing::divertors() const {
     return __divertors;
 }
 
@@ -1443,9 +1455,9 @@ Drawing &DrawingSerialiser::deserialise(void *data) {
     // Dam Bars
     unsigned char damBarCount = *buffer++;
     for (unsigned i = 0; i < damBarCount; i++) {
-        Drawing::DamBar& pad = Drawing::DamBar::deserialise(buffer);
-        buffer += pad.serialisedSize();
-        drawing->__damBars.push_back(pad);
+        Drawing::DamBar& bar = Drawing::DamBar::deserialise(buffer);
+        buffer += bar.serialisedSize();
+        drawing->__damBars.push_back(bar);
     }
 
     // Blank Spaces
@@ -1535,6 +1547,9 @@ std::string DrawingSummary::summaryString() const {
         s << "+" << DrawingComponentManager<Material>::getComponentByHandle(thicknessHandles[1]).thickness;
     }
     s << " x " << DrawingComponentManager<Aperture>::getComponentByHandle(apertureHandle).apertureName();
+    for (unsigned i : __extraApertures) {
+        s << " x " << DrawingComponentManager<Aperture>::getComponentByHandle(i).apertureName();
+    }
 
     return s.str();
 }
@@ -1593,11 +1608,28 @@ unsigned DrawingSummary::barSpacingCount() const {
     return __barSpacings.size() + 1;
 }
 
+void DrawingSummary::addExtraAperture(unsigned apertureHandle) {
+    __extraApertures.push_back(apertureHandle);
+}
+
+std::vector<unsigned> DrawingSummary::extraApertures() const {
+    return __extraApertures;
+}
+
+void DrawingSummary::clearExtraApertures() {
+    __extraApertures.clear();
+}
+
+unsigned DrawingSummary::extraApertureCount() const {
+    return __extraApertures.size();
+}
+
 DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int maxMatID, float maxWidth, float maxLength,
                                                                  unsigned int maxThicknessHandle, float maxLapSize,
                                                                  unsigned int maxApertureHandle, 
                                                                  unsigned char maxBarSpacingCount, float maxBarSpacing,
-                                                                 unsigned char maxDrawingLength) {
+                                                                 unsigned char maxDrawingLength,
+                                                                 unsigned char maxExtraApertureCount) {
     this->matIDSize = MIN_COVERING_BITS(maxMatID);
     this->widthSize = MIN_COVERING_BITS((unsigned) (maxWidth * 2));
     this->lengthSize = MIN_COVERING_BITS((unsigned) (maxLength * 2));
@@ -1606,9 +1638,11 @@ DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int ma
     this->apertureHandleSize = MIN_COVERING_BITS(maxApertureHandle);
     this->barSpacingCountSize = MIN_COVERING_BITS(maxBarSpacingCount);
     this->barSpacingSize = MIN_COVERING_BITS((unsigned) (maxBarSpacing * 2));
+    this->extraApertureCountSize = MIN_COVERING_BITS(maxExtraApertureCount);
 
     this->maxDrawingLength = maxDrawingLength;
     this->maxBarSpacingCount = maxBarSpacingCount;
+    this->maxExtraApertureCount = maxExtraApertureCount;
 
     matIDBytes = MIN_COVERING_BYTES(matIDSize);
     widthBytes = MIN_COVERING_BYTES(widthSize);
@@ -1618,13 +1652,15 @@ DrawingSummaryCompressionSchema::DrawingSummaryCompressionSchema(unsigned int ma
     apertureHandleBytes = MIN_COVERING_BYTES(apertureHandleSize);
     barSpacingCountBytes = MIN_COVERING_BYTES(barSpacingCountSize);
     barSpacingBytes = MIN_COVERING_BYTES(barSpacingSize);
+    extraApertureCountBytes = MIN_COVERING_BYTES(extraApertureCountSize);
 }
 
 unsigned DrawingSummaryCompressionSchema::compressedSize(const DrawingSummary &summary) const {
     return sizeof(unsigned char) + summary.drawingNumber.size() + MIN_COVERING_BYTES(
         matIDSize + widthSize + lengthSize + apertureHandleSize + thicknessHandleSize + 1 +
         (summary.hasTwoLayers() ? thicknessHandleSize : 0) + 3 + summary.numberOfLaps() * lapSize +
-        barSpacingCountSize + (summary.barSpacingCount() - 1) * barSpacingSize);
+        barSpacingCountSize + (summary.barSpacingCount() - 1) * barSpacingSize) + extraApertureCountSize
+        + (summary.extraApertureCount() * apertureHandleSize);
 }
 
 void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summary, void *target) const {
@@ -1664,6 +1700,13 @@ void DrawingSummaryCompressionSchema::compressSummary(const DrawingSummary &summ
     for (unsigned spacing : summary.__barSpacings) {
         writeAtBitOffset((void *) &spacing, barSpacingBytes, buff, offset);
         offset += barSpacingSize;
+    }
+    unsigned noOfExtraApertures = summary.extraApertureCount();
+    writeAtBitOffset(&noOfExtraApertures, extraApertureCountBytes, buff, offset);
+    offset += extraApertureCountSize;
+    for (unsigned handle : summary.__extraApertures) {
+        writeAtBitOffset((void*)&handle, apertureHandleBytes, buff, offset);
+        offset += apertureHandleSize;
     }
 }
 
@@ -1710,6 +1753,15 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
         offset += barSpacingSize;
     }
 
+    unsigned noOfExtraApertures = 0;
+    readFromBitOffset(buff, offset, &noOfExtraApertures, extraApertureCountSize);
+    offset += extraApertureCountSize;
+    summary.__extraApertures.resize(noOfExtraApertures);
+    for (unsigned i = 0; i < noOfExtraApertures; i++) {
+        readFromBitOffset(buff, offset, &summary.__extraApertures[i], apertureHandleSize);
+        offset += apertureHandleSize;
+    }
+
     size = MIN_COVERING_BYTES(offset) + sizeof(unsigned char) + summary.drawingNumber.size();
 
     return summary;
@@ -1718,5 +1770,5 @@ DrawingSummary DrawingSummaryCompressionSchema::uncompressSummary(void *data, un
 unsigned DrawingSummaryCompressionSchema::maxCompressedSize() const {
     return sizeof(unsigned char) + maxDrawingLength + MIN_COVERING_BYTES(
         matIDSize + widthSize + lengthSize + thicknessHandleSize * 2 + 4 + lapSize * 4 + apertureHandleSize +
-        barSpacingCountSize + maxBarSpacingCount * barSpacingSize);
+        barSpacingCountSize + maxBarSpacingCount * barSpacingSize + extraApertureCountSize + maxExtraApertureCount * apertureHandleSize);
 }

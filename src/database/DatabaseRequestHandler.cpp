@@ -6,13 +6,13 @@
 
 #include <utility>
 
-DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0, 0) {
+DatabaseRequestHandler::DatabaseRequestHandler() : schema(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) {
     pricingMap.insert({"running_m", MaterialPricingType::RUNNING_M });
     pricingMap.insert({ "square_m", MaterialPricingType::SQUARE_M });
     pricingMap.insert({ "sheet", MaterialPricingType::SHEET });
 }
 
-void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandle &clientHandle, void *message,
+void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandle &clientHandle, void*&& message,
 	unsigned int messageSize) {
 	switch (getDeserialiseType(message)) {
         case RequestType::REPEAT_TOKEN_REQUEST:
@@ -22,7 +22,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             caller.sendEmailAddress(clientHandle, (unsigned) RequestType::USER_EMAIL_REQUEST);
             break;
         case RequestType::DRAWING_SEARCH_QUERY: {
-            DatabaseSearchQuery &query = DatabaseSearchQuery::deserialise(message);
+            DatabaseSearchQuery &query = DatabaseSearchQuery::deserialise(std::move(message));
             std::vector<DrawingSummary> summaries = caller.databaseManager().executeSearchQuery(query);
             delete &query;
 
@@ -55,7 +55,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::DRAWING_INSERT: {
-            DrawingInsert &drawingInsert = DrawingInsert::deserialise(message);
+            DrawingInsert &drawingInsert = DrawingInsert::deserialise(std::move(message));
 
             if (drawingInsert.drawingData.has_value()) {
                 DrawingInsert response;
@@ -260,7 +260,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::DRAWING_DETAILS: {
-            DrawingRequest request = DrawingRequest::deserialise(message);
+            DrawingRequest request = DrawingRequest::deserialise(std::move(message));
 
             Drawing *returnedDrawing = caller.databaseManager().executeDrawingQuery(request);
             if (returnedDrawing != nullptr) {
@@ -283,7 +283,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::ADD_NEW_COMPONENT: {
-            ComponentInsert &insert = ComponentInsert::deserialise(message);
+            ComponentInsert &insert = ComponentInsert::deserialise(std::move(message));
 
             ComponentInsert response;
             response.clearComponentData();
@@ -411,7 +411,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::GET_NEXT_DRAWING_NUMBER: {
-            NextDrawing &next = NextDrawing::deserialise(message);
+            NextDrawing &next = NextDrawing::deserialise(std::move(message));
 
             switch (next.drawingType) {
                 case NextDrawing::DrawingType::AUTOMATIC:
@@ -433,7 +433,7 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller, const ClientHandl
             break;
         }
         case RequestType::CREATE_DATABASE_BACKUP: {
-            DatabaseBackup &backup = DatabaseBackup::deserialise(message);
+            DatabaseBackup &backup = DatabaseBackup::deserialise(std::move(message));
 
             std::filesystem::path backupFile = backupPath / backup.backupName;
             backupFile.replace_extension("sql");
@@ -492,15 +492,16 @@ DrawingSummaryCompressionSchema DatabaseRequestHandler::compressionSchema(Databa
 		unsigned char maxDrawingLength;
 		unsigned char maxBarSpacingCount;
 		float maxBarSpacing;
+        unsigned char maxExtraApertureCount;
 
 
-		dbManager->getCompressionSchemaDetails(maxMatID, maxWidth, maxLength, maxLapSize, maxBarSpacingCount, maxBarSpacing, maxDrawingLength);
+		dbManager->getCompressionSchemaDetails(maxMatID, maxWidth, maxLength, maxLapSize, maxBarSpacingCount, maxBarSpacing, maxDrawingLength, maxExtraApertureCount);
 		maxThicknessHandle = DrawingComponentManager<Material>::maximumHandle();
 		maxApertureHandle = DrawingComponentManager<Aperture>::maximumHandle();
 		
 		schema = DrawingSummaryCompressionSchema(maxMatID, maxWidth, maxLength, maxThicknessHandle, 
 												 maxLapSize, maxApertureHandle, maxBarSpacingCount, 
-												 maxBarSpacing, maxDrawingLength);
+												 maxBarSpacing, maxDrawingLength, maxExtraApertureCount);
 
 		schemaDirty = false;
 	}
@@ -804,13 +805,13 @@ void DatabaseRequestHandler::constructDataElements(
             sizeValue += sizeof(unsigned) * 2 + sizeof(unsigned short) * 2 + sizeof(unsigned char) + data.name.size() + sizeof(unsigned char);
             material_ids.insert({ row[6], data });
             if (!row[2].isNull()) {
-                sizeValue += sizeof(float) * 3 + sizeof(MaterialPricingType);
-                material_ids[row[6]].materialPrices.push_back({ row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>())});
+                sizeValue += sizeof(unsigned) + sizeof(float) * 3 + sizeof(MaterialPricingType);
+                material_ids[row[6]].materialPrices.push_back({ row[0], row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>()) });
             }
         }
         else {
-            sizeValue += sizeof(float) * 3 + sizeof(MaterialPricingType);
-            material_ids[row[6]].materialPrices.push_back({ row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>())});
+            sizeValue += sizeof(unsigned) +  sizeof(float) * 3 + sizeof(MaterialPricingType);
+            material_ids[row[6]].materialPrices.push_back({ row[0], row[2], row[3], row[4], pricingMap.at(row[5].get<std::string>()) });
         }
     }
     for (const std::pair<unsigned, MaterialData>& key : material_ids) {
@@ -836,19 +837,21 @@ void DatabaseRequestHandler::serialiseDataElement(const DatabaseRequestHandler::
     unsigned char priceElements = element.materialPrices.size();
     *buff++ = priceElements;
 
-    for (std::tuple<float, float, float, MaterialPricingType> tuple : element.materialPrices) {
-        *((float*)buff) = std::get<0>(tuple);
-        buff += sizeof(float);
+    for (Material::MaterialPrice tuple : element.materialPrices) {
+        *((unsigned*)buff) = std::get<0>(tuple);
+        buff += sizeof(unsigned);
         *((float*)buff) = std::get<1>(tuple);
         buff += sizeof(float);
         *((float*)buff) = std::get<2>(tuple);
         buff += sizeof(float);
-        *((MaterialPricingType*)buff) = std::get<3>(tuple);
+        *((float*)buff) = std::get<3>(tuple);
+        buff += sizeof(float);
+        *((MaterialPricingType*)buff) = std::get<4>(tuple);
         buff += sizeof(MaterialPricingType);
     }
     
 
-	sizeValue += sizeof(unsigned short) * 2 + sizeof(unsigned char) + nameSize + sizeof(unsigned char) + priceElements * (sizeof(float) * 3 + sizeof(MaterialPricingType));
+	sizeValue += sizeof(unsigned short) * 2 + sizeof(unsigned char) + nameSize + sizeof(unsigned char) + priceElements * (sizeof(unsigned) + sizeof(float) * 3 + sizeof(MaterialPricingType));
 }
 
 

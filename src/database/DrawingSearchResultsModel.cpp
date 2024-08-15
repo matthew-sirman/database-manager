@@ -69,7 +69,7 @@ QVariant DrawingSearchResultsModel::headerData(int section, Qt::Orientation orie
     return QVariant();
 }
 
-void DrawingSearchResultsModel::sourceDataFromBuffer(void* buffer) {
+void DrawingSearchResultsModel::sourceDataFromBuffer(void*&& buffer) {
     unsigned char *buff = (unsigned char *)buffer;
     buff += sizeof(RequestType);
 
@@ -102,6 +102,7 @@ void DrawingSearchResultsModel::sourceDataFromBuffer(void* buffer) {
         endInsertRows();
     }
 
+    free(buffer);
     emit dataChanged(index(0, 0), index(rowCount(), columnCount()));
 }
 

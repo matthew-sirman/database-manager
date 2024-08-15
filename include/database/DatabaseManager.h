@@ -16,7 +16,7 @@
 
 #include "../../guard.h"
 
-/// <summary>
+/// <summary>\ingroup database
 /// DatabaseManager
 /// A class for managing connections to the MySQL database underlying the application.
 /// Also contains methods for some specific actions such as reading values for a 
@@ -44,7 +44,6 @@ public:
     /// <param name="user">The username for the connection.</param>
     /// <param name="password">The password for the user specified by the username.</param>
     /// <param name="host">The server to connect to, where the database is located.</param>
-    /// <returns></returns>
     DatabaseManager(const std::string &database, const std::string &user, const std::string &password,
         const std::string &host = "localhost");
 
@@ -61,7 +60,8 @@ public:
     /// <param name="maxDrawingLength">A refernce to a variable to store the maximum drawing number length.
     /// Note: drawing numbers longer than 255 are disallowed by the database, so this value is used as a single byte.</param>
     void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, 
-                                     unsigned char &maxBarSpacingCount, float &maxBarSpacing, unsigned char &maxDrawingLength);
+                                     unsigned char &maxBarSpacingCount, float &maxBarSpacing,
+                                     unsigned char &maxDrawingLength, unsigned char &maxExtraApertureCount);
 
     /// <summary>
     /// Executes a search query based on a DatabaseSearchQuery object parameterisation.
@@ -85,8 +85,24 @@ public:
     /// <returns>The rows from the table.</returns>
     mysqlx::RowResult sourceTable(const std::string& tableName, const std::string& orderBy = std::string());
 
+    /// <summary>
+    /// Sources multiple tables that are right joined together.
+    /// </summary>
+    /// <param name="leftTable">The left table's name</param>
+    /// <param name="rightTable">The riht table's name</param>
+    /// <param name="common">The name of the field to join upon</param>
+    /// <param name="orderBy">An ordering for the returned table</param>
+    /// <returns>The rows from the combined table</returns>
     mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy = std::string());
-
+    
+    /// <summary>
+    /// Sources multiple tables that are right joined together.
+    /// </summary>
+    /// <param name="leftTable">The left table's name</param>
+    /// <param name="rightTable">The riht table's name</param>
+    /// <param name="commons">A pair of strings, joining the left table on the first common and the second table on the second's.</param>
+    /// <param name="orderBy">An ordering for the returned table</param>
+    /// <returns>The rows from the combined table</returns>
     mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy = std::string());
 
     /// <summary>

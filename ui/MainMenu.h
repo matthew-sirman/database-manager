@@ -39,11 +39,24 @@ namespace Ui {
     class MainMenu;
 }
 
+/// <summary>
+/// MainMenu Inherits QMainWindow
+/// The main menu of the manager, including search functionality, and the basic window design. It also controls the tabs.
+/// </summary>
 class MainMenu : public QMainWindow {
     Q_OBJECT
 public:
+    /// <summary>
+    /// Constructs a new main window, initialising a connection to the server.
+    /// </summary>
+    /// <param name="clientMetaFilePath">The client meta file to read information about how to connect
+    /// to the server from.</param>
+    /// <param name="parent">The parent of this widget.</param>
     explicit MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *parent = nullptr);
 
+    /// <summary>
+    /// Default Destructor.
+    /// </summary>
     ~MainMenu() override;
 
 private:
@@ -119,20 +132,38 @@ private slots:
 
     void processDrawings();
 
-    void insertDrawingResponse(unsigned responseType, unsigned responseCode);
+    void insertDrawingResponse(DrawingInsert::InsertResponseCode responseType, unsigned responseCode);
 
-    void insertComponentResponse(unsigned responseCode);
+    void insertComponentResponse(ComponentInsert::ComponentInsertResponse responseCode);
 
-    void backupResponse(unsigned responseCode);
+    void backupResponse(DatabaseBackup::BackupResponse responseCode);
 
 signals:
+    /// <summary>
+    /// This signal is emitted when a \ref DrawingRequest has been recieved.
+    /// </summary>
     void itemAddedToDrawingQueue();
 
-    void insertDrawingResponseReceived(unsigned responseType, unsigned responseCode);
+    /// <summary>
+    /// This singal is emitted when the \ref DatabaseResponseHandler recieves a \ref DrawingInsert.
+    /// </summary>
+    /// <param name="insertResponseType">The response code of the insert.</param>
+    /// <param name="echoResponseCode">Currently unsed, however this code links to DrawingResponseCode,
+    /// and is kept the same across the lifespan of a drawing insert, so when it is returned, the
+    /// relevant DrawingResponseCode can be selected.</param>
+    void insertDrawingResponseReceived(DrawingInsert::InsertResponseCode insertResponseType, unsigned echoResponseCode);
 
-    void addComponentResponseReceived(unsigned responseCode);
+    /// <summary>
+    /// This signal is emitted when the \ref DatabaseResponseHandler recieves a \ref ComponentInsert.
+    /// </summary>
+    /// <param name="responseCode">The response code of the insert.</param>
+    void addComponentResponseReceived(ComponentInsert::ComponentInsertResponse responseCode);
 
-    void backupResponseReceived(unsigned resposneCode);
+    /// <summary>
+    /// This signal is emitted when the \ref DatabaseResponseHandler recieves a \ref DatabaseBackup.
+    /// </summary>
+    /// <param name="resposneCode">The response code of the backup.</param>
+    void backupResponseReceived(DatabaseBackup::BackupResponse resposneCode);
 
 };
 

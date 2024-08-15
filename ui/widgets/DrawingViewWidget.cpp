@@ -40,7 +40,7 @@ DrawingViewWidget::DrawingViewWidget(const Drawing &drawing, QWidget *parent)
 }
 
 DrawingViewWidget::~DrawingViewWidget() {
-
+    pdfDocument->close();
 }
 
 void DrawingViewWidget::updateFields() {
@@ -148,7 +148,11 @@ void DrawingViewWidget::updateFields() {
 
     // Drawings page
     ui->drawingPDFSelectorInput->clear();
-    ui->drawingPDFSelectorInput->addItem((drawing->drawingNumber() + " PDF").c_str(), drawing->hyperlink().c_str());
+    // ui->drawingPDFSelectorInput->addItem((drawing->drawingNumber() + " PDF").c_str(), drawing->hyperlink().c_str());
+    ui->drawingPDFSelectorInput->addItem(
+        QString::fromStdString(drawing->drawingNumber() + " PDF"),
+        QString::fromStdString(drawing->hyperlink().string())
+    );
 
     for (const std::filesystem::path& pdf : drawing->pressDrawingHyperlinks()) {
         ui->drawingPDFSelectorInput->addItem(pdf.generic_string().c_str(), pdf.generic_string().c_str());
@@ -170,8 +174,8 @@ void DrawingViewWidget::updateFields() {
     }
 
     QPdfDocumentRenderOptions renderOptions;
-    renderOptions.setRenderFlags(QPdf::RenderAnnotations);
-    pdfViewer->setDocumentRenderOptions(renderOptions);
+    renderOptions.setRenderFlags(QPdfDocumentRenderOptions::RenderFlag::Annotations);
+    // pdfViewer->setDocumentRenderOptions(renderOptions);
 
     connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
         pdfDocument->load(ui->drawingPDFSelectorInput->itemData(index).toString());
@@ -188,7 +192,7 @@ void DrawingViewWidget::updateFields() {
     ui->pricesTab->setLayout(outerLayout);
 
     QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-    QRegExpValidator* unsignedValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+    QRegularExpressionValidator* unsignedValidator = new QRegularExpressionValidator(QRegularExpression("[1-9][0-9]*"));
     float total = 0;
     QHBoxLayout* prices_layout = new QHBoxLayout();
     QWidget* prices_layout_container = new QWidget();
@@ -330,8 +334,9 @@ std::vector<std::filesystem::path> DrawingViewWidget::punchProgramPathForDrawing
             break;
         }
     }
-
-    if (folder.size() == 1) {
+    if (folder == "M") {
+        folder = "2. Manuals";
+    } else if (folder.size() == 1) {
         folder = "1" + folder;
     }
 

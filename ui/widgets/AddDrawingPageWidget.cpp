@@ -41,13 +41,13 @@ AddDrawingPageWidget::AddDrawingPageWidget(const std::string &drawingNumber, QWi
     ui->drawingSpecsVisual->setScene(visualsScene);
     ui->drawingSpecsVisual->setDrawing(drawing);
 
-    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(drawingNumberRegex);
+    QRegularExpressionValidator *drawingNumberValidator = new QRegularExpressionValidator(drawingNumberRegex);
 
     ui->drawingNumberInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberInput, SIGNAL(textEdited(const QString &)), this,
             SLOT(capitaliseLineEdit(const QString &)));
 
-    QRegExpValidator *positionValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
+    QRegularExpressionValidator *positionValidator = new QRegularExpressionValidator(QRegularExpression("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
 
     ui->machinePositionInput->setValidator(positionValidator);
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
@@ -103,13 +103,13 @@ AddDrawingPageWidget::AddDrawingPageWidget(const Drawing &drawing, AddDrawingPag
     ui->drawingSpecsVisual->setScene(visualsScene);
     ui->drawingSpecsVisual->setDrawing(this->drawing);
 
-    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(drawingNumberRegex);
+    QRegularExpressionValidator *drawingNumberValidator = new QRegularExpressionValidator(drawingNumberRegex);
 
     ui->drawingNumberInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberInput, SIGNAL(textEdited(const QString &)), this,
             SLOT(capitaliseLineEdit(const QString &)));
 
-    QRegExpValidator *positionValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
+    QRegularExpressionValidator *positionValidator = new QRegularExpressionValidator(QRegularExpression("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
 
     ui->machinePositionInput->setValidator(positionValidator);
     connect(ui->machinePositionInput, SIGNAL(textEdited(const QString &)), this,
@@ -126,28 +126,12 @@ AddDrawingPageWidget::~AddDrawingPageWidget() {
 }
 
 void AddDrawingPageWidget::setupComboboxSources() {
-    static std::unordered_map<unsigned char, unsigned char> shapeOrder = {
-            {1, 1},
-            {2, 4},
-            {3, 2},
-            {4, 3},
-            {5, 5},
-            {6, 0}
-    };
-    std::function<bool(const Aperture &, const Aperture &)> apertureComparator = [](const Aperture &a,
-                                                                                    const Aperture &b) {
-        if (a.apertureShapeID != b.apertureShapeID) {
-            return shapeOrder[a.apertureShapeID] < shapeOrder[b.apertureShapeID];
-        }
-        return a.width < b.width;
-    };
-
     std::function<bool(const SideIron&, const SideIron&)> sideIronComparator = [](const SideIron& a, const SideIron& b) {return a.length < b.length; };
 
     DrawingComponentManager<Product>::addCallback([this]() { productSource.updateSource(); });
-    DrawingComponentManager<Aperture>::addCallback([this, apertureComparator]() {
+    DrawingComponentManager<Aperture>::addCallback([this]() {
         apertureSource.updateSource();
-        apertureSource.sort(apertureComparator);
+        apertureSource.sort(Aperture::apertureComparator);
     });
     DrawingComponentManager<Material>::addCallback([this]() { topMaterialSource.updateSource(); });
     DrawingComponentManager<Material>::addCallback([this]() { bottomMaterialSource.updateSource(); });
@@ -186,7 +170,7 @@ void AddDrawingPageWidget::setupComboboxSources() {
 
     machineModelFilter = machineModelSource.setFilter<MachineModelFilter>();
 
-    apertureSource.sort(apertureComparator);
+    apertureSource.sort(Aperture::apertureComparator);
 
     ui->productInput->setDataSource(productSource);
     ui->apertureInput->setDataSource(apertureSource);
@@ -208,7 +192,7 @@ void AddDrawingPageWidget::setupActivators() {
                     drawing.removeBottomLayer();
                 } else {
                     if (ui->bottomMaterialInput->currentIndex() != -1) {
-                        drawing.setMaterial(Drawing::TOP, DrawingComponentManager<Material>::getComponentByHandle(
+                        drawing.setMaterial(Drawing::BOTTOM, DrawingComponentManager<Material>::getComponentByHandle(
                                 ui->bottomMaterialInput->currentData().toInt()));
                     }
                 }
@@ -326,7 +310,7 @@ void AddDrawingPageWidget::setupActivators() {
 
 void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->drawingNumberInput, &QLineEdit::textChanged, [this](const QString &text) {
-        if (drawingNumberRegex.exactMatch(text)) {
+        if (drawingNumberRegex.match(text).hasMatch()) {
             drawing.setDrawingNumber(text.toStdString());
         }
     });
@@ -435,6 +419,9 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
     connect(ui->productInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         Product &product = DrawingComponentManager<Product>::getComponentByHandle(
                 ui->productInput->itemData(index).toInt());
+        if (product.handle() == drawing.product().handle()) {
+            return;
+        }
 
         if (product.productName == "Rubber Screen Cloth") {
             topMaterialSource.setFilter<RubberScreenClothMaterialFilter>();
@@ -746,7 +733,7 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
         drawing.setQuantityOnDeck(newValue);
     });
     connect(ui->machinePositionInput, &QLineEdit::textChanged, [this](const QString &newPosition) {
-        drawing.setMachinePosition(newPosition.toStdString());
+        drawing.setMachinePosition(newPosition.toUpper().toStdString());
     });
     connect(ui->machineDeckInput, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this](int index) {
         drawing.setMachineDeck(DrawingComponentManager<MachineDeck>::getComponentByHandle(
@@ -877,18 +864,19 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
 
 void AddDrawingPageWidget::loadDrawing() {
     ui->drawingNumberInput->setText(drawing.drawingNumber().c_str());
-    ui->productInput->setCurrentIndex(ui->productInput->findData(drawing.product().handle()));
+
     ui->dateInput->setDate(QDate(drawing.date().year, drawing.date().month, drawing.date().day));
     ui->widthInput->setValue(drawing.width());
     ui->lengthInput->setValue(drawing.length());
     if (!drawing.loadWarning(Drawing::MISSING_MATERIAL_DETECTED)) {
         ui->topMaterialInput->setCurrentIndex(ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()));
         if (drawing.material(Drawing::BOTTOM).has_value()) {
-            ui->bottomMaterialLabel->setActive();
             ui->bottomMaterialInput->setCurrentIndex(
                     ui->bottomMaterialInput->findData(drawing.material(Drawing::BOTTOM)->handle()));
+            ui->bottomMaterialLabel->setActive();
         }
     }
+    ui->productInput->setCurrentIndex(ui->productInput->findData(drawing.product().handle()));
     if (!drawing.loadWarning(Drawing::INVALID_BACKING_STRIP_DETECTED)) {
         ui->backingStripsInput->setCurrentIndex(ui->backingStripsInput->findData(drawing.backingStrip()->handle()));
     }
@@ -962,9 +950,10 @@ void AddDrawingPageWidget::loadDrawing() {
 
     Drawing::MachineTemplate machineTemplate = drawing.machineTemplate();
     ui->manufacturerInput->setCurrentText(machineTemplate.machine().manufacturer.c_str());
-    ui->modelInput->setCurrentText(machineTemplate.machine().model.c_str());
+    //ui->modelInput->setCurrentText(machineTemplate.machine().model.c_str());
+    ui->modelInput->setCurrentIndex(ui->modelInput->findData(machineTemplate.machine().handle()));
     ui->quantityOnDeckInput->setValue(machineTemplate.quantityOnDeck);
-    ui->machinePositionInput->setText(machineTemplate.position.c_str());
+    ui->machinePositionInput->setText(QString(machineTemplate.position.c_str()).toUpper());
     ui->machineDeckInput->setCurrentIndex(ui->machineDeckInput->findData(machineTemplate.deck().handle()));
 
     ui->hyperlinkDisplay->setText(drawing.hyperlink().generic_string().c_str());

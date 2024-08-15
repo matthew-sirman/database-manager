@@ -282,7 +282,7 @@ unsigned DatabaseSearchQuery::serialisedSize() const {
 }
 
 // Reconstructs a DatabaseSearchQuery object from the data buffer
-DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
+DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void*&& data) {
     // First we create an empty query object on the heap for returning once
     // we have given it its values
     DatabaseSearchQuery *query = new DatabaseSearchQuery();
@@ -467,6 +467,7 @@ DatabaseSearchQuery &DatabaseSearchQuery::deserialise(void *data) {
         query->machineDeck = std::nullopt;
     }
 
+    free(data);
     // Return the constructed query
     return *query;
 }
@@ -566,7 +567,9 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
            "SELECT mat_id, 'O' AS type, width, mat_side FROM {0}.overlaps) AS l "
            "WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps, "
            "COALESCE((SELECT JSON_ARRAYAGG(bs.bar_spacing) FROM {0}.bar_spacings AS bs WHERE bs.mat_id=d.mat_id), "
-           "JSON_ARRAY()) AS spacings"
+           "JSON_ARRAY()) AS spacings, "
+           "COALESCE((SELECT JSON_ARRAYAGG(ea.aperture_id) FROM {0}.extra_apertures AS ea WHERE ea.mat_id = d.mat_id "
+           "GROUP BY ea.mat_id),JSON_ARRAY()) AS ea "
         << std::endl;
 
     // We then specify the primary table to select from, and begin joining other required tables.
@@ -580,6 +583,89 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
     std::stringstream condition;
 
     // SELECT d.mat_id AS mat_id, d.drawing_number AS drawing_number, d.width AS width, d.length AS length, mal.aperture_id AS aperture_id, (SELECT JSON_ARRAYAGG(t.material_thickness_id) FROM thickness AS t WHERE t.mat_id=d.mat_id) AS material_ids, d.tension_type AS tension_type, COALESCE((SELECT JSON_ARRAYAGG(JSON_ARRAY(l.type, l.width, l.mat_side)) FROM (SELECT mat_id, 'S' AS type, width, mat_side FROM sidelaps UNION SELECT mat_id, 'O' AS type, width, mat_side FROM overlaps) AS l WHERE l.mat_id=d.mat_id), JSON_ARRAY()) AS laps, COALESCE((SELECT JSON_ARRAYAGG(bs.bar_spacing) FROM bar_spacings AS bs WHERE bs.mat_id=d.mat_id), JSON_ARRAY()) AS spacings.FROM drawings AS d.INNER JOIN mat_aperture_link AS malON d.mat_id=mal.mat_id
+    //SELECT
+    //    d.mat_id AS mat_id,
+    //    d.drawing_number AS drawing_number,
+    //    d.width AS width,
+    //    d.length AS length,
+    //    mal.aperture_id AS aperture_id,
+    //    (
+    //        SELECT
+    //        JSON_ARRAYAGG(t.material_thickness_id)
+    //        FROM
+    //        screen_mat_database_dev.thickness AS t
+    //        WHERE
+    //        t.mat_id = d.mat_id
+    //        ) AS material_ids,
+    //    d.tension_type AS tension_type,
+    //    COALESCE(
+    //        (
+    //            SELECT
+    //            JSON_ARRAYAGG(
+    //                JSON_ARRAY(l.type, l.width, l.mat_side)
+    //            )
+    //            FROM
+    //            (
+    //                SELECT
+    //                mat_id,
+    //                'S' AS type,
+    //                width,
+    //                mat_side
+    //                FROM
+    //                screen_mat_database_dev.sidelaps
+    //                UNION
+    //                SELECT
+    //                mat_id,
+    //                'O' AS type,
+    //                width,
+    //                mat_side
+    //                FROM
+    //                screen_mat_database_dev.overlaps
+    //            ) AS l
+    //            WHERE
+    //            l.mat_id = d.mat_id
+    //            ),
+    //        JSON_ARRAY()
+    //    ) AS laps,
+    //    COALESCE(
+    //        (
+    //            SELECT
+    //            JSON_ARRAYAGG(bs.bar_spacing)
+    //            FROM
+    //            screen_mat_database_dev.bar_spacings AS bs
+    //            WHERE
+    //            bs.mat_id = d.mat_id
+    //            ),
+    //        JSON_ARRAY()
+    //    ) AS spacings,
+    //   COALESCE(
+    //(
+    //    SELECT
+    //    JSON_ARRAYAGG(ea.aperture_id)
+    //    FROM
+    //    screen_mat_database_dev.extra_apertures AS ea
+    //    WHERE
+    //    ea.mat_id = d.mat_id
+    //    GROUP BY
+    //    ea.mat_id
+    //    ),
+    //    JSON_ARRAY()
+    //    ) AS ea
+    //    FROM
+    //    screen_mat_database_dev.drawings AS d
+    //    INNER JOIN screen_mat_database_dev.mat_aperture_link AS mal ON d.mat_id = mal.mat_id
+    //    WHERE
+    //    d.drawing_number LIKE 'EF%'
+    //    GROUP BY
+    //    d.mat_id,
+    //    mal.aperture_id
+    //    ORDER BY
+    //    IF(
+    //        d.drawing_number REGEXP '^[A-Z][0-9]{2,}[A-Z]?$',
+    //        CONCAT('0', d.drawing_number),
+    //        d.drawing_number
+    //    ) DESC;
+
     // For each of these simpler queries, we simply check if the parameter is present, 
     // and if it is, we create a conditional string matching the field in the database
     // to whatever was passed into the query.
@@ -803,8 +889,14 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
         }
     }
 
-    // If we have at least a single condition, we append the "where" clause to the 
-    // query string, and add each condition, delimited by the word AND.
+    // We include condition always as error avoidance, so that if a material is missing, it is removed from the results as opposed
+    // to causing an error and blocking all results.
+    //sql << "WHERE " << std::endl;
+    //sql << "material_ids IS NOT NULL" << std::endl;
+
+    //for (std::string s : conditions) {
+    //    sql << " AND " << s << std::endl;
+    //}
     if (!conditions.empty()) {
         sql << "WHERE " << std::endl;
         for (unsigned i = 0; i < conditions.size() - 1; i++) {
@@ -828,64 +920,75 @@ std::string DatabaseSearchQuery::toSQLQueryString() const {
 std::vector<DrawingSummary> DatabaseSearchQuery::getQueryResultSummaries(mysqlx::RowResult resultSet) {
     // Declare the target array
     std::vector<DrawingSummary> summaries;
-
+    DrawingSummary* backup;
     // Loop through each row
     for (const mysqlx::Row &row : resultSet) {
-        // Create a summary object 
-        DrawingSummary summary;
-        // Set the basic parameters from the data source
-        summary.matID = row[0];
-        summary.drawingNumber = row[1].get<std::string>();
-        summary.setWidth(row[2]);
-        summary.setLength(row[3]);
+        try {
+            // Create a summary object 
+            // Set the basic parameters from the data source
+            DrawingSummary summary;
+            backup = &summary;
+            summary.matID = row[0].get<int>();
+            summary.drawingNumber = row[1].get<std::string>();
+            summary.setWidth(row[2].get<float>());
+            summary.setLength(row[3].get<float>());
 
-        // It may be the case that this mat uses a bidirectional aperture, in which case we return
-        // all matching apertures and choose the correct one, based upon the aperture direction
-        Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[4]);
-        summary.apertureHandle = matchingAperture.handle();
+            // It may be the case that this mat uses a bidirectional aperture, in which case we return
+            // all matching apertures and choose the correct one, based upon the aperture direction
+            Aperture matchingAperture = DrawingComponentManager<Aperture>::findComponentByID(row[4].get<int>());
+            summary.apertureHandle = matchingAperture.handle();
 
-        // We nullify the thickness handles and lap sizes to clear any residual memory which might
-        // be accidentally written
-        memset(&summary.thicknessHandles, 0, sizeof(summary.thicknessHandles));
-        for (unsigned i = 0; i < 4; i++) {
-            summary.setLapSize(i, 0);
-        }
 
-        // We then loop through each returned element in the thicknesses returned and set the corresponding thickness
-        // handle in the summary object
-        for (unsigned thicknessSlot = 0; thicknessSlot < row[5].elementCount(); thicknessSlot++) {
-            summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[5][thicknessSlot]).handle();
-        }
-
-        // Then we deal with any laps there may be in the drawing
-        for (const mysqlx::Value &lap : row[7]) {
-            // If we encounter a "damaged" lap, we just skip it to avoid a possible
-            // error
-            if (lap[2].isNull()) {
-                continue;
+            // We nullify the thickness handles and lap sizes to clear any residual memory which might
+            // be accidentally written
+            memset(&summary.thicknessHandles, 0, sizeof(summary.thicknessHandles));
+            for (unsigned i = 0; i < 4; i++) {
+                summary.setLapSize(i, 0);
             }
 
-            // We calculate the index this lap belongs to. This depends on the side of the mat, the tension type
-            // and whether it is a sidelap or overlap. Note that a boolean equivalence will return 1 if equal and
-            // 0 if inequal, so if lap[2] == "Right", then the index will be 1 to start with, otherwise 0.
-            // This means we can easily calculate the index associated with this lap value.
-            unsigned index = (lap[2].get<std::string>() == "Right");
-            if (row[6].get<std::string>() == "Side") {
-                index += 2 * (lap[0].get<std::string>() == "O");
+            // We then loop through each returned element in the thicknesses returned and set the corresponding thickness
+            // handle in the summary object
+            for (unsigned thicknessSlot = 0; thicknessSlot < row[5].elementCount(); thicknessSlot++) {
+                summary.thicknessHandles[thicknessSlot] = DrawingComponentManager<Material>::findComponentByID(row[5][thicknessSlot]).handle();
             }
-            else {
-                index += 2 * (lap[0].get<std::string>() == "S");
+
+            // Then we deal with any laps there may be in the drawing
+            for (const mysqlx::Value& lap : row[7]) {
+                // If we encounter a "damaged" lap, we just skip it to avoid a possible
+                // error
+                if (lap[2].isNull()) {
+                    continue;
+                }
+
+                // We calculate the index this lap belongs to. This depends on the side of the mat, the tension type
+                // and whether it is a sidelap or overlap. Note that a boolean equivalence will return 1 if equal and
+                // 0 if inequal, so if lap[2] == "Right", then the index will be 1 to start with, otherwise 0.
+                // This means we can easily calculate the index associated with this lap value.
+                unsigned index = (lap[2].get<std::string>() == "Right");
+                if (row[6].get<std::string>() == "Side") {
+                    index += 2 * (lap[0].get<std::string>() == "O");
+                }
+                else {
+                    index += 2 * (lap[0].get<std::string>() == "S");
+                }
+                // Finally, after computing the index, we simply write the size to the summary in the correct slot.
+                summary.setLapSize(index, lap[1].get<double>());
             }
-            // Finally, after computing the index, we simply write the size to the summary in the correct slot.
-            summary.setLapSize(index, lap[1].get<double>());
-        }
 
-        for (double spacing : row[8]) {
-            summary.addSpacing(spacing);
-        }
+            for (double spacing : row[8]) {
+                summary.addSpacing(spacing);
+            }
 
-        // Once we have finished creating this summary, we add it to the list
-        summaries.push_back(summary);
+            for (unsigned aperture : row[9]) {
+                summary.addExtraAperture(aperture);
+            }
+
+            // Once we have finished creating this summary, we add it to the list
+            summaries.push_back(summary);
+        }
+        catch (mysqlx::Error e) {
+            mysqlx::throw_error(e.what());
+        }
     }
 
     // Finally once all summaries are created, we return the final list
@@ -944,7 +1047,7 @@ unsigned int DrawingRequest::serialisedSize() const {
 }
 
 // Deserialses a DrawingRequest from a data buffer
-DrawingRequest &DrawingRequest::deserialise(void *data) {
+DrawingRequest &DrawingRequest::deserialise(void*&& data) {
     // First we construct the request object to return
     DrawingRequest *drawingRequest = new DrawingRequest();
 
@@ -971,6 +1074,7 @@ DrawingRequest &DrawingRequest::deserialise(void *data) {
         drawingRequest->drawingData = std::nullopt;
     }
 
+    free(data);
     return *drawingRequest;
 }
 
@@ -1019,7 +1123,7 @@ unsigned int DrawingInsert::serialisedSize() const {
 }
 
 // Deserialses a DrawingInsert from a data buffer
-DrawingInsert &DrawingInsert::deserialise(void *data) {
+DrawingInsert &DrawingInsert::deserialise(void*&& data) {
     // First we construct the insert object to return
     DrawingInsert *drawingInsert = new DrawingInsert();
 
@@ -1046,6 +1150,8 @@ DrawingInsert &DrawingInsert::deserialise(void *data) {
         // Otherwise we set the data to be a nullopt
         drawingInsert->drawingData = std::nullopt;
     }
+
+    free(data);
 
     // Finally we return the reconstruced insert object
     return *drawingInsert;
@@ -1411,6 +1517,7 @@ std::string DrawingInsert::punchProgramsInsertQuery(unsigned matID) const {
     return insert.str();
 }
 
+// Creates a MySQL query string for inserting Impact Pads into the corresponding table
 std::string DrawingInsert::impactPadsInsertQuery(unsigned matID) const {
     std::vector<Drawing::ImpactPad> impactPads = drawingData->impactPads();
 
@@ -1452,14 +1559,14 @@ std::string DrawingInsert::damBarInsertQuery(unsigned matID) const {
     std::stringstream insert;
 
     insert << "INSERT INTO {0}.dam_bars" << std::endl;
-    insert << "(mat_id, width, length, thickness, x_coord, y_coord)" << std::endl;
+    insert << "(mat_id, width, length, x_coord, y_coord, material_id)" << std::endl;
     insert << "VALUES" << std::endl;
 
     for (std::vector<Drawing::DamBar>::const_iterator it = damBars.begin(); it != damBars.end(); it++) {
         Drawing::DamBar bar = *it;
 
 
-        insert << "', " << bar.width << ", " << bar.length << ", " << bar.pos.x << ", " << bar.pos.y << ")";
+        insert << "(" << matID << ", " << bar.width << ", " << bar.length << "," << bar.pos.x << ", " << bar.pos.y << ", " << bar.material().componentID() << ")";
 
         if (it != damBars.end() - 1) {
             insert << ", ";
@@ -1513,7 +1620,7 @@ std::string DrawingInsert::extraApertureInsertQuery(unsigned matID) const {
     for (std::vector<Drawing::ExtraAperture>::const_iterator it = extraApertures.begin(); it != extraApertures.end(); it++) {
         Drawing::ExtraAperture aperture = *it;
 
-        insert << "(" << matID << ", " << aperture.width << ", " << aperture.length << ", " << aperture.pos.x << ", " << aperture.pos.y << ", " << aperture.apertureID <<")";
+        insert << "(" << matID << ", " << aperture.width << ", " << aperture.length << ", " << aperture.pos.x << ", " << aperture.pos.y << ", " << aperture.aperture().componentID() <<")";
 
         if (it != extraApertures.end() - 1) {
             insert << ", ";
@@ -1525,7 +1632,7 @@ std::string DrawingInsert::extraApertureInsertQuery(unsigned matID) const {
 }
 
 std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
-    std::vector<Drawing::CentreHole> centreHoles = drawingData->centreHoles();
+    const std::vector<Drawing::CentreHole> &centreHoles = drawingData->centreHoles();
 
     if (centreHoles.empty()) {
         return std::string();
@@ -1540,7 +1647,7 @@ std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
     for (std::vector<Drawing::CentreHole>::const_iterator it = centreHoles.begin(); it != centreHoles.end(); it++) {
         Drawing::CentreHole hole = *it;
 
-        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.apertureID << ")";
+        insert << "(" << matID << ", " << hole.pos.x << ", " << hole.pos.y << ", " << hole.aperture().componentID() << ")";
 
         if (it != centreHoles.end() - 1) {
             insert << ", ";
@@ -1552,7 +1659,7 @@ std::string DrawingInsert::centreHolesInsertQuery(unsigned matID) const {
 }
 
 std::string DrawingInsert::deflectorsInsertQuery(unsigned matID) const {
-    std::vector<Drawing::Deflector> deflectors = drawingData->deflectors();
+    const std::vector<Drawing::Deflector> &deflectors = drawingData->deflectors();
 
     if (deflectors.empty()) {
         return std::string();
@@ -1580,7 +1687,7 @@ std::string DrawingInsert::deflectorsInsertQuery(unsigned matID) const {
 }
 
 std::string DrawingInsert::divertorsInsertQuery(unsigned matID) const {
-    std::vector<Drawing::Divertor> divertors = drawingData->divertors();
+    const std::vector<Drawing::Divertor> &divertors = drawingData->divertors();
 
     if (divertors.empty()) {
         return std::string();
@@ -1735,6 +1842,8 @@ void ComponentInsert::serialise(void *target) const {
             break;
         }
         case InsertType::MATERIAL_PRICE: {
+            *((unsigned*)buff) = materialPriceData->material_price_id;
+            buff += sizeof(unsigned);
             *((unsigned *)buff) = materialPriceData->material_id;;
             buff += sizeof(unsigned);
             *((float*)buff) = materialPriceData->length;
@@ -1747,10 +1856,6 @@ void ComponentInsert::serialise(void *target) const {
             buff += sizeof(MaterialPricingType);
             *((PriceMode*)buff) = materialPriceData->priceMode;
             buff += sizeof(PriceMode);
-            *((float*)buff) = materialPriceData->oldWidth;
-            buff += sizeof(float);
-            *((float*)buff) = materialPriceData->oldLength;
-            buff += sizeof(float);
 
             break;
         }
@@ -1839,7 +1944,7 @@ unsigned int ComponentInsert::serialisedSize() const {
     }
 }
 
-ComponentInsert &ComponentInsert::deserialise(void *data) {
+ComponentInsert &ComponentInsert::deserialise(void*&& data) {
     ComponentInsert *insert = new ComponentInsert();
 
     unsigned char *buff = (unsigned char *)data + sizeof(RequestType);
@@ -1953,6 +2058,8 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
         case InsertType::MATERIAL_PRICE:
         {
             MaterialPriceData data;
+            data.material_price_id = *((unsigned*)buff);
+            buff += sizeof(unsigned);
             data.material_id = *((unsigned*)buff);
             buff += sizeof(unsigned);
             data.length = *((float*)buff);
@@ -1965,10 +2072,6 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
             buff += sizeof(MaterialPricingType);
             data.priceMode = *((PriceMode*)buff);
             buff += sizeof(PriceMode);
-            data.oldWidth = *((float*)buff);
-            buff += sizeof(float);
-            data.oldLength = *((float*)buff);
-            buff += sizeof(float);
 
             insert->materialPriceData = data;
             break;
@@ -2048,6 +2151,7 @@ ComponentInsert &ComponentInsert::deserialise(void *data) {
         }
     }
 
+    free(data);
     return *insert;
 }
 
@@ -2209,25 +2313,22 @@ std::string ComponentInsert::toSQLQueryString() const {
                     if (materialPriceData->pricingType == MaterialPricingType::RUNNING_M) {
                         insert << "UPDATE {0}.material_prices SET" << std::endl;
                         insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'running_m'" << std::endl;
-                        insert << "WHERE " << std::endl;
-                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                        insert << "WHERE material_price_id = " << materialPriceData->material_price_id << std::endl;
                     }
                     else if (materialPriceData->pricingType == MaterialPricingType::SQUARE_M) {
                         insert << "UPDATE {0}.material_prices SET" << std::endl;
                         insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'square_m'" << std::endl;
-                        insert << "WHERE " << std::endl;
-                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                        insert << "WHERE material_price_id = " << materialPriceData->material_price_id << std::endl;
                     }
                     else if (materialPriceData->pricingType == MaterialPricingType::SHEET) {
                         insert << "UPDATE {0}.material_prices SET" << std::endl;
                         insert << "width = " << materialPriceData->width << ", length = " << materialPriceData->length << ", price = " << materialPriceData->price << ", pricing = " << "'sheet'" << std::endl;
-                        insert << "WHERE " << std::endl;
-                        insert << "material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->oldWidth << " AND length = " << materialPriceData->oldLength;
+                        insert << "WHERE material_price_id = " << materialPriceData->material_price_id << std::endl;
                     }
                     break;
                 case (PriceMode::REMOVE):
                     insert << "DELETE FROM {0}.material_prices" << std::endl;
-                    insert << "WHERE material_id = " << materialPriceData->material_id << " AND width = " << materialPriceData->width << " AND length = " << materialPriceData->length;
+                    insert << "WHERE material_price_id = " << materialPriceData->material_price_id << std::endl;
                     break;
                 default:
                     break;
@@ -2348,7 +2449,7 @@ unsigned int DatabaseBackup::serialisedSize() const {
     return sizeof(RequestType) + sizeof(BackupResponse) + sizeof(unsigned char) + backupName.size();
 }
 
-DatabaseBackup &DatabaseBackup::deserialise(void *data) {
+DatabaseBackup &DatabaseBackup::deserialise(void*&& data) {
     DatabaseBackup *backup = new DatabaseBackup();
 
     unsigned char *buff = (unsigned char *)data + sizeof(RequestType);
@@ -2359,6 +2460,7 @@ DatabaseBackup &DatabaseBackup::deserialise(void *data) {
     unsigned char backupNameSize = *buff++;
     backup->backupName = std::string((const char *)buff, backupNameSize);
 
+    free(data);
     return *backup;
 }
 
@@ -2384,7 +2486,7 @@ unsigned int NextDrawing::serialisedSize() const {
     return sizeof(RequestType) + sizeof(DrawingType) + sizeof(unsigned char) + (drawingNumber.has_value() ? sizeof(unsigned char) + drawingNumber->size() : 0);
 }
 
-NextDrawing &NextDrawing::deserialise(void *data) {
+NextDrawing &NextDrawing::deserialise(void*&& data) {
     NextDrawing *next = new NextDrawing();
 
     unsigned char *buff = (unsigned char *) data + sizeof(RequestType);
@@ -2401,5 +2503,6 @@ NextDrawing &NextDrawing::deserialise(void *data) {
         next->drawingNumber = std::nullopt;
     }
 
+    free(data);
     return *next;
 }

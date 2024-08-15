@@ -1,72 +1,72 @@
-<svg width="13032.000000000007" height="9416" xmlns="http://www.w3.org/2000/svg">
- <!-- Created with Method Draw - http://github.com/duopixel/Method-Draw/ -->
-
- <g>
-  <title>background</title>
-  <rect fill="none" id="canvas_background" height="9418" width="13034" y="-1" x="-1"/>
- </g>
- <g>
-  <title>Layer 1</title>
-  <g id="general_details">
-   <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="null" x="380" y="1130" id="label_general_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">General Details</text>
-   <rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="1230" width="3800" height="1960" id="general_details_target_region"/>
-  </g>
-  <g id="manufacturing_details">
-   <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="null" x="380" y="3700" id="label_manufacturing_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">Manufacturing Details</text>
-   <rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="3800" width="3800" height="4000" id="manufacturing_details_target_region"/>
-  </g>
-  <rect opacity="0" id="drawing_target_region" height="7060.0281" width="8432" y="977.04765" x="4600" fill-opacity="0" stroke-opacity="null" stroke-width="10" stroke="#000000" fill="#000000"/>
-  <g id="title_section">
-   <rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="0" y="0" width="4430.00275" height="400" id="svg_1"/>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="321.00131" y="250" id="svg_2" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">ALL DIMENSIONS IN MM UNLESS OTHERWISE STATED</text>
-   <rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="4430.00287" y="0" width="2950.0041" height="400" id="svg_3"/>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="4801.00427" y="250" id="svg_4" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">REMOVE ALL BURR AND FLASH</text>
-   <rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="7380" y="0" width="3060.00393" height="400" id="svg_5"/>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="7810.98351" y="250" id="svg_6" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DO NOT SCALE DRAWING</text>
-   <rect stroke="#000000" id="svg_7" height="800" width="2592" x="10440" fill-opacity="0" stroke-width="10" fill="#0fffff"/>
-   <ellipse ry="200" rx="200" id="svg_9" cy="400" cx="11070" fill-opacity="0" stroke-width="10" stroke="#000000" fill="#0fffff"/>
-   <ellipse ry="100" rx="100" id="svg_8" cy="400" cx="11070" fill-opacity="0" stroke-width="10" fill="#0fffff" stroke="#000000"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_11" y2="400" x2="11370" y1="400" x1="10770" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_12" y2="700" x2="11070" y1="120" x1="11070" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_13" y2="550" x2="11700.49436" y1="250" x1="11700.49436" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-   <line stroke="#000000" stroke-linecap="null" stroke-linejoin="null" id="svg_14" y2="650" x2="12780" y1="150" x1="12780" fill-opacity="0" stroke-width="10" fill="none"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_15" y2="150" x2="12780" y1="250" x1="11700" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_16" y2="650" x2="12780" y1="550" x1="11700" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-   <line stroke-linecap="null" stroke-linejoin="null" id="svg_17" y2="400" x2="12900" y1="400" x1="12241" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
-  </g>
-  <g id="base_section">
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="9216" width="699.98626" height="200" id="svg_63"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="9016" width="699.98626" height="200" id="svg_64"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="8816" width="699.98626" height="200" id="svg_65"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="9216" width="1000" height="200" id="svg_66"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="9016" width="1000" height="200" id="svg_67"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="8816" width="1000" height="200" id="svg_68"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="2200" y="9216" width="5000" height="200" id="svg_72"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="2200" y="9016" width="5000" height="200" id="svg_73"/>
-   <rect fill="none" stroke-width="10" fill-opacity="0" x="2200" y="8816" width="5000" height="200" id="svg_74" stroke="#000000"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9216" width="500" height="200" id="svg_75"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9016" width="500" height="200" id="svg_76"/>
-   <rect fill="none" stroke-width="10" fill-opacity="0" x="1700" y="8816" width="500" height="200" id="svg_77" stroke="#000000"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8816" width="700" height="200" id="svg_79"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="8816" width="1400" height="200" id="svg_83"/>
-   <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="12500" y="8316" width="532" height="499.9945" id="svg_88"/>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="219.99616" y="9373.16966" id="svg_89" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">REV.</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="979.98291" y="9373.16966" id="svg_90" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DATE</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="1859.96843" y="9373.16966" id="svg_91" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">BY</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="2406.63252" y="9373" id="svg_92" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">CHANGE DESCRIPTION</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="7266.5971" y="8973" id="svg_94" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DRN. BY</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="8369.93098" y="8973" id="svg_95" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DATE</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="7226.63264" y="8426.6267" id="svg_96" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">TITLE</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="10219.95198" y="8439.95997" id="svg_97" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">DRAWING NUMBER</text>
-   <text fill="#000000" stroke="#000000" stroke-width="0" x="12526.60774" y="8426.6267" id="svg_98" font-size="100" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">REV</text>
-   <g id="base_details">
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8316" width="3000" height="500" id="field_title"/>
-    <rect stroke-opacity="0" fill="none" stroke="#ffffff" stroke-width="10" fill-opacity="0" x="9901" y="8816" width="3132" height="600" id="field_scs_details"/>
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="10201" y="8316" width="2300" height="500" id="field_drawing_number"/>
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="9016" width="700" height="400" id="field_drawn_by"/>
-    <rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="9016" width="1400" height="400" id="field_date"/>
-    <rect id="field_scs_logo" height="600" width="600" y="8816" x="9301" fill-opacity="0" stroke-opacity="0" stroke-width="10" stroke="#ffffff" fill="none"/>
-   </g>
-  </g>
- </g>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="13032" height="9416" viewbox="0 0 13698 9581 ">
+	<g>
+		<title>background</title>
+		<rect fill="none" id="canvas_background" height="9853" width="13700" y="-1" x="-1"></rect>
+	</g>
+	<g>
+		<title>Layer 1</title>
+		<g id="general_details">
+			<text fill="#000000" stroke="#000000" stroke-width="1" stroke-opacity="0" fill-opacity="1" x="380" y="1130" font-family="Roboto" id="label_general_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">General Details</text>
+			<rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="1230" width="3800" height="1960" id="general_details_target_region"></rect>
+		</g>
+		<g id="manufacturing_details">
+			<text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="0" x="380" y="3700" font-family="Roboto" id="label_manufacturing_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">Manufacturing Details</text>
+			<rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="3800" width="3800" height="4000" id="manufacturing_details_target_region"></rect>
+		</g>
+		<rect opacity="0" id="drawing_target_region" height="7060.0281" width="8432" y="977.04765" x="4600" fill-opacity="0" stroke-opacity="null" stroke-width="10" stroke="#000000" fill="#000000"></rect>
+		<g id="title_section">
+			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="0" y="0" width="4430.00275" height="400" id="svg_1"></rect>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="321.00131" y="250" id="svg_2" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">ALL DIMENSIONS IN MM UNLESS OTHERWISE STATED</text>
+			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="4430.00287" y="0" width="2950.0041" height="400" id="svg_3"></rect>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="4801.00427" y="250" id="svg_4" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REMOVE ALL BURR AND FLASH</text>
+			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="7380" y="0" width="3060.00393" height="400" id="svg_5"></rect>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7810.98351" y="250" id="svg_6" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DO NOT SCALE DRAWING</text>
+			<rect stroke="#000000" id="svg_7" height="800" width="2592" x="10440" fill-opacity="0" stroke-width="10" fill="#0fffff"></rect>
+			<ellipse ry="200" rx="200" id="svg_9" cy="400" cx="11070" fill-opacity="0" stroke-width="10" stroke="#000000" fill="#0fffff"></ellipse>
+			<ellipse ry="100" rx="100" id="svg_8" cy="400" cx="11070" fill-opacity="0" stroke-width="10" fill="#0fffff" stroke="#000000"></ellipse>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_11" y2="400" x2="11370" y1="400" x1="10770" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_12" y2="700" x2="11070" y1="120" x1="11070" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_13" y2="550" x2="11700.49436" y1="250" x1="11700.49436" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+			<line stroke="#000000" stroke-linecap="null" stroke-linejoin="null" id="svg_14" y2="650" x2="12780" y1="150" x1="12780" fill-opacity="0" stroke-width="10" fill="none"></line>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_15" y2="150" x2="12780" y1="250" x1="11700" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_16" y2="650" x2="12780" y1="550" x1="11700" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+			<line stroke-linecap="null" stroke-linejoin="null" id="svg_17" y2="400" x2="12900" y1="400" x1="12241" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></line>
+		</g>
+		<g id="base_section">
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="9216" width="699.98626" height="200" id="svg_63"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="9016" width="699.98626" height="200" id="svg_64"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="0" y="8816" width="699.98626" height="200" id="svg_65"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="9216" width="1000" height="200" id="svg_66"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="9016" width="1000" height="200" id="svg_67"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="700" y="8816" width="1000" height="200" id="svg_68"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="2200" y="9216" width="5000" height="200" id="svg_72"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="2200" y="9016" width="5000" height="200" id="svg_73"></rect>
+			<rect fill="none" stroke-width="10" fill-opacity="0" x="2200" y="8816" width="5000" height="200" id="svg_74" stroke="#000000"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9216" width="500" height="200" id="svg_75"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="1700" y="9016" width="500" height="200" id="svg_76"></rect>
+			<rect fill="none" stroke-width="10" fill-opacity="0" x="1700" y="8816" width="500" height="200" id="svg_77" stroke="#000000"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8816" width="700" height="200" id="svg_79"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="8816" width="1400" height="200" id="svg_83"></rect>
+			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="12500" y="8316" width="532" height="499.9945" id="svg_88"></rect>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="219.99616" y="9373.16966" id="svg_89" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REV.</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="979.98291" y="9373.16966" id="svg_90" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="1859.96843" y="9373.16966" id="svg_91" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">BY</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="2406.63252" y="9373" id="svg_92" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">CHANGE DESCRIPTION</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7266.5971" y="8973" id="svg_94" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DRN. BY</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="8369.93098" y="8973" id="svg_95" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7226.63264" y="8426.6267" id="svg_96" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">TITLE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="10219.95198" y="8439.95997" id="svg_97" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">DRAWING NUMBER</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="12526.60774" y="8426.6267" id="svg_98" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">REV</text>
+			<g id="base_details">
+				<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8316" width="3000" height="500" id="field_title"></rect>
+				<rect stroke-opacity="0" fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="9901" y="8816" width="3132" height="600" id="field_scs_details"></rect>
+				<rect stroke-opacity="1" fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="10201" y="8316" width="2300" height="500" id="field_drawing_number"></rect>
+				<rect stroke-opacity="1" fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="9016" width="700" height="400" id="field_drawn_by"></rect>
+				<rect stroke-opacity="1" fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="9016" width="1400" height="400" id="field_date"></rect>
+				<rect stroke-opacity="0" id="field_scs_logo" height="600" width="600" y="8816" x="9301" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"></rect>
+			</g>
+		</g>
+	</g>
 </svg>

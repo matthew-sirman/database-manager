@@ -15,7 +15,6 @@ DrawingView::DrawingView(QWidget *parent) : QGraphicsView(parent) {
 }
 
 DrawingView::~DrawingView() {
-    delete drawingBorderRect;
     delete leftLapHint, rightLapHint, topLapHint, bottomLapHint;
     delete widthDimension, lengthDimension;
     delete widthSumTextItem;
@@ -37,13 +36,13 @@ DrawingView::~DrawingView() {
     for (ImpactPadGraphicsItem *impactPad : impactPadRegions) {
         delete impactPad;
     }
-    for (BlankSpaceGraphicsItem* blankSpace : blankSpaceReigons) {
+    for (BlankSpaceGraphicsItem* blankSpace : blankSpaceRegions) {
         delete blankSpace;
     }
-    for (ExtraApertureGraphicsItem* extraAperture : extraApertureReigons) {
+    for (ExtraApertureGraphicsItem* extraAperture : extraApertureRegions) {
         delete extraAperture;
     }
-    for (DamBarGraphicsItem* damBar : damBarReigons) {
+    for (DamBarGraphicsItem* damBar : damBarRegions) {
         delete damBar;
     }
     delete centreHoleSet;
@@ -195,6 +194,7 @@ void DrawingView::paintEvent(QPaintEvent *event) {
 
 void DrawingView::resizeEvent(QResizeEvent *event) {
     setRedrawRequired();
+    QGraphicsView::resizeEvent(event);
 }
 
 void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
@@ -209,17 +209,17 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                         goto base_event_handler;
                     }
                 }
-                for (BlankSpaceGraphicsItem* blankSpace : blankSpaceReigons) {
+                for (BlankSpaceGraphicsItem* blankSpace : blankSpaceRegions) {
                     if (blankSpace->contains(event->pos())) {
                         goto base_event_handler;
                     }
                 }
-                for (ExtraApertureGraphicsItem* extraAperture : extraApertureReigons) {
+                for (ExtraApertureGraphicsItem* extraAperture : extraApertureRegions) {
                     if (extraAperture->contains(event->pos())) {
                         goto base_event_handler;
                     }
                 }
-                for (DamBarGraphicsItem* damBar : damBarReigons) {
+                for (DamBarGraphicsItem* damBar : damBarRegions) {
                     if (damBar->contains(event->pos())) {
                         goto base_event_handler;
                     }
@@ -250,19 +250,19 @@ void DrawingView::contextMenuEvent(QContextMenuEvent *event) {
                 });
                 menu->addAction("Add Blank Space", [this]() {
                     updateSnapLines();
-                    blankSpaceReigonSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    blankSpaceRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_BLANK_SPACE;
                 });
                 menu->addAction("Add Extra Aperture", [this]() {
                     updateSnapLines();
-                    extraApertureReigonSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    extraApertureRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_EXTRA_APERTURE;
 });
                 menu->addAction("Add Dam Bar", [this]() {
                     updateSnapLines();
-                    damBarReigonSelector = new QRubberBand(QRubberBand::Rectangle, this);
+                    damBarRegionSelector = new QRubberBand(QRubberBand::Rectangle, this);
                     QApplication::setOverrideCursor(Qt::CrossCursor);
                     addPartState = AddPartState::ADD_DAM_BAR;
                     });
@@ -303,24 +303,24 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                 }
                 break;
             case AddPartState::ADD_BLANK_SPACE:
-                if (blankSpaceReigonSelector) {
-                    blankSpaceReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                if (blankSpaceRegionSelector) {
+                    blankSpaceRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
                     blankSpaceAnchorPoint = snapPoint(event->pos());
-                    blankSpaceReigonSelector->show();
+                    blankSpaceRegionSelector->show();
                 }
                 break;
             case AddPartState::ADD_EXTRA_APERTURE:
-                if (extraApertureReigonSelector) {
-                    extraApertureReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                if (extraApertureRegionSelector) {
+                    extraApertureRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
                     extraApertureAnchorPoint = snapPoint(event->pos());
-                    extraApertureReigonSelector->show();
+                    extraApertureRegionSelector->show();
                 }
                 break;
             case AddPartState::ADD_DAM_BAR:
-                if (damBarReigonSelector) {
-                    damBarReigonSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
+                if (damBarRegionSelector) {
+                    damBarRegionSelector->setGeometry(QRect(snapPoint(event->pos()), QSize()));
                     damBarAnchorPoint = snapPoint(event->pos());
-                    damBarReigonSelector->show();
+                    damBarRegionSelector->show();
                 }
                 break;
             case AddPartState::ADD_CENTRE_HOLES: {
@@ -331,18 +331,11 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                     drawing->width();
                 hole.pos.y = ((holeCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
                     drawing->length();
-                if (!centreHoleSet->empty()) {
-                    hole.apertureID = centreHoleSet->currentAperture().componentID();
+                if (centreHoleSet->empty()) {
+                    // Most popular aperture for centre holes (20RL30)
+                    hole.setAperture(DrawingComponentManager<Aperture>::findComponentByID(632));
                 }
-                else {
-                    hole.apertureID = 113;
-                }
-
-                drawing->addCentreHole(hole);
-                centreHoleSet->clearCentreHoles();
-                for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
-                    centreHoleSet->addCentreHole(drawing->centreHole(i));
-                }
+                centreHoleSet->addItem(std::move(hole));
 
                 setRedrawRequired();
 
@@ -358,14 +351,11 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                 deflector.pos.y =
                     ((deflectorCentre.y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
                     drawing->length();
-                deflector.size = deflectorSet->deflectorSize();
-                deflector.setMaterial(deflectorSet->deflectorMaterial());
-
-                drawing->addDeflector(deflector);
-                deflectorSet->clearDeflectors();
-                for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
-                    deflectorSet->addDeflector(drawing->deflector(i));
+                if (deflectorSet->empty()) {
+                    deflector.setMaterial(DrawingComponentManager<Material>::findComponentByID(29));
                 }
+
+                deflectorSet->addItem(std::move(deflector));
 
                 setRedrawRequired();
 
@@ -377,17 +367,13 @@ void DrawingView::mousePressEvent(QMouseEvent *event) {
                 divertor.verticalPosition =
                     ((event->pos().y() - drawingBorderRect->rect().top()) / drawingBorderRect->rect().height()) *
                     drawing->length();
-                divertor.length = divertorSet->divertorLength();
-                divertor.width = divertorSet->divertorWidth();
                 divertor.side =
                     event->pos().x() < drawingBorderRect->rect().center().x() ? Drawing::LEFT : Drawing::RIGHT;
-                divertor.setMaterial(divertorSet->divertorMaterial());
-
-                drawing->addDivertor(divertor);
-                divertorSet->clearDivertors();
-                for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
-                    divertorSet->addDivertor(drawing->divertor(i));
+                if (divertorSet->empty()) {
+                    divertor.setMaterial(DrawingComponentManager<Material>::findComponentByID(29));
                 }
+
+                divertorSet->addItem(std::move(divertor));
 
                 setRedrawRequired();
 
@@ -411,7 +397,7 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
 
         impactPadRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
-    if (blankSpaceReigonSelector && addPartState == AddPartState::ADD_BLANK_SPACE &&
+    if (blankSpaceRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE &&
         drawingBorderRect->rect().contains(event->pos())) {
         QPoint startPoint = blankSpaceAnchorPoint;
         QPoint endPoint = snapPoint(event->pos());
@@ -419,9 +405,9 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
             bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
 
-        blankSpaceReigonSelector->setGeometry(QRect(topLeft, bottomRight));
+        blankSpaceRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
-    if (extraApertureReigonSelector && addPartState == AddPartState::ADD_EXTRA_APERTURE &&
+    if (extraApertureRegionSelector && addPartState == AddPartState::ADD_EXTRA_APERTURE &&
         drawingBorderRect->rect().contains(event->pos())) {
         QPoint startPoint = extraApertureAnchorPoint;
         QPoint endPoint = snapPoint(event->pos());
@@ -429,9 +415,9 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
             bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
 
-        extraApertureReigonSelector->setGeometry(QRect(topLeft, bottomRight));
+        extraApertureRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
-    if (damBarReigonSelector && addPartState == AddPartState::ADD_DAM_BAR &&
+    if (damBarRegionSelector && addPartState == AddPartState::ADD_DAM_BAR &&
         drawingBorderRect->rect().contains(event->pos())) {
         QPoint startPoint = damBarAnchorPoint;
         QPoint endPoint = snapPoint(event->pos());
@@ -439,7 +425,7 @@ void DrawingView::mouseMoveEvent(QMouseEvent *event) {
         QPoint topLeft(std::min(startPoint.x(), endPoint.x()), std::min(startPoint.y(), endPoint.y())),
             bottomRight(std::max(startPoint.x(), endPoint.x()), std::max(startPoint.y(), endPoint.y()));
 
-        damBarReigonSelector->setGeometry(QRect(topLeft, bottomRight));
+        damBarRegionSelector->setGeometry(QRect(topLeft, bottomRight));
     }
     QGraphicsView::mouseMoveEvent(event);
 }
@@ -461,7 +447,7 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
             pad.width = (impactPadRect.width() / drawingBorderRect->rect().width()) * drawing->width();
             pad.length = (impactPadRect.height() / drawingBorderRect->rect().height()) * drawing->length();
 
-            pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(1));
+            pad.setMaterial(DrawingComponentManager<Material>::findComponentByID(29));
             pad.setAperture(DrawingComponentManager<Aperture>::findComponentByID(1));
 
             drawing->addImpactPad(pad);
@@ -471,9 +457,9 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
         delete impactPadRegionSelector;
         impactPadRegionSelector = nullptr;
     }
-    if (blankSpaceReigonSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
+    if (blankSpaceRegionSelector && addPartState == AddPartState::ADD_BLANK_SPACE) {
         if (event->button() == Qt::LeftButton) {
-            QRectF blankSpaceRect = QRectF(blankSpaceReigonSelector->pos(), blankSpaceReigonSelector->size());
+            QRectF blankSpaceRect = QRectF(blankSpaceRegionSelector->pos(), blankSpaceRegionSelector->size());
             blankSpaceRect.setTopLeft(snapPointF(blankSpaceRect.topLeft()));
             blankSpaceRect.setBottomRight(snapPointF(blankSpaceRect.bottomRight()));
 
@@ -492,12 +478,12 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
             addPartState = AddPartState::NONE;
             QApplication::restoreOverrideCursor();
         }
-        delete blankSpaceReigonSelector;
-        blankSpaceReigonSelector = nullptr;
+        delete blankSpaceRegionSelector;
+        blankSpaceRegionSelector = nullptr;
     }
-    if (extraApertureReigonSelector && addPartState == AddPartState::ADD_EXTRA_APERTURE) {
+    if (extraApertureRegionSelector && addPartState == AddPartState::ADD_EXTRA_APERTURE) {
         if (event->button() == Qt::LeftButton) {
-            QRectF extraApertureRect = QRectF(extraApertureReigonSelector->pos(), extraApertureReigonSelector->size());
+            QRectF extraApertureRect = QRectF(extraApertureRegionSelector->pos(), extraApertureRegionSelector->size());
             extraApertureRect.setTopLeft(snapPointF(extraApertureRect.topLeft()));
             extraApertureRect.setBottomRight(snapPointF(extraApertureRect.bottomRight()));
 
@@ -516,12 +502,12 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
             addPartState = AddPartState::NONE;
             QApplication::restoreOverrideCursor();
         }
-        delete extraApertureReigonSelector;
-        extraApertureReigonSelector = nullptr;
+        delete extraApertureRegionSelector;
+        extraApertureRegionSelector = nullptr;
     }
-    if (damBarReigonSelector && addPartState == AddPartState::ADD_DAM_BAR) {
+    if (damBarRegionSelector && addPartState == AddPartState::ADD_DAM_BAR) {
         if (event->button() == Qt::LeftButton) {
-            QRectF damBarRect = QRectF(damBarReigonSelector->pos(), damBarReigonSelector->size());
+            QRectF damBarRect = QRectF(damBarRegionSelector->pos(), damBarRegionSelector->size());
             damBarRect.setTopLeft(snapPointF(damBarRect.topLeft()));
             damBarRect.setBottomRight(snapPointF(damBarRect.bottomRight()));
 
@@ -534,14 +520,14 @@ void DrawingView::mouseReleaseEvent(QMouseEvent *event) {
                 drawing->length();
             bar.width = (damBarRect.width() / drawingBorderRect->rect().width()) * drawing->width();
             bar.length = (damBarRect.height() / drawingBorderRect->rect().height()) * drawing->length();
-
+            bar.setMaterial(DrawingComponentManager<Material>::findComponentByID(29));
 
             drawing->addDamBar(bar);
             addPartState = AddPartState::NONE;
             QApplication::restoreOverrideCursor();
         }
-        delete damBarReigonSelector;
-        damBarReigonSelector = nullptr;
+        delete damBarRegionSelector;
+        damBarRegionSelector = nullptr;
     }
     QGraphicsView::mouseReleaseEvent(event);
 }
@@ -682,6 +668,7 @@ void DrawingView::redrawScene() {
                 graphicsScene->addItem(leftLapHint);
             }
             leftLapHint->setVisible(!lapsDisabled);
+            leftLapHint->setUsed(leftLap.has_value());
 
             QRectF rightLapRegion;
             rightLapRegion.setTopLeft(matBoundingRegion.topRight());
@@ -703,6 +690,7 @@ void DrawingView::redrawScene() {
                 graphicsScene->addItem(rightLapHint);
             }
             rightLapHint->setVisible(!lapsDisabled);
+            rightLapHint->setUsed(rightLap.has_value());
 
             QRectF topLapRegion;
             topLapRegion.setBottomLeft(matBoundingRegion.topLeft());
@@ -723,6 +711,7 @@ void DrawingView::redrawScene() {
                 graphicsScene->addItem(topLapHint);
             }
             topLapHint->setVisible(!lapsDisabled);
+            topLapHint->setUsed(topLap.has_value());
 
             QRectF bottomLapRegion;
             bottomLapRegion.setTopLeft(matBoundingRegion.bottomLeft());
@@ -744,6 +733,7 @@ void DrawingView::redrawScene() {
                 graphicsScene->addItem(bottomLapHint);
             }
             bottomLapHint->setVisible(!lapsDisabled);
+            bottomLapHint->setUsed(bottomLap.has_value());
 
             updateProxies();
 
@@ -841,10 +831,11 @@ void DrawingView::redrawScene() {
                 impactPadRegions.clear();
 
                 for (unsigned i = 0; i < drawing->impactPads().size(); i++) {
-                    ImpactPadGraphicsItem *impactPad = new ImpactPadGraphicsItem(QRectF(), drawing->impactPad(i),
+                    ImpactPadGraphicsItem *impactPad = new AreaGraphicsItem<Drawing::ImpactPad, Material, Aperture>(QRectF(), drawing->impactPad(i),
                                                                                  inspector);
+                    impactPad->setToolTip("Impact Pad");
                     impactPad->setRemoveFunction([this, i, impactPad, graphicsScene]() {
-                        drawing->removeImpactPad(drawing->impactPad(i));
+                        drawing->removeImpactPad(impactPad->get());
                         graphicsScene->removeItem(impactPad);
                         impactPadRegions.erase(std::find(impactPadRegions.begin(), impactPadRegions.end(), impactPad));
                     });
@@ -853,38 +844,41 @@ void DrawingView::redrawScene() {
                 }
             }
 
-            for (unsigned i = 0; i < impactPadRegions.size(); i++) {
-                Drawing::ImpactPad &impactPad = drawing->impactPad(i);
-                impactPadRegions[i]->setBounds(QRectF(
+            //for (unsigned i = 0; i < impactPadRegions.size(); i++) {
+            for (ImpactPadGraphicsItem *ipGraphics : impactPadRegions) {
+                const Drawing::ImpactPad& impactPad = ipGraphics->get();
+                ipGraphics->setBounds(QRectF(
                         QPointF(matBoundingRegion.left() + (impactPad.pos.x / width) * matBoundingRegion.width(),
                                 matBoundingRegion.top() + (impactPad.pos.y / length) * matBoundingRegion.height()),
                         QSizeF((impactPad.width / width) * matBoundingRegion.width(),
                                (impactPad.length / length) * matBoundingRegion.height())
                 ));
             }
-            if (blankSpaceReigons.size() != drawing->blankSpaces().size()) {
-                for (BlankSpaceGraphicsItem* region : blankSpaceReigons) {
+            if (blankSpaceRegions.size() != drawing->blankSpaces().size()) {
+                for (BlankSpaceGraphicsItem* region : blankSpaceRegions) {
                     graphicsScene->removeItem(region);
                     delete region;
                 }
-                blankSpaceReigons.clear();
+                blankSpaceRegions.clear();
 
                 for (unsigned i = 0; i < drawing->blankSpaces().size(); i++) {
                     BlankSpaceGraphicsItem* blankSpace = new BlankSpaceGraphicsItem(QRectF(), drawing->blankSpace(i),
                         inspector);
+                    blankSpace->setToolTip("Blank Space");
                     blankSpace->setRemoveFunction([this, i, blankSpace, graphicsScene]() {
-                        drawing->removeBlankSpace(drawing->blankSpace(i));
+                        drawing->removeBlankSpace(blankSpace->get());
                         graphicsScene->removeItem(blankSpace);
-                        blankSpaceReigons.erase(std::find(blankSpaceReigons.begin(), blankSpaceReigons.end(), blankSpace));
+                        blankSpaceRegions.erase(std::find(blankSpaceRegions.begin(), blankSpaceRegions.end(), blankSpace));
                         });
                     graphicsScene->addItem(blankSpace);
-                    blankSpaceReigons.push_back(blankSpace);
+                    blankSpaceRegions.push_back(blankSpace);
                 }
             }
 
-            for (unsigned i = 0; i < blankSpaceReigons.size(); i++) {
-                Drawing::BlankSpace& blankSpace = drawing->blankSpace(i);
-                blankSpaceReigons[i]->setBounds(QRectF(
+            //for (unsigned i = 0; i < blankSpaceRegions.size(); i++) {
+            for (BlankSpaceGraphicsItem *bsGraphics : blankSpaceRegions) {
+                const Drawing::BlankSpace& blankSpace = bsGraphics->get();
+                bsGraphics->setBounds(QRectF(
                     QPointF(matBoundingRegion.left() + (blankSpace.pos.x / width) * matBoundingRegion.width(),
                             matBoundingRegion.top() + (blankSpace.pos.y / length) * matBoundingRegion.height()),
                     QSizeF((blankSpace.width / width) * matBoundingRegion.width(),
@@ -892,29 +886,31 @@ void DrawingView::redrawScene() {
                 ));
             }
 
-            if (extraApertureReigons.size() != drawing->extraApertures().size()) {
-                for (ExtraApertureGraphicsItem* region : extraApertureReigons) {
+            if (extraApertureRegions.size() != drawing->extraApertures().size()) {
+                for (ExtraApertureGraphicsItem* region : extraApertureRegions) {
                     graphicsScene->removeItem(region);
                     delete region;
                 }
-                extraApertureReigons.clear();
+                extraApertureRegions.clear();
 
                 for (unsigned i = 0; i < drawing->extraApertures().size(); i++) {
-                    ExtraApertureGraphicsItem* extraAperture = new ExtraApertureGraphicsItem(QRectF(), drawing->extraAperture(i),
+                    ExtraApertureGraphicsItem* extraAperture = new AreaGraphicsItem<Drawing::ExtraAperture, Aperture>(QRectF(), drawing->extraAperture(i),
                         inspector);
+                    extraAperture->setToolTip("Extra Aperture");
                     extraAperture->setRemoveFunction([this, i, extraAperture, graphicsScene]() {
-                        drawing->removeExtraAperture(drawing->extraAperture(i));
+                        drawing->removeExtraAperture(extraAperture->get());
                         graphicsScene->removeItem(extraAperture);
-                        extraApertureReigons.erase(std::find(extraApertureReigons.begin(), extraApertureReigons.end(), extraAperture));
+                        extraApertureRegions.erase(std::find(extraApertureRegions.begin(), extraApertureRegions.end(), extraAperture));
                         });
                     graphicsScene->addItem(extraAperture);
-                    extraApertureReigons.push_back(extraAperture);
+                    extraApertureRegions.push_back(extraAperture);
                 }
             }
 
-            for (unsigned i = 0; i < extraApertureReigons.size(); i++) {
-                Drawing::ExtraAperture& extraAperture = drawing->extraAperture(i);
-                extraApertureReigons[i]->setBounds(QRectF(
+            //for (unsigned i = 0; i < extraApertureRegions.size(); i++) {
+            for (ExtraApertureGraphicsItem* eaGraphics : extraApertureRegions) {
+                const Drawing::ExtraAperture& extraAperture = eaGraphics->get();
+                eaGraphics->setBounds(QRectF(
                     QPointF(matBoundingRegion.left() + (extraAperture.pos.x / width) * matBoundingRegion.width(),
                             matBoundingRegion.top() + (extraAperture.pos.y / length) * matBoundingRegion.height()),
                     QSizeF((extraAperture.width / width) * matBoundingRegion.width(),
@@ -922,29 +918,30 @@ void DrawingView::redrawScene() {
                 ));
             }
 
-            if (damBarReigons.size() != drawing->damBars().size()) {
-                for (DamBarGraphicsItem* region : damBarReigons) {
+            if (damBarRegions.size() != drawing->damBars().size()) {
+                for (DamBarGraphicsItem* region : damBarRegions) {
                     graphicsScene->removeItem(region);
                     delete region;
                 }
-                damBarReigons.clear();
+                damBarRegions.clear();
 
                 for (unsigned i = 0; i < drawing->damBars().size(); i++) {
-                    DamBarGraphicsItem* damBar = new DamBarGraphicsItem(QRectF(), drawing->damBar(i),
-                        inspector);
+                    DamBarGraphicsItem* damBar = new AreaGraphicsItem<Drawing::DamBar, Material>(QRectF(),
+                        drawing->damBar(i), inspector);
+                    damBar->setToolTip("Dam Bar");
                     damBar->setRemoveFunction([this, i, damBar, graphicsScene]() {
-                        drawing->removeDamBar(drawing->damBar(i));
                         graphicsScene->removeItem(damBar);
-                        damBarReigons.erase(std::find(damBarReigons.begin(), damBarReigons.end(), damBar));
+                        damBarRegions.erase(std::find(damBarRegions.begin(), damBarRegions.end(), damBar));
+                        drawing->removeDamBar(damBar->get());
                         });
                     graphicsScene->addItem(damBar);
-                    damBarReigons.push_back(damBar);
+                    damBarRegions.push_back(damBar);
                 }
             }
 
-            for (unsigned i = 0; i < damBarReigons.size(); i++) {
-                Drawing::DamBar& damBar = drawing->damBar(i);
-                damBarReigons[i]->setBounds(QRectF(
+            for (DamBarGraphicsItem* region : damBarRegions) {
+                const Drawing::DamBar& damBar = region->get();
+                region->setBounds(QRectF(
                     QPointF(matBoundingRegion.left() + (damBar.pos.x / width) * matBoundingRegion.width(),
                         matBoundingRegion.top() + (damBar.pos.y / length) * matBoundingRegion.height()),
                     QSizeF((damBar.width / width) * matBoundingRegion.width(),
@@ -955,51 +952,24 @@ void DrawingView::redrawScene() {
             if (centreHoleSet) {
                 centreHoleSet->setBounds(matBoundingRegion, width, length);
             } else {
-                centreHoleSet = new CentreHoleSetGraphicsItem(matBoundingRegion, width, length, inspector);
-                centreHoleSet->setRemoveFunction([this](const Drawing::CentreHole &hole) {
-                    drawing->removeCentreHole(hole);
-                    centreHoleSet->clearCentreHoles();
-                    for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
-                        centreHoleSet->addCentreHole(drawing->centreHole(i));
-                    }
-                });
-                for (unsigned i = 0; i < drawing->numberOfCentreHoles(); i++) {
-                    centreHoleSet->addCentreHole(drawing->centreHole(i));
-                }
+                centreHoleSet = new CentreHoleSetGraphicsItem(drawing->centreHoles(), matBoundingRegion, width, length, inspector);
+                centreHoleSet->setRemoveFunction(std::bind(&Drawing::removeCentreHole, drawing, std::placeholders::_1));
                 graphicsScene->addItem(centreHoleSet);
             }
 
             if (deflectorSet) {
                 deflectorSet->setBounds(matBoundingRegion, width, length);
             } else {
-                deflectorSet = new DeflectorSetGraphicsItem(matBoundingRegion, width, length, inspector);
-                deflectorSet->setRemoveFunction([this](const Drawing::Deflector &deflector) {
-                    drawing->removeDeflector(deflector);
-                    deflectorSet->clearDeflectors();
-                    for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
-                        deflectorSet->addDeflector(drawing->deflector(i));
-                    }
-                });
-                for (unsigned i = 0; i < drawing->numberOfDeflectors(); i++) {
-                    deflectorSet->addDeflector(drawing->deflector(i));
-                }
+                deflectorSet = new DeflectorSetGraphicsItem(drawing->deflectors(), matBoundingRegion, width, length, inspector);
+                deflectorSet->setRemoveFunction(std::bind(&Drawing::removeDeflector, drawing, std::placeholders::_1));
                 graphicsScene->addItem(deflectorSet);
             }
 
             if (divertorSet) {
                 divertorSet->setBounds(matBoundingRegion, width, length);
             } else {
-                divertorSet = new DivertorSetGraphicsItem(matBoundingRegion, width, length, inspector);
-                divertorSet->setRemoveFunction([this](const Drawing::Divertor &divertor) {
-                    drawing->removeDivertor(divertor);
-                    divertorSet->clearDivertors();
-                    for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
-                        divertorSet->addDivertor(drawing->divertor(i));
-                    }
-                });
-                for (unsigned i = 0; i < drawing->numberOfDivertors(); i++) {
-                    divertorSet->addDivertor(drawing->divertor(i));
-                }
+                divertorSet = new DivertorSetGraphicsItem(drawing->divertors(), matBoundingRegion, width, length, inspector);
+                divertorSet->setRemoveFunction(std::bind(&Drawing::removeDivertor, drawing, std::placeholders::_1));
                 graphicsScene->addItem(divertorSet);
             }
         }

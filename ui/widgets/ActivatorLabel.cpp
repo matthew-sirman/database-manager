@@ -40,7 +40,7 @@ void ActivatorLabel::mouseReleaseEvent(QMouseEvent *ev) {
     QLabel::mouseReleaseEvent(ev);
 }
 
-void ActivatorLabel::enterEvent(QEvent *ev) {
+void ActivatorLabel::enterEvent(QEnterEvent *ev) {
     if (isEnabled()) {
         setProperty("hovering", true);
         setStyle(style());

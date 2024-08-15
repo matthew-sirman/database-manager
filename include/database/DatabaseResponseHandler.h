@@ -9,7 +9,7 @@
 #include "DrawingSearchResultsModel.h"
 #include "../networking/Client.h"
 
-/// <summary>
+/// <summary>\ingroup database
 /// DatabaseResponseHandler
 /// This object is bound to the Client object for the application. Any message received from the server
 /// (after the initial key exchanges and connection messages) will be forwarded to the bound ClientResponseHandler
@@ -24,9 +24,10 @@ public:
     /// forwarded to this function, so by this stage, we know that the message is valid (though it could potentially
     /// still be corrupted.)
     /// </summary>
-    /// <param name="message">A bytestream of the raw (decrypted) message data. The client handles the decryption.</param>
+    /// <param name="message">A bytestream of the raw (decrypted) message data. The client handles the decryption.
+    /// It is a rvalue reference to indicate the transfer of ownership.</param>
     /// <param name="messageSize">The size of the message bytestream.</param>
-    void onMessageReceived(void *message, unsigned int messageSize) override;
+    void onMessageReceived(void*&& message, unsigned int messageSize) override;
 
     /// <summary>
     /// Setter for the search results model. When the handler receives certain responses, it can forward the response

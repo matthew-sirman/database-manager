@@ -5,6 +5,9 @@
 #ifndef DATABASE_MANAGER_DATASERIALISER_H
 #define DATABASE_MANAGER_DATASERIALISER_H
 
+/// <summary>
+/// UNUSED
+/// </summary>
 #define BASIC_TYPE_SERIALISER(type, ...)                             \
 public:                                                              \
 inline void serialise(void *&buffer) {                               \
@@ -26,6 +29,9 @@ public:
 
 typedef unsigned char byte;
 
+/// <summary>
+/// UNUSED
+/// </summary>
 class ISerialisable {
 public:
     virtual void serialise(void *&buffer) = 0;
@@ -33,6 +39,10 @@ public:
     virtual size_t serialisedSize() = 0;
 };
 
+
+/// <summary>
+/// UNUSED
+/// </summary>
 class DataSerialiser {
 public:
     template<typename ...Args>

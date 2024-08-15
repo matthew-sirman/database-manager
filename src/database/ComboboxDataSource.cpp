@@ -12,7 +12,7 @@ ComboboxDataElement::ComboboxDataElement(const std::string &text) {
 }
 
 // Constructor taking both the text and index arguments
-ComboboxDataElement::ComboboxDataElement(const std::string &text, unsigned int index) {
+ComboboxDataElement::ComboboxDataElement(const std::string &text, unsigned index) {
     this->text = text;
     this->index = index;
 }

@@ -13,7 +13,7 @@ AddSideIronPriceWindow::AddSideIronPriceWindow(Client *client, QWidget* parent)
 	QObject::connect(ui->acceptButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 	QDoubleValidator* doubleValidator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-	QRegExpValidator* numberValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+	QRegularExpressionValidator* numberValidator = new QRegularExpressionValidator(QRegularExpression("[1-9][0-9]*"));
 	ui->lowerLengthEdit->setValidator(numberValidator);
 	ui->upperLengthEdit->setValidator(numberValidator);
 	ui->priceEdit->setValidator(doubleValidator);
@@ -64,7 +64,7 @@ AddSideIronPriceWindow::AddSideIronPriceWindow(Client* client, ComponentInsert::
 	QObject::connect(ui->acceptButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 	QDoubleValidator* doubleValidator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-	QRegExpValidator* numberValidator = new QRegExpValidator(QRegExp("[1-9][0-9]*"));
+	QRegularExpressionValidator* numberValidator = new QRegularExpressionValidator(QRegularExpression("[1-9][0-9]*"));
 	ui->lowerLengthEdit->setValidator(numberValidator);
 	ui->upperLengthEdit->setValidator(numberValidator);
 	ui->priceEdit->setValidator(doubleValidator);

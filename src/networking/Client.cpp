@@ -119,7 +119,6 @@ Client::ConnectionStatus Client::connectToServer(const std::string& ipAddress, u
 
     authStringCallback(authUrl.url);
 
-    // TODO: Probably open this in another thread - currently this will hang the application
     std::string authToken = openOneShotHTTPAuthenticationServer("127.0.0.1", 5000,
             "<html><body><h1>Thank you</h1></body></html>");
 
@@ -340,10 +339,13 @@ void Client::clientLoop() {
         EncryptedNetworkMessage rMessage;
         if (clientSocket.receiveMessage(rMessage, MessageProtocol::AES_MESSAGE) == SOCKET_SUCCESS) {
             if (!rMessage.error()) {
-                void* decryptedMessage =(uint8 *) rMessage.decryptMessageData(sessionKey);
+                // decryptedMessage should not be owned by the client, and ownership should be passed to the response handler
+                void*&& decryptedMessage = (void*)rMessage.decryptMessageData(sessionKey);
 
                 if (responseHandler) {
-                    responseHandler->onMessageReceived(decryptedMessage, rMessage.getMessageSize());
+                    // Obviously moving a pointer is useless, but it indicates transfer of ownership,
+                    // and that it is now the responsibility of the reciever to free.
+                    responseHandler->onMessageReceived(std::move(decryptedMessage), rMessage.getMessageSize());
                 }
                 // TODO: update pointer
                 // Race condition - "data" within drawingComponents line 420ish gets deleted then accessed

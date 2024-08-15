@@ -15,12 +15,20 @@ namespace Ui {
     class AddExtraPriceWindow;
 }
 
-class ExtraPricingWindow;
-
+/// <summary>
+/// AddExtraPriceWindow inherits QDialog
+/// A dialog to edit a specific extra price.
+/// </summary>
 class AddExtraPriceWindow : public QDialog {
     Q_OBJECT
 public:
-    explicit AddExtraPriceWindow(Client* client, ExtraPrice& price, int index, QWidget* parent = nullptr); // Update
+    /// <summary>
+    /// Creates a new dialog which allows the provided extra price to be edited.
+    /// </summary>
+	/// <param name="client">The TCP client for updating the database.</param>
+    /// <param name="price">The extra price to be edited.</param>
+    /// <param name="parent">The parent widget of this.</param>
+    explicit AddExtraPriceWindow(Client* client, ExtraPrice& price, QWidget* parent = nullptr);
 private:
     Ui::AddExtraPriceWindow* ui = nullptr;
 signals:

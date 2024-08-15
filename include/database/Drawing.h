@@ -11,12 +11,14 @@
 #include <regex>
 
 #include "drawingComponents.h"
-#include "../util/DataSerialiser.h"
 #include "../../packer.h"
+
+/// \defgroup database Database
+/// Test
 
 // Macro to find the minimum number of bytes required to cover a given number of bits (e.g. 15 bits -> 2 bytes, 17 bits -> 3 bytes)
 #define MIN_COVERING_BYTES(x) (((x) / 8) + ((x) % 8 != 0))
-// Macro to find the minimum number of bites required to represent a given value (e.g. 513 = 512 + 1 = 2^9 + 2^0 -> 9 bits required)
+// Macro to find the minimum number of bits required to represent a given value (e.g. 513 = 512 + 1 = 2^9 + 2^0 -> 9 bits required)
 #define MIN_COVERING_BITS(x) (32u - 0)//__builtin_clz(x)) 
 //TODO: fix this
 
@@ -109,7 +111,9 @@ struct DrawingSerialiser;
 // Forward declaration of the DrawingSummary struct
 struct DrawingSummary;
 
-/// <summary>
+template<typename T, DrawingComponentConcept ...Ds>
+class GroupGraphicsItem;
+/// <summary> \ingroup database
 /// Drawing
 /// The Drawing object contains the entire record data for a particular drawing, as stored in the database.
 /// This is the C++ representation of a particular drawing. The drawing can be edited and read from through
@@ -170,12 +174,20 @@ public:
         RIGHT
     };
 
+    /// <summary>
+    /// HookOrientation enum
+    /// Represents the orientation of the hook
+    /// </summary>
     enum HookOrientation {
-        UNKOWN,
+        UNKNOWN,
         HOOK_UP,
         HOOK_DOWN
     };
 
+    /// <summary>
+    /// Ending enum
+    /// Describes whether the mat is tentioned at the end or perpendictular, or default when it is clear/not recorded.
+    /// </summary>
     enum Ending {
         DEFAULT,
         FIXED_END,
@@ -559,13 +571,17 @@ public:
         unsigned apertureHandle;
     };
 
+    /// <summary>
+    /// DamBar
+    /// A data structure contatining the information needed to represent a dam bar component of a drawing.
+    /// </summary>
     struct DamBar {
         // Friend the drawing structure
         friend struct Drawing;
 
-        // The coordinate position of the top left corner of this impact pad (in mat coordinates)
+        // The coordinate position of the top left corner of this dam bar (in mat coordinates)
         Coordinate pos;
-        // The width and length of this impact pad (in mat coordinates)
+        // The width and length of this dam bar (in mat coordinates) and the thickness
         float width, length;
 
         /// <summary>
@@ -581,6 +597,7 @@ public:
             this->pos.y = bar.pos.y;
             this->width = bar.width;
             this->length = bar.length;
+            this->materialID = bar.materialID;
         }
 
         /// <summary>
@@ -591,28 +608,26 @@ public:
         /// <summary>
         /// Equality operator
         /// </summary>
-        /// <param name="other">A reference to another impact pad object to compare to.</param>
-        /// <returns>Whether or not the impact pads are considered equal.</returns>
+        /// <param name="other">A reference to another dam bar object to compare to.</param>
+        /// <returns>Whether or not the dam bars are considered equal.</returns>
         inline bool operator==(const DamBar& other) {
-            // Two impact pads are considered equal if and only if their top left corners, width, length, material and
-            // aperture are all equal.
-            return pos == other.pos && width == other.width && length == other.length;
+            // Two dam bars are considered equal if and only if their top left corners, width, length and thickness are equal.
+            return pos == other.pos && width == other.width && length == other.length && materialID == other.materialID;
         }
 
         /// <summary>
         /// Inequality operator
         /// </summary>
-        /// <param name="other">A reference to another impact pad object to compare to.</param>
-        /// <returns>Whether or not the impact pads are considered inequal.</returns>
+        /// <param name="other">A reference to another dam bar object to compare to.</param>
+        /// <returns>Whether or not the dam bar are considered inequal.</returns>
         inline bool operator!=(const DamBar& other) {
-            // Return the boolean NOT of whether the mats are considered equal
+            // Return the boolean NOT of whether the bars are considered equal
             return !(*this == other);
         }
 
         inline unsigned serialisedSize() const {
-            // A dam bar is specified by 4 float values for the X, Y, W, H, T of the rectangle, and 
-            // two unsigned integer handles representing the material and aperture handles.
-            return sizeof(float) * 5;
+            // A dam bar is specified by 4 float values for the X, Y, W, H of the rectangle, and the materialID
+            return sizeof(float) * 4 + sizeof(unsigned);
         }
 
         /// <summary>
@@ -633,22 +648,24 @@ public:
             buff += sizeof(float);
             *((float*)buff) = length;
             buff += sizeof(float);
+            *((unsigned*)buff) = materialID;
+            buff += sizeof(unsigned);
         }
 
         /// <summary>
         /// Deserialises an dam bar from (the start of) a data buffer
         /// </summary>
         /// <param name="buffer">The data buffer to interpret as an dam bar.</param>
-        /// <returns>A newly constructed impact pad object specified by the data from the buffer.</returns>
+        /// <returns>A newly constructed dam bar object specified by the data from the buffer.</returns>
         inline static DamBar& deserialise(void* buffer) {
             // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char* buff = (unsigned char*)buffer;
 
-            // Construct a new ImpactPad object for returning (hence on the heap)
+            // Construct a new DamBar object for returning (hence on the heap)
             DamBar* bar = new DamBar();
 
             // Read each value in turn in the same sequence as specified by the serialise function
-            // and write to each property in the pad itself.
+            // and write to each property in the bar itself.
             bar->pos.x = *((float*)buff);
             buff += sizeof(float);
             bar->pos.y = *((float*)buff);
@@ -657,12 +674,29 @@ public:
             buff += sizeof(float);
             bar->length = *((float*)buff);
             buff += sizeof(float);
+            bar->materialID = *((float*)buff);
+            buff += sizeof(unsigned);
 
-            // Return the impact pad object we constructed
+            // Return the dam bar object we constructed
             return *bar;
         }
+
+        inline Material& material() const {
+            return DrawingComponentManager<Material>::findComponentByID(materialID);
+        }
+
+        inline void setMaterial(const Material& m) {
+            materialID = m.componentID();
+        }
+
+    private:
+        unsigned materialID;
     };
 
+    /// <summary>
+    /// BlankSpace
+    /// A data structure containing the information needed to represent a blank space component of a drawing.
+    /// </summary>
     struct BlankSpace {
 
         friend struct Drawing;
@@ -671,32 +705,57 @@ public:
 
         float width, length;
 
+        /// <summary>
+        /// Default constructor
+        /// </summary>
         inline BlankSpace() = default;
-
+        
+        /// <summary>
+        /// Copy Constuctor
+        /// </summary>
+        /// <param name="space">The blank space to copy.</param>
         inline BlankSpace(const BlankSpace &space) {
             this->pos.x = space.pos.x;
             this->pos.y = space.pos.y;
             this->width = space.width;
             this->length = space.length;
         }
-
+        /// <summary>
+        /// Default destructor
+        /// </summary>
         inline ~BlankSpace() = default;
 
+        /// <summary>
+        /// Blank Space equality operator.
+        /// </summary>
+        /// <param name="other">A blank space to compare if this blank space is equal.</param>
+        /// <returns>A boolean representing whether or not the blank spaces are equal.</returns>
         inline bool operator==(const BlankSpace& other) {
             // Two Blank Spaces are considered equal if and only if their top left corners, width, and length are the same
             return pos == other.pos && width == other.width && length == other.length;
         }
 
+        /// <summary>
+        /// Blank Space inequality operator
+        /// </summary>
+        /// <param name="other">A blank space to compare equality against.</param>
+        /// <returns>A boolean representing whether or not the blank spaces are inequal.</returns>
         inline bool operator!=(const BlankSpace& other) {
             // Return the boolean NOT of whether the mats are considered equal
             return !(*this == other);
         }
-
+        /// <summary>
+        /// Calculates the serialised size of a blank space
+        /// </summary>
+        /// <returns>The size of a blank space in memory</returns>
         inline unsigned serialisedSize() const {
             // An BlankSpace is specified by 4 float values for the X, Y, W, H of the rectangle.
             return sizeof(float) * 4;
         }
-
+        /// <summary>
+        /// Serialises a blank space object to be transmitted over networks.
+        /// </summary>
+        /// <param name="target">A buffer to write the serialised object to.</param>
         inline void serialise(void* target) const {
             // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char* buff = (unsigned char*)target;
@@ -712,7 +771,12 @@ public:
             *((float*)buff) = length;
             buff += sizeof(float);
         }
-
+        
+        /// <summary>
+        /// A static deserialisation function for blank spaces.
+        /// </summary>
+        /// <param name="buffer">Buffer to read the serialised blank space off.</param>
+        /// <returns>A newly constructed blank space object</returns>
         inline static BlankSpace& deserialise(void* buffer) {
             // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char* buff = (unsigned char*)buffer;
@@ -734,8 +798,12 @@ public:
             // Return the BlankSpace object we constructed
             return *pad;
         }
-    };
 
+    };
+    /// <summary>
+    /// ExtraAperture
+    /// Stores all relevant information for drawings that need multiple apertures
+    /// </summary>
     struct ExtraAperture {
 
         friend struct Drawing;
@@ -744,10 +812,14 @@ public:
 
         float width, length;
 
-        unsigned apertureID;
-
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
         inline ExtraAperture() = default;
-
+        /// <summary>
+        /// Copy constructor.
+        /// </summary>
+        /// <param name="aperture">Extra aperture to copy.</param>
         inline ExtraAperture(const ExtraAperture& aperture) {
             this->pos.x = aperture.pos.x;
             this->pos.y = aperture.pos.y;
@@ -755,24 +827,44 @@ public:
             this->length = aperture.length;
             this->apertureID = aperture.apertureID;
         }
-
+        /// <summary>
+        /// Default destructor
+        /// </summary>
         inline ~ExtraAperture() = default;
-
+        
+        /// <summary>
+        /// Equality Operator.
+        /// </summary>
+        /// <param name="other">Extra aperture to be compared against.</param>
+        /// <returns>Boolean representing equality of extra apertures.</returns>
         inline bool operator==(const ExtraAperture& other) {
             // Two aperture are considered equal if and only if their top left corners, width, and length and shape are the same
             return pos == other.pos && width == other.width && length == other.length && apertureID == other.apertureID;
         }
 
+        /// <summary>
+        /// Inequality Operator.
+        /// </summary>
+        /// <param name="other">Extra aperture to be compared against.</param>
+        /// <returns>Boolean representing inequality of extra apertures.</returns>
         inline bool operator!=(const ExtraAperture& other) {
             // Return the boolean NOT of whether the mats are considered equal
             return !(*this == other);
         }
-
+		
+        /// <summary>
+        /// Calculates the serialised sized of an extra aperture.
+        /// </summary>
+        /// <returns>Size in memory of this extra aperture.</returns>
         inline unsigned serialisedSize() const {
             // An aperture is specified by 4 float values for the X, Y, W, H of the rectangle and unsigned for shape ID.
             return sizeof(float) * 4 + sizeof(unsigned);
         }
-
+        
+        /// <summary>
+        /// Serialises an extra aperture to be transmitted across a network.
+        /// </summary>
+        /// <param name="target">The buffer to write the serialised object to.</param>
         inline void serialise(void* target) const {
             // Cast the target buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char* buff = (unsigned char*)target;
@@ -791,6 +883,11 @@ public:
             buff += sizeof(unsigned);
         }
 
+        /// <summary>
+        /// Deserialises an extra aperture recieved from the network.
+        /// </summary>
+        /// <param name="buffer">The buffer to read the serialised extra aperture from.</param>
+        /// <returns>An extra aperture object from the buffer.</returns>
         inline static ExtraAperture& deserialise(void* buffer) {
             // Cast the source buffer to a byte buffer so we can perform pointer arithmetic
             unsigned char* buff = (unsigned char*)buffer;
@@ -814,6 +911,17 @@ public:
             // Return the aperture object we constructed
             return *aperture;
         }
+
+        inline const Aperture& aperture() const {
+            return DrawingComponentManager<Aperture>::findComponentByID(apertureID);
+        }
+
+        inline void setAperture(const Aperture& ap) {
+            apertureID = ap.componentID();
+        }
+
+    private:
+        unsigned apertureID;
     };
 
     /// <summary>
@@ -823,12 +931,12 @@ public:
     struct CentreHole {
         // Friend the drawing structure
         friend struct Drawing;
+        friend class GroupGraphicsItem<CentreHole, Aperture>;
 
         /// <summary>
         /// Shape
         /// Internal Shape grouping structure for the shape of a centre hole
         /// </summary>
-        unsigned apertureID;
         /*struct Shape {
             // The width and length of the shape which is cut out of the mat
             float width, length;
@@ -929,7 +1037,7 @@ public:
         /// <summary>
         /// Deserialises the centre hole from (the start of) a data buffer
         /// </summary>
-        /// <param name="target">The data buffer to read from.</param>
+        /// <param name="buffer">The data buffer to read from.</param>
         inline static CentreHole &deserialise(void *buffer) {
             unsigned char *buff = (unsigned char *) buffer;
 
@@ -944,6 +1052,16 @@ public:
 
             return *hole;
         }
+
+        inline Aperture& aperture() const {
+            return DrawingComponentManager<Aperture>::findComponentByID(apertureID);
+        }
+
+        inline void setAperture(const Aperture& ap) {
+            apertureID = ap.componentID();
+        }
+    private:
+        unsigned apertureID;
     };
 
     /// <summary>
@@ -953,11 +1071,12 @@ public:
     struct Deflector {
         // Friend the drawing structure
         friend struct Drawing;
+        friend class GroupGraphicsItem<Deflector, Material>;
 
         // The position of the centre of the deflector
         Coordinate pos;
         // The side length of the square of material used as the deflector
-        float size;
+        float size = 45;
 
         /// <summary>
         /// Default constructor
@@ -1014,11 +1133,18 @@ public:
         void setMaterial(const Material &material) {
             materialHandle = material.handle();
         }
-
+        /// <summary>
+        /// Calculates the serialised sized of this object
+        /// </summary>
+        /// <returns>The serialised size</returns>
         inline unsigned serialisedSize() const {
             return sizeof(float) * 4 + sizeof(unsigned);
         }
 
+        /// <summary>
+        /// Serialises the deflector to be sent across the network.
+        /// </summary>
+        /// <param name="target">Buffer to write the object to.</param>
         inline void serialise(void *target) const {
             unsigned char *buff = (unsigned char *) target;
 
@@ -1032,6 +1158,11 @@ public:
             buff += sizeof(unsigned);
         }
 
+        /// <summary>
+        /// Deserialises a deflector.
+        /// </summary>
+        /// <param name="buffer">Buffer to read the serialised object from.</param>
+        /// <returns>Newly created Deflector object</returns>
         inline static Deflector &deserialise(void *buffer) {
             unsigned char *buff = (unsigned char *) buffer;
 
@@ -1060,6 +1191,7 @@ public:
     struct Divertor {
         // Friend the drawing structure
         friend struct Drawing;
+        friend class GroupGraphicsItem<Divertor, Material>;
 
         // The side of the mat this divertor is on
         Side side;
@@ -1068,7 +1200,7 @@ public:
         float verticalPosition;
         // The width of the divertor measured as the perpendicular distance between the two diagonal parallel lines
         // and the length of the divertor measured as the length of each diagonal line
-        float width, length;
+        float width = 25, length = 150;
 
         /// <summary>
         /// Default constructor
@@ -1129,10 +1261,17 @@ public:
             materialHandle = material.handle();
         }
 
+        /// <summary>
+        /// Calculates the serialised size of this object.
+        /// </summary>
+        /// <returns>The size of the serialised object.</returns>
         inline unsigned serialisedSize() const {
             return sizeof(unsigned char) + sizeof(float) * 3 + sizeof(unsigned);
         }
-
+        /// <summary>
+        /// Serialises a divertor object onto a buffer.
+        /// </summary>
+        /// <param name="target">Buffer to seralise divertor object onto.</param>
         inline void serialise(void *target) const {
             unsigned char *buff = (unsigned char *) target;
 
@@ -1146,7 +1285,12 @@ public:
             *((unsigned *) buff) = materialHandle;
             buff += sizeof(unsigned);
         }
-
+        
+        /// <summary>
+        /// Deserialises a divertor object off a buffer.
+        /// </summary>
+        /// <param name="buffer">Buffer to read divertor object from.</param>
+        /// <returns>A newly created divertor object.</returns>
         inline static Divertor &deserialise(void *buffer) {
             unsigned char *buff = (unsigned char *) buffer;
 
@@ -1327,12 +1471,27 @@ public:
     /// <param name="ap">The Aperture to set this drawing to.</param>
     void setAperture(const Aperture &ap);
 
+    /// <summary>
+    /// Getter for backing strip optional.
+    /// </summary>
+    /// <returns>Backing strip if exists.</returns>
     virtual std::optional<BackingStrip> backingStrip() const;
 
+    /// <summary>
+    /// Setter for backing strip.
+    /// </summary>
+    /// <param name="strip">Backing strip to attach to drawing.</param>
     void setBackingStrip(const BackingStrip& strip);
 
+    /// <summary>
+    /// Removes the backing strip
+    /// </summary>
     void removeBackingStrip();
 
+    /// <summary>
+    /// Checks existence of backing strips.
+    /// </summary>
+    /// <returns>Boolean representing existence of backing strips.</returns>
     virtual bool hasBackingStrips() const;
 
     /// <summary>
@@ -1452,12 +1611,31 @@ public:
      /// <returns>Whether the specified side iron is cut down.</returns>
     virtual bool sideIronCutDown(Side side) const;
 
+
+    /// <summary>
+    /// Returns a bool whether or not the either ends have a value.
+    /// </summary>
+    /// <returns>True if either of the sides have an ending, false otherwise.</returns>
     virtual bool sideIronFixedEnd() const;
 
+    /// <summary>
+    /// Getter for a specific ending on the given side.
+    /// </summary>
+    /// <param name="side">The side to get the ending of.</param>
+    /// <returns>The requested ending, given it exists.</returns>
     virtual std::optional<Ending> sideIronFixedEnd(Side side) const;
 
+    /// <summary>
+    /// Getter for the feed end.
+    /// </summary>
+    /// <returns>The side that is the feed end.</returns>
     virtual std::optional<Side> sideIronFeedEnd() const;
 
+    /// <summary>
+    /// Getter for the hook orientation on the given side
+    /// </summary>
+    /// <param name="side"></param>
+    /// <returns></returns>
     virtual std::optional<HookOrientation> sideIronHookOrientation(Side side) const;
 
     /// <summary>
@@ -1480,17 +1658,43 @@ public:
     /// <param name="side">The side to are specifying for.</param>
     /// <param name="cutDown">The value to set the specified side to.</param>
     void setSideIronCutDown(Side side, bool cutDown);
-
+    
+    /// <summary>
+    /// Sets the type of endings of the side iron on a given side.
+    /// </summary>
+    /// <param name="side">Side to change ending of.</param>
+    /// <param name="ending">New ending.</param>
     void setSideIronEnding(Side side, Ending ending);
 
+    /// <summary>
+    /// Sets the given side to be the feed side.
+    /// </summary>
+    /// <param name="side">The side to set as feed.</param>
     void setSideIronFeed(Side side);
 
-    void setSideIronHookOrientation(Side side, HookOrientation hookOrientation);
+    /// <summary>
+    /// Sets the hook orientation for a given side.
+    /// </summary>
+    /// <param name="side">Side to change hook orientation.</param>
+    /// <param name="orientation">The new hook orientation.</param>
+    void setSideIronHookOrientation(Side side, HookOrientation orientation);
 
+    /// <summary>
+    /// Remove a side iron ending from the given side.
+    /// </summary>
+    /// <param name="side">Side to remove ending from.</param>
     void removeSideIronEnding(Side side);
 
+    /// <summary>
+    /// remove's the side iron feed option from a given side.
+    /// </summary>
+    /// <param name="side">Side to remove the feed flag from.</param>
     void removeSideIronFeed(Side side);
 
+    /// <summary>
+    /// Resets the side iron hook orientation from a given side.
+    /// </summary>
+    /// <param name="side">The side to remove the hook orientation from.</param>
     void removeSideIronHookOrientation(Side side);
 
     /// <summary>
@@ -1548,7 +1752,7 @@ public:
     /// <summary>
     /// Setter for the press punch program PDF hyperlinks
     /// </summary>
-    /// <param name="prod">A vector of each file path for the additional press drawing hyperlinks to set.</param>
+    /// <param name="hyperlinks">A vector of each file path for the additional press drawing hyperlinks to set.</param>
     void setPressDrawingHyperlinks(const std::vector<std::filesystem::path> &hyperlinks);
 
     /// <summary>
@@ -1581,8 +1785,14 @@ public:
     /// <param name="index">The index to retrieve the impact pad from</param>
     /// <returns>A reference to the impact pad at the given index.</returns>
     virtual ImpactPad &impactPad(unsigned index);
-
+    
+    /// <summary>
+    /// Getter for an individual const impact pad.
+    /// </summary>
+    /// <param name="index">index of impact pad.</param>
+    /// <returns>Impact pad at index.</returns>
     virtual const ImpactPad &safeImpactPad(unsigned index) const;
+
     /// <summary>
     /// Remover for an impact pad from the drawing
     /// </summary>
@@ -1595,34 +1805,97 @@ public:
     /// <returns>The size of the impact pads vector.</returns>
     virtual unsigned numberOfImpactPads() const;
 
+    /// <summary>
+    /// Adds a new dam bar to the drawing.
+    /// </summary>
+    /// <param name="bar">The dam bar too add.</param>
     void addDamBar(const DamBar& bar);
 
+    /// <summary>
+    /// Returns all dam bars attached to this drawing.
+    /// </summary>
+    /// <returns>The dam bars.</returns>
     virtual std::vector<DamBar> damBars() const;
 
+    /// <summary>
+    /// Getter for a specific dam bar by index in the dam bars vector.
+    /// </summary>
+    /// <param name="index">The index of the dam bar.</param>
+    /// <returns>The dam bar at the given index.</returns>
     virtual DamBar& damBar(unsigned index);
 
+    /// <summary>
+    /// Removes a given dam bar.
+    /// </summary>
+    /// <param name="bar">The dam bar to be removed.</param>
     void removeDamBar(const DamBar& bar);
 
+    /// <summary>
+    /// Returns the number of dam bars currently attached to the drawing.
+    /// </summary>
+    /// <returns>The number of dam bars.</returns>
     virtual unsigned numberOfDamBars() const;
 
+    /// <summary>
+    /// Adds a new blank space to the drawing.
+    /// </summary>
+    /// <param name="blankSpace">The blank space to add.</param>
     void addBlankSpace(const BlankSpace& blankSpace);
 
+    /// <summary>
+    /// Returns a vector of all blank spaces attached to the drawing.
+    /// </summary>
+    /// <returns>Vector of blank spaces.</returns>
     virtual std::vector<BlankSpace> blankSpaces() const;
 
+    /// <summary>
+    /// Getter for a specific blank space by its index in the vector of blank spaces.
+    /// </summary>
+    /// <param name="index">The index of the blank space.</param>
+    /// <returns>The blank space.</returns>
     virtual BlankSpace& blankSpace(unsigned index);
 
+    /// <summary>
+    /// Removes a blank space from the drawing that is equal to the given blank space.
+    /// </summary>
+    /// <param name="space">The given blank space to delete a equal blank space.</param>
     void removeBlankSpace(const BlankSpace& space);
 
+    /// <summary>
+    /// The number of blank spaces attached to the drawing.
+    /// </summary>
+    /// <returns></returns>
     virtual unsigned numberOfBlankSpaces() const;
 
+    /// <summary>
+    /// Adds an extra aperture area to the drawing
+    /// </summary>
+    /// <param name="extraAperture">The extra aperture to be added to the drawing.</param>
     void addExtraAperture(const ExtraAperture& extraAperture);
 
+    /// <summary>
+    /// Getter for all the extra apertures.
+    /// </summary>
+    /// <returns>Vector of all extra apertures.</returns>
     virtual std::vector<ExtraAperture> extraApertures() const;
 
+    /// <summary>
+    /// Gets an extra aperture via its index in the vector.
+    /// </summary>
+    /// <param name="index">The index of the extra aperture.</param>
+    /// <returns>The extra aperture at the index.</returns>
     virtual ExtraAperture& extraAperture(unsigned index);
 
+    /// <summary>
+    /// Removes an extra aperture that is equal to the given extra aperture.
+    /// </summary>
+    /// <param name="aperture">Extra aperture to delete equal extra apertures.</param>
     void removeExtraAperture(const ExtraAperture& aperture);
 
+    /// <summary>
+    /// Getter for the amount of extra apertures attached to the drawing.
+    /// </summary>
+    /// <returns></returns>
     virtual unsigned numberOfExtraApertures() const;
 
     /// <summary>
@@ -1635,7 +1908,9 @@ public:
     /// Getter for the centre holes
     /// </summary>
     /// <returns>A vector of centre holes on this drawing.</returns>
-    virtual std::vector<CentreHole> centreHoles() const;
+    virtual const std::vector<CentreHole> &centreHoles() const;
+
+    std::vector<CentreHole> &centreHoles();
 
     /// <summary>
     /// Getter for an individual centre hole
@@ -1666,7 +1941,9 @@ public:
     /// Getter for the deflectors
     /// </summary>
     /// <returns>A vector of deflectors on this drawing.</returns>
-    virtual std::vector<Deflector> deflectors() const;
+    virtual const std::vector<Deflector> &deflectors() const;
+
+    std::vector<Deflector>& deflectors();
 
     /// <summary>
     /// Getter for an individual deflector
@@ -1697,7 +1974,9 @@ public:
     /// Getter for the divertors
     /// </summary>
     /// <returns>A vector of divertors on this drawing.</returns>
-    virtual std::vector<Divertor> divertors() const;
+    virtual std::vector<Divertor> &divertors();
+
+    const std::vector<Divertor>& divertors() const;
 
     /// <summary>
     /// Getter for an individual divertor
@@ -1709,7 +1988,7 @@ public:
     /// <summary>
     /// Remover for a divertor from the drawing
     /// </summary>
-    /// <param name="deflector">The divertor to remove.</param>
+    /// <param name="divertor">The divertor to remove.</param>
     void removeDivertor(const Divertor &divertor);
 
     /// <summary>
@@ -1813,7 +2092,7 @@ private:
 
 
 
-/// <summary>
+/// <summary>\ingroup database
 /// DrawingSerialiser
 /// Assistant class for serialising drawings to data streams without the serialisation interface
 /// directly in the Drawing class.
@@ -1843,7 +2122,7 @@ struct DrawingSerialiser {
 
 struct DrawingSummaryCompressionSchema;
 
-/// <summary>
+/// <summary>\ingroup database
 /// DrawingSummary
 /// Summary data representing an incomplete set of information about a drawing. The idea is to 
 /// have a small amount of information summarising the drawing transferred in a search query in 
@@ -1852,7 +2131,7 @@ struct DrawingSummaryCompressionSchema;
 /// </summary>
 struct DrawingSummary {
     // Friend the compression schema class so it can access private properties
-    friend class DrawingSummaryCompressionSchema;
+    friend struct DrawingSummaryCompressionSchema;
 
     // The mat ID of the drawing as stored in the database
     unsigned matID;
@@ -1907,7 +2186,7 @@ struct DrawingSummary {
     /// Setter for the length of this drawing. This is used because the internal
     /// representation stores the length as an unsigned.
     /// </summary>
-    /// <param name="width">The true length for this drawing.</param>
+    /// <param name="length">The true length for this drawing.</param>
     void setLength(float length);
 
     /// <summary>
@@ -1923,7 +2202,7 @@ struct DrawingSummary {
     /// stores the lap sizes as unsigned values
     /// </summary>
     /// <param name="index">The index of the lap.</param>
-    /// <param name="size">The true lap size.</returns>
+    /// <param name="size">The true lap size.</param>
     void setLapSize(unsigned index, float size);
 
     /// <summary>
@@ -1951,6 +2230,13 @@ struct DrawingSummary {
     /// <returns>The number of bar spacings for this drawing.</returns>
     unsigned barSpacingCount() const;
 
+    void addExtraAperture(unsigned apertureHandle);
+
+    std::vector<unsigned> extraApertures() const;
+
+    void clearExtraApertures();
+
+    unsigned extraApertureCount() const;
 private:
     // The internal representation of theses fields all store TWICE the true value. This allows
     // the "true" values to be either integers or integers plus a half (e.g. 1200.5). Unsigned values
@@ -1960,10 +2246,11 @@ private:
     unsigned __width, __length;
     unsigned __lapSizes[4];
     std::vector<unsigned> __barSpacings;
+    std::vector<unsigned> __extraApertures;
 };
 
 PACK_START
-/// <summary>
+/// <summary>\ingroup database
 /// DrawingSummaryCompressionSchema
 /// Represents compression metadata used to compress and uncompress a drawing or set of drawings based on
 /// the maximum values it would need to transmit to represent any given field. For example, the mat_id field
@@ -1987,7 +2274,8 @@ struct DrawingSummaryCompressionSchema {
     /// <param name="maxBarSpacing">The largest bar spacing on any drawing from the database.</param>
     /// <param name="maxDrawingLength">The length of the longest drawing number in the databae.</param>
     DrawingSummaryCompressionSchema(unsigned maxMatID, float maxWidth, float maxLength, unsigned maxThicknessHandle,
-        float maxLapSize, unsigned maxApertureHandle, unsigned char maxBarSpacingCount, float maxBarSpacing, unsigned char maxDrawingLength);
+        float maxLapSize, unsigned maxApertureHandle, unsigned char maxBarSpacingCount, float maxBarSpacing,
+        unsigned char maxDrawingLength, unsigned char maxExtraApertureCount);
 
     /// <summary>
     /// Calculates the compressed size a given summary will occupy (in bits) when compressed
@@ -2031,9 +2319,11 @@ private:
     unsigned char maxDrawingLength;
     unsigned char barSpacingCountSize;
     unsigned char barSpacingSize;
+    unsigned char extraApertureCountSize;
 
     // The maximum number of bar spacings from any drawing
     unsigned char maxBarSpacingCount;
+    unsigned char maxExtraApertureCount;
 
     // These values represent the minimum number of covering bytes for each
     // of the above fields in bits. For example, 15 bits can be covered in 2 bytes
@@ -2047,6 +2337,7 @@ private:
     unsigned char apertureHandleBytes;
     unsigned char barSpacingCountBytes;
     unsigned char barSpacingBytes;
+    unsigned char extraApertureCountBytes;
 }
 PACK_END
 

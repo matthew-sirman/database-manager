@@ -4,7 +4,7 @@
 // ui->topMaterialInput->findData(drawing.material(Drawing::TOP)->handle()
 
 MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
-    : QDialog(parent), ui(new Ui::MaterialPricingWindow()) {
+    : QDialog(parent), ui(new Ui::MaterialPricingWindow()), client(client) {
     ui->setupUi(this);
     this->setWindowModality(Qt::WindowModality::ApplicationModal);
 
@@ -17,7 +17,7 @@ MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
     materialPricingScroll = ui->materialPricingScroll;
     materialComboBox = ui->materialComboBox;
 
-    DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); });
+    DrawingComponentManager<Material>::addCallback([this]() { materialSource.updateSource(); this->setUpdateRequired(); });
     materialSource.updateSource();
 
     connect(button, &QPushButton::clicked, [client, this]() {
@@ -47,14 +47,14 @@ void MaterialPricingWindow::update(Client* client) {
         if (!material.materialPrices.empty()) {
 
             QFrame* lastLine = nullptr;
-            for (std::vector<std::tuple<float, float, float, MaterialPricingType>>::iterator i = material.materialPrices.begin(); i != material.materialPrices.end(); i++) {
-                std::tuple<float, float, float, MaterialPricingType> element = *i;
-                QLineEdit* widthTextbox = new QLineEdit(QString::number(std::get<0>(element)));
+            for (std::vector<Material::MaterialPrice>::iterator i = material.materialPrices.begin(); i != material.materialPrices.end(); i++) {
+                Material::MaterialPrice element = *i;
+                QLineEdit* widthTextbox = new QLineEdit(QString::number(std::get<1>(element)));
                 widthTextbox->setReadOnly(true);
                 widthTextbox->setValidator(validator);
                 layout->addRow("Width: ", widthTextbox);
-                if ((int)std::get<3>(element) == 2) {
-                    QLineEdit* lengthTextbox = new QLineEdit(QString::number(std::get<1>(element)));
+                if ((int)std::get<4>(element) == 2) {
+                    QLineEdit* lengthTextbox = new QLineEdit(QString::number(std::get<2>(element)));
                     lengthTextbox->setReadOnly(true);
                     lengthTextbox->setValidator(validator);
                     layout->addRow("Length: ", lengthTextbox);
@@ -66,7 +66,7 @@ void MaterialPricingWindow::update(Client* client) {
                     lengthTextbox->setValidator(validator);
                     layout->addRow("Length: ", lengthTextbox);
                 }
-                QLineEdit* priceTextbox = new QLineEdit(QString::number(std::get<2>(element)));
+                QLineEdit* priceTextbox = new QLineEdit(QString::number(std::get<3>(element)));
                 priceTextbox->setReadOnly(true);
                 priceTextbox->setValidator(validator);
                 layout->addRow("Price: ", priceTextbox);
@@ -74,7 +74,7 @@ void MaterialPricingWindow::update(Client* client) {
                 priceTypeBox->addItem("Running Metre");
                 priceTypeBox->addItem("Square Metre");
                 priceTypeBox->addItem("Sheet");
-                priceTypeBox->setCurrentIndex((int)(std::get<3>(element)));
+                priceTypeBox->setCurrentIndex((int)(std::get<4>(element)));
                 priceTypeBox->setDisabled(true);
                 layout->addRow("per :", priceTypeBox);
                 QPushButton* remove = new QPushButton("Remove");
@@ -115,4 +115,16 @@ void MaterialPricingWindow::setComboboxCallback(std::function<void(DynamicComboB
 
 void MaterialPricingWindow::updateSource() {
     materialSource.updateSource();
+}
+
+void MaterialPricingWindow::setUpdateRequired() {
+    updateRequired = true;
+}
+
+void MaterialPricingWindow::paintEvent(QPaintEvent* event) {
+    if (updateRequired) {
+        update(client);
+        updateRequired = false;
+    }
+    QDialog::paintEvent(event);
 }

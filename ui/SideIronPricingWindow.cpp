@@ -27,7 +27,6 @@ void SideIronPricingWindow::update() {
     QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
 
     for (unsigned i : DrawingComponentManager<SideIronPrice>::dataIndexSet()) {
-        std::cout << "asadasdas" << std::endl;
         SideIronPrice price = DrawingComponentManager<SideIronPrice>::getComponentByHandle(i);
         QWidget* priceContainer = new QWidget();
         ui->sideIronPricingScroll->layout()->addWidget(priceContainer);

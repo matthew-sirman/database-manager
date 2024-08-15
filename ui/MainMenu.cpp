@@ -9,6 +9,7 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     QMainWindow(parent),
     ui(new Ui::MainMenu) {
     ui->setupUi(this);
+    setWindowIcon(QIcon(":/scs_logo.png"));
 
     QShortcut* closeTab = new QShortcut(ui->mainTabs);
     closeTab->setKey(Qt::CTRL + Qt::Key_W);
@@ -253,10 +254,11 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     });
 
     handler->setAddComponentResponseCallback([this](ComponentInsert::ComponentInsertResponse responseCode) {
-        emit addComponentResponseReceived((unsigned)responseCode);
+        emit addComponentResponseReceived(responseCode);
     });
 
-    connect(this, SIGNAL(addComponentResponseReceived(unsigned)), this, SLOT(insertComponentResponse(unsigned)));
+    connect(this, SIGNAL(addComponentResponseReceived(ComponentInsert::ComponentInsertResponse)),
+            this, SLOT(insertComponentResponse(ComponentInsert::ComponentInsertResponse)));
 
     connect(ui->fileMenu_createBackupAction, &QAction::triggered, [this]() {
         std::time_t currentTimePoint = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -272,7 +274,7 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
             QMessageBox::about(this, "Invalid Backup Name", "Backup name must not be empty.");
             return;
         }
-        if (backupName.contains(QRegExp("\\|/"))) {
+        if (backupName.contains(QRegularExpression("\\|/"))) {
             QMessageBox::about(this, "Invalid Backup Name", "Backup name must not contain slashes.");
             return;
         }
@@ -289,10 +291,11 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
     });
 
     handler->setBackupResponseCallback([this](DatabaseBackup::BackupResponse responseCode) {
-        emit backupResponseReceived((unsigned)responseCode);
+        emit backupResponseReceived(responseCode);
     });
 
-    connect(this, SIGNAL(backupResponseReceived(unsigned)), this, SLOT(backupResponse(unsigned)));
+    connect(this, SIGNAL(backupResponseReceived(DatabaseBackup::BackupResponse)),
+            this, SLOT(backupResponse(DatabaseBackup::BackupResponse)));
 
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::RightSide, nullptr);
     ui->mainTabs->tabBar()->setTabButton(0, QTabBar::LeftSide, nullptr);
@@ -318,8 +321,8 @@ MainMenu::MainMenu(const std::filesystem::path &clientMetaFilePath, QWidget *par
         }
     });
 
-    connect(this, SIGNAL(insertDrawingResponseReceived(unsigned, unsigned)),
-            this, SLOT(insertDrawingResponse(unsigned, unsigned)));
+    connect(this, SIGNAL(insertDrawingResponseReceived(DrawingInsert::InsertResponseCode, unsigned)),
+            this, SLOT(insertDrawingResponse(DrawingInsert::InsertResponseCode, unsigned)));
 
     setupComboboxSources();
     setupValidators();
@@ -416,12 +419,12 @@ void MainMenu::setupComboboxSources() {
 }
 
 void MainMenu::setupValidators() {
-    QRegExpValidator *drawingNumberValidator = new QRegExpValidator(QRegExp("^([a-zA-Z]{1,2}[0-9]{0,2}[a-zA-Z]?|M[0-9]{0,}[a-zA-Z]?)$"));
+    QRegularExpressionValidator *drawingNumberValidator = new QRegularExpressionValidator(QRegularExpression("^([a-zA-Z]{1,2}[0-9]{0,2}[a-zA-Z]?|M[0-9]{0,}[a-zA-Z]?)$"));
 
     ui->drawingNumberSearchInput->setValidator(drawingNumberValidator);
     connect(ui->drawingNumberSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
 
-    QRegExpValidator *positionSearchValidator = new QRegExpValidator(QRegExp("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
+    QRegularExpressionValidator *positionSearchValidator = new QRegularExpressionValidator(QRegularExpression("(^$)|(^[0-9]+([-][0-9]+)?$)|(^[Aa][Ll]{2}$)"));
 
     ui->positionSearchInput->setValidator(positionSearchValidator);
     connect(ui->positionSearchInput, SIGNAL(textEdited(const QString &)), this, SLOT(capitaliseLineEdit(const QString &)));
@@ -932,8 +935,8 @@ void MainMenu::processDrawings() {
     drawingReceivedQueueMutex.unlock();
 }
 
-void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCode) {
-    switch ((DrawingInsert::InsertResponseCode) responseType) {
+void MainMenu::insertDrawingResponse(DrawingInsert::InsertResponseCode responseType, unsigned responseCode) {
+    switch (responseType) {
         case DrawingInsert::NONE:
             break;
         case DrawingInsert::SUCCESS:
@@ -967,8 +970,8 @@ void MainMenu::insertDrawingResponse(unsigned responseType, unsigned responseCod
     searchButtonPressed();
 }
 
-void MainMenu::insertComponentResponse(unsigned responseCode) {
-    switch ((ComponentInsert::ComponentInsertResponse)responseCode) {
+void MainMenu::insertComponentResponse(ComponentInsert::ComponentInsertResponse responseCode) {
+    switch (responseCode) {
         case ComponentInsert::ComponentInsertResponse::SUCCESS:
             QMessageBox::about(this, "Add Component", "Component successfully added to database.");
             break;
@@ -980,8 +983,8 @@ void MainMenu::insertComponentResponse(unsigned responseCode) {
     }
 }
 
-void MainMenu::backupResponse(unsigned responseCode) {
-    switch ((DatabaseBackup::BackupResponse)responseCode) {
+void MainMenu::backupResponse(DatabaseBackup::BackupResponse responseCode) {
+    switch (responseCode) {
         case DatabaseBackup::BackupResponse::SUCCESS:
             QMessageBox::about(this, "Database Backup", "Backup created successfully.");
             break;

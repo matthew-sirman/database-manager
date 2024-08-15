@@ -11,7 +11,7 @@
 // Simple typedef for the correct type of filter object for the ComboboxDataSources
 typedef SourceFilter<std::vector<unsigned>::const_iterator> ComboboxSourceFilter;
 
-/// <summary>
+/// <summary>\ingroup database
 /// RubberScreenClothMaterialFilter
 /// A filter to install on a material data source to filter to only materials made of Rubber Screen Cloth.
 /// </summary>
@@ -21,7 +21,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// RubberScreenClothMaterialFilter
 /// A filter to install on a material data source to filter to only materials made of Tackyback rubber.
 /// </summary>
@@ -31,7 +31,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// RubberScreenClothMaterialFilter
 /// A filter to install on a material data source to filter to only materials mode of Polyurethane.
 /// </summary>
@@ -41,7 +41,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// RubberScreenClothMaterialFilter
 /// A filter to install on a material data source to filter to only materials applicable to Extraflex and Polyflex 
 /// materials.
@@ -52,7 +52,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// BivitecMaterialFilter
 /// A filter to install on a material data source to filter to only materials used in Bivitec mats.
 /// </summary>
@@ -62,7 +62,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// BivitecMaterialFilter
 /// A filter to install on a material data source to filter to only materials used in Rubber Module mats.
 /// </summary>
@@ -72,7 +72,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// SideIronFilter
 /// Filters a set of side irons to those of an (optional) given type and ab (optional) minimum length.
 /// </summary>
@@ -103,7 +103,7 @@ public:
 	/// <summary>
 	///  Setter for the type of material the mat uses to filter by
 	/// </summary>
-	/// <param name="rubberScreenCloth">Whether the mat is rubber screen cloth or extraflex</param>
+	/// <param name="isScreenCloth">Whether the mat is rubber screen cloth or extraflex</param>
 	void setSideIronFilterMatType(bool isScreenCloth);
 
 	/// <summary>
@@ -122,7 +122,7 @@ private:
 	bool __filter(std::vector<unsigned>::const_iterator element) const override;
 };
 
-/// <summary>
+/// <summary>\ingroup database
 /// MachineModelFilter
 /// Filters a machine data source by a given manufacturer. This has the result of returing all the models for a given
 /// manufacturer.
