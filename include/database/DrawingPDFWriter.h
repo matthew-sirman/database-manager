@@ -15,13 +15,14 @@
 #include <QMessageBox>
 #include <QFontDialog>
 #include <QFontDatabase>
+#include <QEventLoop>
 
 #include <filesystem>
 
-#include "Drawing.h"
+#include "../../../include/database/Drawing.h"
 
 
-/// <summary>\ingroup database
+/// <summary>
 /// DrawingPDFWriter
 /// A class designed to help draw a drawing to a pdf.
 /// </summary>

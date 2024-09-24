@@ -11,7 +11,7 @@
 #include "../../packer.h"
 #include <map>
 
-/// <summary>\ingroup database
+/// <summary>
 /// DatabaseRequestHandler
 /// Inherits from ServerRequestHandler. This class is responsible for managing
 /// requests from the client to access database resources. It acts as a "middle man"
@@ -37,7 +37,9 @@ public:
 	/// <param name="messageSize">The length (in bytes) of the message data received.</param>
 	void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void*&& message, unsigned int messageSize) override;
 
-	// The filepath to create backups under. Should be set in the server's meta file.
+	/// <summary>
+	/// The filepath to create backups under. Should be set in the server's meta file.
+	/// </summary>
 	std::filesystem::path backupPath;
 
 private:
@@ -76,6 +78,7 @@ private:
 		// Unsigned integers for the (database) id and (program) handle for this element
 		unsigned id = 0, handle = 0;
 	};
+
 
 	/// <summary>
 	/// ProductData
@@ -133,6 +136,13 @@ private:
 		std::string shape;
 	};
 
+    struct StrapData : TableSourceData {
+        typedef Strap ComponentType;
+
+        unsigned materialHandle;
+        bool isWTL;
+    };
+
 	/// <summary>
 	/// MaterialData
 	/// Inherits from TableSourceData. This object is for storing data about an aperture shape
@@ -144,59 +154,109 @@ private:
 
 		// The name of this material (e.g. Rubber Screen Cloth)
 		std::string name;
-		// The hardness and thickness of this material
-		unsigned short hardness{}, thickness{};
+		/// <summary>
+		/// The hardness of this material.
+		/// </summary>
+		unsigned short hardness{};
+        /// <summary>
+        /// The thickness of this material.
+        /// </summary>
+        unsigned short thickness{};
 
+		/// <summary>
+		/// All the prices related to this material.
+		/// </summary>
 		std::vector<Material::MaterialPrice> materialPrices;
 	};
 	/// <summary>
 	/// ExtraPriceData
-	/// Inhertis from TableSourceData. This object is for storing data about extra prices
+	/// Inherits from TableSourceData. This object is for storing data about extra prices
 	/// read from the database
 	/// </summary>
 	struct ExtraPriceData : TableSourceData {
 		// Typedef for the ComponentType. This is used for accessing the appropriate DrawingComponentManager.
 		typedef ExtraPrice ComponentType;
 
+		/// <summary>
+		/// The type of extra price this is.
+		/// </summary>
 		ExtraPriceType type;
+		/// <summary>
+		/// The price of this extra price.
+		/// </summary>
 		float price;
+		/// <summary>
+		/// The amount of square metres per price, or std::nullopt if irrelevant.
+		/// </summary>
 		std::optional<float> squareMetres;
+		/// <summary>
+		/// The amount per price, or std::nullopt if irrelevant.
+		/// </summary>
 		std::optional<unsigned> amount;
 	};
 	/// <summary>
 	/// LabourTimeData
-	/// Inhertis from TableSourceData. This object is for storing data about labour time
+	/// Inherits from TableSourceData. This object is for storing data about labour time
 	/// read from the database
 	/// </summary>
 	struct LabourTimeData : TableSourceData {
 		typedef LabourTime ComponentType;
 
+		/// <summary>
+		/// The name of the job.
+		/// </summary>
 		std::string job;
+		/// <summary>
+		/// The amount of time this job takes to complete.
+		/// </summary>
 		unsigned time;
 	};
 
 	/// <summary>
 	/// SideIronPriceData 
-	/// Inhertis from TableSourceData. This object is for storing data about side irons
+	/// Inherits from TableSourceData. This object is for storing data about side irons
 	/// read from the database
 	/// </summary>
 	struct SideIronPriceData : TableSourceData {
 		typedef SideIronPrice ComponentType;
+		/// <summary>
+		/// The type of the side iron.
+		/// </summary>
 		SideIronType type;
-		unsigned lowerLength, upperLength;
+		/// <summary>
+		/// The lowest length a side iron can be to be match this price.
+		/// </summary>
+		unsigned lowerLength;
+		/// <summary>
+		/// The highest length a side iron can be to be match this price.
+		/// </summary>
+        unsigned upperLength;
+		/// <summary>
+		/// The price of these side irons.
+		/// </summary>
 		float price;
+		/// <summary>
+		/// True if this is for extraflex side irons, false otherwise.
+		/// </summary>
 		bool extraflex;
 	};
 
 	/// <summary>
 	/// PowderCoatingPriceData
-	/// Inhertis from TableSourceData. This object is for storing data about powder coating
+	/// Inherits from TableSourceData. This object is for storing data about powder coating
 	/// read from the database
 	/// </summary>
 	struct PowderCoatingPriceData : TableSourceData {
 		typedef PowderCoatingPrice ComponentType;
 
-		float hookPrice, strapPrice;
+		/// <summary>
+		/// The price to powder coat a hook.
+		/// </summary>
+		float hookPrice;
+        /// <summary>
+        /// The price to powder coat a strap.
+        /// </summary>
+        float strapPrice;
 	};
 
 	/// <summary>
@@ -216,6 +276,8 @@ private:
 		std::string drawingNumber;
 		// The hyperlink to the drawing for this side iron
 		std::string hyperlink;
+
+        bool extraflex;
 
 		std::optional<float> price = std::nullopt;
 		std::optional<unsigned> screws = std::nullopt;
@@ -261,7 +323,7 @@ private:
 	/// </summary>
 	/// <typeparam name="T">The type for which to create the source data.</typeparam>
 	/// <param name="sourceRows">The row sources from the correct MySQL table.</param>
-	template<typename T>
+	template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
 	void createSourceData(mysqlx::RowResult sourceRows) const;
 
 	/// <summary>
@@ -278,7 +340,7 @@ private:
 	/// <param name="elements">The current vector of elements. This is appended to within the method.</param>
 	/// <param name="sizeValue">The amount of space the element(s) added will occupy in a buffer, so we know how big of a buffer to 
 	/// construct.</param>
-	template<typename T>
+	template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
 	void constructDataElements(mysqlx::RowResult &sourceRow, unsigned &handle, std::vector<T> &elements, unsigned &sizeValue) const;
 
 	/// <summary>
@@ -290,8 +352,8 @@ private:
 	/// <param name="element">The element object itself to write.</param>
 	/// <param name="buffer">The buffer to write to.</param>
 	/// <param name="sizeValue">A reference value to increment with the amount of space this element occupies.</param>
-	template<typename T>
-	void serialiseDataElement(const T &element, void *buffer, unsigned &sizeValue) const;
+	template<typename T> requires std::is_base_of_v<TableSourceData, T>
+	void serialiseDataElement(const T &element, unsigned char** buffer) const;
 
 	/// <summary>
 	/// Gets the request type header to attach to the response buffer.
@@ -299,12 +361,12 @@ private:
 	/// </summary>
 	/// <typeparam name="T">The type of the element to return the header.</typeparam>
 	/// <returns>The correct RequestType for the type T.</returns>
-	template<typename T>
+	template<typename T> requires std::is_base_of_v<TableSourceData, T>
 	constexpr RequestType getRequestType() const;
 };
 
 // Creates all the source data for a given set of rows
-template<typename T>
+template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
 void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) const {
 	// We statically assert that this is being used on a valid type. If there is an attempt to call this function on a type which does not derive
 	// from TableSourceData, there will be a compiler error.
@@ -324,7 +386,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 	unsigned handle = 1;
 
 	// We loop through each row in the source
-		// For each, we construct the data element(s). This is added tot he elements list from inside this function.
+		// For each, we construct the data element(s). This is added to the elements list from inside this function.
 	constructDataElements<T>(sourceRows, handle, elements, bufferSize);
 
 	// Next we create the source data buffer with the size we have calculated.
@@ -332,6 +394,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 	// We cast it to a byte buffer
 	unsigned char *buff = (unsigned char *)sourceBuffer;
+
 	// First we write the request type to the beginning of the buffer
 	*((RequestType *)buff) = getRequestType<T>();
 	buff += sizeof(RequestType);
@@ -350,9 +413,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 		// Next we serialise the data element to the buffer and increment the buffer by the amount of
 		// space the element occupied.
-		unsigned elementSize = 0;
-		serialiseDataElement<T>(element, buff, elementSize);
-		buff += elementSize;
+		serialiseDataElement<T>(element, &buff);
 	}
 
 	// Finally, once the buffer has been constructed, we send the buffer to the DrawingComponentManager of the correct type.

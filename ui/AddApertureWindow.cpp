@@ -35,8 +35,7 @@ AddApertureWindow::AddApertureWindow(Client *client, QWidget *parent)
 						(unsigned)ui->baseLengthInput->value(),
 						(unsigned)ui->quantityInput->value(),
 						DrawingComponentManager<ApertureShape>::getComponentByHandle(ui->apertureShapeInput->currentData().toInt()).componentID(),
-						(bool)ui->nibbleApertureLabel->active(),
-						(unsigned)DrawingComponentManager<Aperture>::getComponentByHandle(ui->nibbleApertureInput->currentData().toInt()).componentID()
+						ui->nibbleApertureLabel->active() ? std::make_optional(DrawingComponentManager<Aperture>::getComponentByHandle(ui->nibbleApertureInput->currentData().toInt()).componentID()) : std::nullopt
 					});
 				}
 				else {

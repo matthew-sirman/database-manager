@@ -12,7 +12,7 @@
 template<typename T, typename IType>
 class DataSource;
 
-/// <summary>\ingroup database
+/// <summary>
 /// SourceFilter
 /// Base type for an installable filter object on a DataSource. The filter should be extended to
 /// suit a particular data source. This will filter a data source based on an arbitrary set of 
@@ -47,7 +47,9 @@ public:
     void attachFilterUpdateCallback(const std::function<void()> &callback);
 
 protected:
-    // The update callback function to be invoked if the filter's criteria change
+    /// <summary>
+    /// The update callback function to be invoked if the filter's criteria change.
+    /// </summary>
     std::function<void()> filterUpdateCallback = nullptr;
 
 private:
@@ -93,7 +95,7 @@ inline void SourceFilter<IType>::attachFilterUpdateCallback(const std::function<
     filterUpdateCallback = callback;
 }
 
-/// <summary>\ingroup database
+/// <summary>
 /// DataSourceIterator
 /// The iterator object for the datasource itself. Acts as a wrapper for an iterator of type
 /// IType and acts on a set of type T. The iterator has the ability to be filtered and adapted.
@@ -121,11 +123,25 @@ private:
     };
 
 public:
-    // Standard typedefs to make a valid C++ iterator object
+    /// <summary>
+    /// Standard typedefs to make a valid C++ iterator object
+    /// </summary>
     typedef T value_type;
+    /// <summary>
+    /// Standard typedefs to make a valid C++ iterator object
+    /// </summary>
     typedef std::ptrdiff_t difference_type;
+    /// <summary>
+    /// Standard typedefs to make a valid C++ iterator object
+    /// </summary>
     typedef T *pointer;
+    /// <summary>
+    /// Standard typedefs to make a valid C++ iterator object
+    /// </summary>
     typedef T &reference;
+    /// <summary>
+    /// Standard typedefs to make a valid C++ iterator object
+    /// </summary>
     typedef std::input_iterator_tag iterator_category;
 
     /// <summary>
@@ -194,14 +210,20 @@ protected:
     /// <param name="filter">The filter object to use.</param>
     DataSourceIterator(IType iter, const std::function<T(IType)> &adapter, const SourceFilter<IType> &filter);
 
-    // The adapter function to use. This must be set to use the iterator. If it is left as nullptr,
-    // an error will occur.
+    /// <summary>
+    /// The adapter function to use. This must be set to use the iterator. If it is left as nullptr,
+    /// an error will occur.
+    /// </summary>
     std::function<T(IType)> __adapter = nullptr;
 
-    // The filter object to use. This is not essential. If left (or set) as nullptr, no filter will be applied.
+    /// <summary>
+    /// The filter object to use. This is not essential. If left (or set) as nullptr, no filter will be applied.
+    /// </summary>
     const SourceFilter<IType> *__filter = nullptr;
 
-    // The current underlying iterator object.
+    /// <summary>
+    /// The current underlying iterator object.
+    /// </summary>
     IType iter;
 };
 
@@ -310,7 +332,7 @@ void DataSourceIterator<T, IType>::setAdapter(const std::function<T(IType)> &ada
     __adapter = adapter;
 }
 
-/// <summary>\ingroup database
+/// <summary>
 /// DataSource
 /// Represents an iterable data source of arbitrary type. This iterable is based on an adapter model
 /// from an underlying iterator type.
@@ -384,17 +406,30 @@ public:
     unsigned state() const;
 
 protected:
-    // Internal holders for the beginning and end of the underlying iterator source
-    IType __begin, __end;
+    /// <summary>
+    /// Internal holder for the beginning of the underlying iterator source.
+    /// </summary>
+    IType __begin;
+    /// <summary>
+    /// Internal holder for the end of the underlying iterator source.
+    /// </summary>
+    IType __end;
 
-    // The adapter function to use to map from the iterator type to the data source set type
+    /// <summary>
+    /// The adapter function to use to map from the iterator type to the data source set type
+    /// </summary>
     std::function<T(IType)> __adapter = nullptr;
 
-    // The filter object installed on this data source. Defaults to nullptr indicating no filter.
+    /// <summary>
+    /// The filter object installed on this data source. Defaults to nullptr indicating no filter.
+    /// </summary>
     SourceFilter<IType> *__filter = nullptr;
 
-    // The current state ID of the data source. This should be incremented whenever a change is made, 
-    // so any users of the source can tell if they are using the correct version.
+
+    /// <summary>
+    /// The current state ID of the data source. This should be incremented whenever a change is made, 
+    /// so any users of the source can tell if they are using the correct version.
+    /// </summary>
     unsigned stateID = 0;
 };
 

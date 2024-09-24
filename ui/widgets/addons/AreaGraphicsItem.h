@@ -32,27 +32,80 @@
 template<typename T, DrawingComponentConcept ...Ds>
 class AreaGraphicsItem : public QGraphicsItem {
 public:
+	/// <summary>
+	/// Constructs a new item ready to be displayed.
+	/// </summary>
+	/// <param name="bounds">The are this item occupies (in screen coords).</param>
+	/// <param name="item">A reference to the item this object displays.</param>
+	/// <param name="inspector">The inspector to display and update the item.</param>
 	explicit AreaGraphicsItem(const QRectF& bounds, T& item, Inspector* inspector = nullptr);
 
+	/// <summary>
+	/// Getter for the bounding rect.
+	/// </summary>
+	/// <returns>The bounding rect.</returns>
 	[[nodiscard]] QRectF boundingRect() const override;
 
+	/// <summary>
+	/// Updates the bounds this object is drawn to.
+	/// </summary>
+	/// <param name="bounds"></param>
 	void setBounds(const QRectF& bounds);
 
+	/// <summary>
+	/// Paints this object to a canvas through the provided painter.
+	/// </summary>
+	/// <param name="painter">The painter to drawn to.</param>
+	/// <param name="options">Unused.</param>
+	/// <param name="widget">Unused.</param>
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* options, QWidget* widget) override;
 
+	/// <summary>
+	/// Checks whether the provided point is within the bounding rect.
+	/// </summary>
+	/// <param name="point">Point to check.</param>
+	/// <returns>True if the point is in the bounds, false otherwise.</returns>
 	[[nodiscard]] bool contains(const QPointF& point) const override;
 
+	/// <summary>
+	/// Sets a function to be called upon the removal of this object.
+	/// </summary>
+	/// <param name="remove"></param>
 	void setRemoveFunction(const std::function<void()>& remove);
 
+	/// <summary>
+	/// Getter for the item this object is based off.
+	/// </summary>
+	/// <typeparam name="T">The type this object is based upon.</typeparam>
+	/// <returns>A refernce to the item this object is based upon.</returns>
 	const T& get() const;
 
 protected:
+	/// <summary>
+	/// Overriden mouse press event for populating the inspector. Propogates event.
+	/// </summary>
+	/// <param name="event">The triggering event.</param>
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 
+	/// <summary>
+	/// Overriden mouse double click event for expanding the inspector. Propogates event.
+	/// </summary>
+	/// <param name="event">The triggering event.</param>
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
 
+	/// <summary>
+	/// Override context menu event display custom context menu. Propogates event.
+	/// </summary>
+	/// <param name="event">The tiggering event.</param>
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 private:
+	/// <summary>
+	/// Populates the inspector with the relevant information. This must be specifically implemented
+	/// for all templates of this function, as seen in \ref AreaGraphicsItem.cpp.
+	/// </summary>
+	/// <param name="item">The item to be displayed.</param>
+	/// <param name="inspector">The inspector to populate.</param>
+	/// <param name="...sources">All the component sources for use in the inspector.</param>
 	static void populateInspector(T& item, Inspector* inspector, ComboboxComponentDataSource<Ds>*... sources);
 	T& item;
 	Inspector* inspector = nullptr;

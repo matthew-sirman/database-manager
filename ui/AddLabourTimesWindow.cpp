@@ -17,27 +17,23 @@ AddLabourTimesWindow::AddLabourTimesWindow(Client* client,
         }
     }
 
-    // TODO : make this work
     LabourTime& labourTime = times;
     layout->addRow(new QLabel(labourTime.labourTime().c_str()));
-    QLineEdit* time = new QLineEdit();
-    QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
-    time->setText(QString::number(labourTime.time, 'f', 0));
-    time->setValidator(validator);
+    //QLineEdit* time = new QLineEdit();
+    //time->setText(QString::number(labourTime.time, 'f', 0));
+    //time->setValidator(validator);
+    QSpinBox* time = new QSpinBox();
+    time->setMinimum(0);
+    time->setMaximum(std::numeric_limits<int>::max());
+
     layout->addRow("Time: ", time);
     
 
     connect(this, &QDialog::accepted, [this, labourTime, time, client]() {
-        emit updateParent(time->text());
 
         ComponentInsert insert;
 
-        ComponentInsert::LabourTimeData* timeData = nullptr;
-        timeData = new ComponentInsert::LabourTimeData(labourTime.componentID(), labourTime.job, std::stof(time->text().toStdString()));
-        insert.setComponentData<ComponentInsert::LabourTimeData>(*timeData);
-
-
-        // somehow changes from whatever you set here to 70
+        insert.setComponentData<ComponentInsert::LabourTimeData>({labourTime.componentID(), labourTime.job, (unsigned)time->value()});
 
         unsigned bufferSize = insert.serialisedSize();
         void* buffer = alloca(bufferSize);

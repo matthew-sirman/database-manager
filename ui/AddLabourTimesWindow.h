@@ -6,10 +6,12 @@
 
 #include <QDialog>
 #include <QLineEdit>
+#include <QSpinBox>
 #include <QWidget>
 #include <QLabel>
 #include <QComboBox>
 #include <QMessageBox>
+#include <PricingPackage.h>
 
 namespace Ui {
     class AddLabourTimesWindow;
@@ -31,6 +33,4 @@ public:
     explicit AddLabourTimesWindow(Client* client, LabourTime& times, QWidget* parent = nullptr); // Update
 private:
     Ui::AddLabourTimesWindow* ui = nullptr;
-signals:
-    void updateParent(QString l);
 };

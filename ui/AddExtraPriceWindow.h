@@ -31,6 +31,4 @@ public:
     explicit AddExtraPriceWindow(Client* client, ExtraPrice& price, QWidget* parent = nullptr);
 private:
     Ui::AddExtraPriceWindow* ui = nullptr;
-signals:
-    void updateParent(QString, std::optional<QString>);
 };

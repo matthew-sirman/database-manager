@@ -24,10 +24,6 @@
 class Inspector {
 public:
 
-	class Inspectable {
-	public:
-		virtual void populateInspector(Inspector* inspector) = 0;
-	};
 	/// <summary>
 	/// Constructs a new inspector with a title.
 	/// </summary>

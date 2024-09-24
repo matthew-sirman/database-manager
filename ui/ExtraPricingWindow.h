@@ -43,8 +43,8 @@ public:
     /// <summary>
     /// Sets a callback to be called when the combobox's index is changed.
     /// </summary>
-    /// <param name=""></param>
-    void setComboboxCallback(std::function<void(DynamicComboBox*)>);
+    /// <param name="callback">The callback to be triggered in index change.</param>
+    void setComboboxCallback(std::function<void(DynamicComboBox*)> callback);
 
     /// <summary>
     /// Causes the source used by the combobox to be updated from the \ref DrawingComponentManager.

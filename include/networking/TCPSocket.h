@@ -30,36 +30,84 @@
 #define sock_errno WSAGetLastError()
 #endif
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum for all TCP socket codes.
 /// </summary>
 enum TCPSocketCode {
+    /// <summary>
+    /// The socket was sucessfully initiated.
+    /// </summary>
     SOCKET_SUCCESS,
+    /// <summary>
+    /// The socket recieved a heartbeat.
+    /// </summary>
     WAS_HEARTBEAT,
+    /// <summary>
+    /// The socket was disconnected.
+    /// </summary>
     SOCKET_DISCONNECTED,
+    /// <summary>
+    /// The socket could not be created.
+    /// </summary>
     ERR_CREATE_SOCKET,
+    /// <summary>
+    /// The socket had invalid options leading to an error.
+    /// </summary>
     ERR_SET_SOCKET_OPTIONS,
+    /// <summary>
+    /// The socket could not parse the IP.
+    /// </summary>
     ERR_PARSE_IP,
+    /// <summary>
+    /// The socket could not bind to the IP.
+    /// </summary>
     ERR_BIND_SOCKET,
+    /// <summary>
+    /// The socket could not connect.
+    /// </summary>
     ERR_CONNECT,
+    /// <summary>
+    /// The socket could not get flags.
+    /// </summary>
     ERR_GET_FD_FLAGS,
+    /// <summary>
+    /// The socket could not set non blocking.
+    /// </summary>
     ERR_SET_NON_BLOCKING,
+    /// <summary>
+    /// The socket could not listen.
+    /// </summary>
     ERR_LISTEN,
+    /// <summary>
+    /// The socket could not accept.
+    /// </summary>
     ERR_ACCEPT,
+    /// <summary>
+    /// The socket has died without disconnecting correctly.
+    /// </summary>
     ERR_SOCKET_DEAD,
+    /// <summary>
+    /// The socket could not send a message.
+    /// </summary>
     ERR_SEND_FAILED,
+    /// <summary>
+    /// The socket could not recieve a message.
+    /// </summary>
     ERR_RECEIVE_FAILED,
+    /// <summary>
+    /// The socket has no data.
+    /// </summary>
     S_NO_DATA
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Checks if the code is an error, and if it is it writes the error to errorStream.
 /// </summary>
 /// <param name="code">The code to check.</param>
 /// <param name="errorStream">Stream to write errors to.</param>
 void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream = std::cerr);
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Checks if the code is an error, and if it is it writes the error to errorStream.
 /// </summary>
 /// <param name="code">The code to check.</param>
@@ -67,7 +115,7 @@ void guardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream = std::cer
 /// <returns>True if no error was found, false otherwise.</returns>
 bool safeGuardTCPSocketCode(TCPSocketCode code, std::ostream &errorStream = std::cerr);
 
-/// <summary>\ingroup networking
+/// <summary>
 /// TCPSocket
 /// An individual socket.
 /// </summary>

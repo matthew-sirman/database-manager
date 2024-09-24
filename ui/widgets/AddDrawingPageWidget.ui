@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1112</width>
-    <height>719</height>
+    <height>779</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
      <item>
       <layout class="QFormLayout" name="drawingNumberProductFormLayout">
        <property name="labelAlignment">
-        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+        <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
        </property>
        <item row="0" column="0">
         <widget class="QLabel" name="drawingNumberLabel">
@@ -101,7 +101,7 @@
           <bool>true</bool>
          </property>
          <property name="insertPolicy">
-          <enum>QComboBox::NoInsert</enum>
+          <enum>QComboBox::InsertPolicy::NoInsert</enum>
          </property>
         </widget>
        </item>
@@ -133,10 +133,10 @@
      <item>
       <spacer name="drawingNumberProductSpacer">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeType">
-        <enum>QSizePolicy::Expanding</enum>
+        <enum>QSizePolicy::Policy::Expanding</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -182,7 +182,7 @@
          <item>
           <layout class="QFormLayout" name="drawingSpecsLeftForm">
            <property name="labelAlignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
            <item row="0" column="0">
             <widget class="QLabel" name="widthLabel">
@@ -213,7 +213,7 @@
               </sizepolicy>
              </property>
              <property name="buttonSymbols">
-              <enum>QAbstractSpinBox::UpDownArrows</enum>
+              <enum>QAbstractSpinBox::ButtonSymbols::UpDownArrows</enum>
              </property>
              <property name="suffix">
               <string>mm</string>
@@ -300,7 +300,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -336,7 +336,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -372,7 +372,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -441,7 +441,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
              <item>
               <property name="text">
@@ -596,7 +596,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -645,7 +645,7 @@
            <item>
             <layout class="QFormLayout" name="sideIronsLeftForm">
              <property name="labelAlignment">
-              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
              </property>
              <item row="0" column="0">
               <widget class="QLabel" name="leftSideIronTypeLabel">
@@ -676,7 +676,7 @@
                 </sizepolicy>
                </property>
                <property name="insertPolicy">
-                <enum>QComboBox::NoInsert</enum>
+                <enum>QComboBox::InsertPolicy::NoInsert</enum>
                </property>
                <item>
                 <property name="text">
@@ -767,7 +767,7 @@
                 </sizepolicy>
                </property>
                <property name="insertPolicy">
-                <enum>QComboBox::NoInsert</enum>
+                <enum>QComboBox::InsertPolicy::NoInsert</enum>
                </property>
               </widget>
              </item>
@@ -798,13 +798,6 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
-              <widget class="QCheckBox" name="leftSideIronCutDownInput">
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-             </item>
              <item row="4" column="0">
               <widget class="QLabel" name="leftSideIronCutDownLabel">
                <property name="styleSheet">
@@ -825,8 +818,68 @@
                </property>
               </widget>
              </item>
-             <item row="7" column="1">
-              <widget class="QComboBox" name="leftSideIronHookOriInput">
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="leftSideIronCutDownInput">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="leftSideIronFeedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Feed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QCheckBox" name="leftSideIronFeedEndInput">
+               <property name="text">
+                <string/>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
+               </property>
+               <property name="tristate">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="leftSideIronfixedEndLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Fixed End</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QComboBox" name="leftSideIronFixedEndInput">
                <item>
                 <property name="text">
                  <string/>
@@ -834,12 +887,12 @@
                </item>
                <item>
                 <property name="text">
-                 <string>Hook Up</string>
+                 <string>Fixed End</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Hook Down</string>
+                 <string>Tensioned End</string>
                 </property>
                </item>
               </widget>
@@ -864,61 +917,8 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="leftSideIronFeedEndLabel">
-               <property name="styleSheet">
-                <string notr="true">
-                                  QLabel {
-                                  padding: 3px;
-                                  }
-
-                                  QLabel[hovering=true] {
-                                  padding: 3px;
-                                  background-color: #d9d9d9;
-                                  border-radius: 5px;
-                                  }
-                                </string>
-               </property>
-               <property name="text">
-                <string>Feed End</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="leftSideIronfixedEndLabel">
-               <property name="styleSheet">
-                <string notr="true">
-                                  QLabel {
-                                  padding: 3px;
-                                  }
-
-                                  QLabel[hovering=true] {
-                                  padding: 3px;
-                                  background-color: #d9d9d9;
-                                  border-radius: 5px;
-                                  }
-                                </string>
-               </property>
-               <property name="text">
-                <string>Fixed End</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="1">
-              <widget class="QCheckBox" name="leftSideIronFeedEndInput">
-               <property name="text">
-                <string/>
-               </property>
-               <property name="checked">
-                <bool>false</bool>
-               </property>
-               <property name="tristate">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="1">
-              <widget class="QComboBox" name="leftSideIronFixedEndInput">
+             <item row="7" column="1">
+              <widget class="QComboBox" name="leftSideIronHookOriInput">
                <item>
                 <property name="text">
                  <string/>
@@ -926,15 +926,38 @@
                </item>
                <item>
                 <property name="text">
-                 <string>Fixed End</string>
+                 <string>Hook Up</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Tensioned End</string>
+                 <string>Hook Down</string>
                 </property>
                </item>
               </widget>
+             </item>
+             <item row="8" column="0">
+              <widget class="ActivatorLabel" name="leftStrapLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Strap</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="1">
+              <widget class="DynamicComboBox" name="leftStrapInput"/>
              </item>
             </layout>
            </item>
@@ -972,7 +995,7 @@
            <item>
             <layout class="QFormLayout" name="sideIronsRightForm">
              <property name="labelAlignment">
-              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
              </property>
              <item row="0" column="0">
               <widget class="QLabel" name="rightSideIronTypeLabel">
@@ -1003,7 +1026,7 @@
                 </sizepolicy>
                </property>
                <property name="insertPolicy">
-                <enum>QComboBox::NoInsert</enum>
+                <enum>QComboBox::InsertPolicy::NoInsert</enum>
                </property>
                <item>
                 <property name="text">
@@ -1094,7 +1117,7 @@
                 </sizepolicy>
                </property>
                <property name="insertPolicy">
-                <enum>QComboBox::NoInsert</enum>
+                <enum>QComboBox::InsertPolicy::NoInsert</enum>
                </property>
               </widget>
              </item>
@@ -1257,12 +1280,35 @@
                </item>
               </widget>
              </item>
+             <item row="8" column="1">
+              <widget class="DynamicComboBox" name="rightStrapInput"/>
+             </item>
+             <item row="8" column="0">
+              <widget class="ActivatorLabel" name="rightStrapLabel">
+               <property name="styleSheet">
+                <string notr="true">
+                                  QLabel {
+                                  padding: 3px;
+                                  }
+
+                                  QLabel[hovering=true] {
+                                  padding: 3px;
+                                  background-color: #d9d9d9;
+                                  border-radius: 5px;
+                                  }
+                                </string>
+               </property>
+               <property name="text">
+                <string>Strap</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
             <spacer name="verticalSpacer">
              <property name="orientation">
-              <enum>Qt::Vertical</enum>
+              <enum>Qt::Orientation::Vertical</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -1284,7 +1330,7 @@
          <item>
           <layout class="QFormLayout" name="machineForm">
            <property name="labelAlignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
            <item row="0" column="0">
             <widget class="ActivatorLabel" name="manufacturerLabel">
@@ -1318,7 +1364,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -1411,7 +1457,7 @@
               </sizepolicy>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -1441,7 +1487,7 @@
               <bool>true</bool>
              </property>
              <property name="insertPolicy">
-              <enum>QComboBox::NoInsert</enum>
+              <enum>QComboBox::InsertPolicy::NoInsert</enum>
              </property>
             </widget>
            </item>
@@ -1533,7 +1579,7 @@
              <item>
               <spacer name="pressDrawingHyperlinksControlSpacer">
                <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+                <enum>Qt::Orientation::Horizontal</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
@@ -1580,10 +1626,10 @@
               </size>
              </property>
              <property name="contextMenuPolicy">
-              <enum>Qt::DefaultContextMenu</enum>
+              <enum>Qt::ContextMenuPolicy::DefaultContextMenu</enum>
              </property>
              <property name="flow">
-              <enum>QListView::TopToBottom</enum>
+              <enum>QListView::Flow::TopToBottom</enum>
              </property>
             </widget>
            </item>
@@ -1596,7 +1642,7 @@
      <item>
       <layout class="QVBoxLayout" name="visualAndInspectorVerticalLayout" stretch="0">
        <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
+        <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
        </property>
        <item>
         <widget class="DrawingView" name="drawingSpecsVisual">
@@ -1610,7 +1656,7 @@
           <bool>true</bool>
          </property>
          <property name="resizeAnchor">
-          <enum>QGraphicsView::AnchorViewCenter</enum>
+          <enum>QGraphicsView::ViewportAnchor::AnchorViewCenter</enum>
          </property>
         </widget>
        </item>

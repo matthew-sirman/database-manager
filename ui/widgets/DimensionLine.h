@@ -16,8 +16,17 @@
 /// </summary>
 class DimensionLine : public QGraphicsItem {
 public:
+    /// <summary>
+    /// An enum representing whether the dimension line should be vertical or horizontal.
+    /// </summary>
     enum Orientation {
+        /// <summary>
+        /// The dimension line is vertical.
+        /// </summary>
         VERTICAL,
+        /// <summary>
+        /// The dimension line is vertical.
+        /// </summary>
         HORIZONTAL
     };
 

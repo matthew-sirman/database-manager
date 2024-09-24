@@ -138,6 +138,7 @@ void DrawingViewWidget::updateFields() {
         ui->backingStripTextbox->setText("None");
     }
     ui->rebatedCheckbox->setChecked(drawing->rebated());
+    //ui->CoverStrapsTextbox->
     ui->notesTextbox->setText(drawing->notes().c_str());
 
     // Machine Template Page
@@ -178,13 +179,14 @@ void DrawingViewWidget::updateFields() {
     // pdfViewer->setDocumentRenderOptions(renderOptions);
 
     connect(ui->drawingPDFSelectorInput, qOverload<int>(&QComboBox::currentIndexChanged), [this](int index) {
-        pdfDocument->load(ui->drawingPDFSelectorInput->itemData(index).toString());
+        pdfDocument = DrawingViewWidget::getDoc(ui->drawingPDFSelectorInput->itemData(index).toString(), sizeHint());
 
         pdfViewer->setDocument(pdfDocument);
         });
 
     ui->drawingPDFsTabFormLayout->setWidget(1, QFormLayout::FieldRole, pdfViewer);
-    pdfDocument->load(drawing->hyperlink().generic_string().c_str());
+    pdfDocument = DrawingViewWidget::getDoc(
+                      drawing->hyperlink().generic_string().c_str(), sizeHint());
     pdfViewer->setDocument(pdfDocument);
 
     // Pricing
@@ -292,7 +294,9 @@ void DrawingViewWidget::updateFields() {
     subtotal_lineEdit->setDisabled(true);
     final_layout->addRow(new QLabel("Subtotal " + QStringLiteral("\u00A3")), subtotal_lineEdit);
 
-    float labour_total_cost = ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(total_time);
+    std::optional<float> maybe_labour_total_cost = get_time_cost(total_time);
+    float labour_total_cost =
+        maybe_labour_total_cost.has_value() ? *maybe_labour_total_cost : 0;
     labour_cost_lineEdit = new QLineEdit(QString::number(labour_total_cost, 'f', 2));
     labour_cost_lineEdit->setDisabled(true);
     final_layout->addRow(new QLabel("Labour Total " + QStringLiteral("\u00A3")), labour_cost_lineEdit);
@@ -365,10 +369,41 @@ void DrawingViewWidget::updateTotals() const {
         total_time += edit->text().toUInt();
     }
     totalTimeEdit->setText(QString::number(total_time));
-    float labour_total_cost = ExtraPriceManager<ExtraPriceType::LABOUR>::getExtraPrice()->getPrice<ExtraPriceType::LABOUR>(total_time);
+    std::optional<float> maybe_labour_total_cost = get_time_cost(total_time);
+    float labour_total_cost =
+        maybe_labour_total_cost.has_value() ? *maybe_labour_total_cost : 0;
     labour_cost_lineEdit->setText(QString::number(labour_total_cost, 'f', 2));
 
     total_lineEdit->setText(QString::number(totalCost + labour_total_cost, 'f', 2));
 
     sales_total->setText(QString::number((totalCost + labour_total_cost) * (1 + (sales_increase->text().toFloat()/100)), 'f', 2));
 };
+
+QPdfDocument *DrawingViewWidget::getDoc(const QString& path, const QSize &size) {
+    QPdfDocument* oldDoc = new QPdfDocument();
+    oldDoc->load(path);
+  QByteArray *pdfData = new QByteArray();
+  QBuffer *buffer = new QBuffer(pdfData);
+  buffer->open(QIODevice::ReadWrite);
+  QPdfWriter writer(buffer);
+  QPageLayout layout;
+  layout.setPageSize(QPageSize::A4);
+  layout.setOrientation(QPageLayout::Orientation::Landscape);
+  writer.setPageLayout(layout);
+  writer.setResolution(300);
+  QPainter painter;
+  painter.begin(&writer);
+  QPdfDocumentRenderOptions options;
+  options.setRenderFlags(QPdfDocumentRenderOptions::RenderFlag::Annotations);
+  for (int i = 0; i < oldDoc->pageCount(); i++) {
+        QImage img = oldDoc->render(i, QSize(writer.width(), writer.height()),
+                                    options);
+    painter.drawImage(0, 0, img);
+    writer.newPage();
+  }
+  painter.end();
+  QPdfDocument *pdfDocument = new QPdfDocument();
+  pdfDocument->load(buffer);
+  buffer->close();
+  return pdfDocument;
+ }

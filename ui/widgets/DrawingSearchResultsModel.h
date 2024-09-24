@@ -9,9 +9,9 @@
 
 #include <functional>
 
-#include "Drawing.h"
+#include "../../include/database/Drawing.h"
 
-/// <summary>\ingroup database
+/// <summary>
 /// DrawingSearchResultsModel
 /// Displays the results of a search query to the database.
 /// </summary>
@@ -71,6 +71,10 @@ public:
     DrawingSummary summaryAtRow(int row) const;
 
 protected:
+    /// <summary>
+    /// A vector of all the summaries, to populate the search results table,
+    /// and have information be read off them as required.
+    /// </summary>
     std::vector<DrawingSummary> summaries;
 };
 

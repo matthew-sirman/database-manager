@@ -21,7 +21,7 @@ MaterialPricingWindow::MaterialPricingWindow(Client* client, QWidget* parent)
     materialSource.updateSource();
 
     connect(button, &QPushButton::clicked, [client, this]() {
-        (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt()))->show();
+        (new AddMaterialPriceWindow(client, materialComboBox->itemData(materialComboBox->currentIndex()).toInt()))->show();
         });
     connect(materialComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index){
         update(client);
@@ -88,10 +88,10 @@ void MaterialPricingWindow::update(Client* client) {
                 lastLine = line;
 
                 connect(edit, &QPushButton::clicked, [client, this, element]() {
-                    (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::UPDATE, element))->show();
+                    (new AddMaterialPriceWindow(client, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::UPDATE, element))->show();
                     });
                 connect(remove, &QPushButton::clicked, [client, this, element]() {
-                    (new AddMaterialPriceWindow(client, this, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::REMOVE, element))->show();
+                    (new AddMaterialPriceWindow(client, materialComboBox->itemData(materialComboBox->currentIndex()).toInt(), ComponentInsert::PriceMode::REMOVE, element))->show();
                     });
             }
             if (lastLine != nullptr) {

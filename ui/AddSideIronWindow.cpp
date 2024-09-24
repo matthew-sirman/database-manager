@@ -42,7 +42,8 @@ AddSideIronWindow::AddSideIronWindow(Client *client, QWidget *parent)
 					siType,
 					(unsigned) ui->lengthInput->value(),
 					ui->drawingNumberDisplay->text().toStdString(),
-					ui->drawingHyperlinkDisplay->text().toStdString()
+					ui->drawingHyperlinkDisplay->text().toStdString(),
+                                     ui->extraflexCheckbox->isChecked()
 				});
 				unsigned bufferSize = insert.serialisedSize();
 				void *buffer = alloca(bufferSize);

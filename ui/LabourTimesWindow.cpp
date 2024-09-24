@@ -58,11 +58,6 @@ void LabourTimesWindow::update(Client* client) {
 
             connect(edit, &QPushButton::clicked, [client, this, labourTime, timeTextBox]() mutable {
                 AddLabourTimesWindow* window = new AddLabourTimesWindow(client, labourTime);
-                connect(window, &AddLabourTimesWindow::updateParent, this, [this, timeTextBox, client](QString s) {
-                    DrawingComponentManager<LabourTime>::getComponentByHandle(labourTimesComboBox->currentData().toInt()).time = s.toFloat();
-                    labourTimesSource.updateSource();
-                    update(client);
-                    });
                 window->show();
                 });
 

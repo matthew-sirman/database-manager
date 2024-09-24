@@ -11,12 +11,13 @@
 
 #include "DatabaseQuery.h"
 #include "Drawing.h"
+#include "Logger.h"
 
 #include "../util/format.h"
 
 #include "../../guard.h"
 
-/// <summary>\ingroup database
+/// <summary>
 /// DatabaseManager
 /// A class for managing connections to the MySQL database underlying the application.
 /// Also contains methods for some specific actions such as reading values for a 
@@ -31,8 +32,17 @@ public:
     /// drawing is not found or R_ERROR if there was an error in the process.
     /// </summary>
     enum class DrawingExistsResponse {
+        /// <summary>
+        /// Indicates the drawing exists.
+        /// </summary>
         EXISTS,
+        /// <summary>
+        /// Indicates the drawing does not exist.
+        /// </summary>
         NOT_EXISTS,
+        /// <summary>
+        /// An error occoured while checking the existence of a drawing.
+        /// </summary>
         R_ERROR
     };
 
@@ -59,6 +69,7 @@ public:
     /// <param name="maxBarSpacing">A reference to a variable to store the maximum bar spacing</param>
     /// <param name="maxDrawingLength">A refernce to a variable to store the maximum drawing number length.
     /// Note: drawing numbers longer than 255 are disallowed by the database, so this value is used as a single byte.</param>
+    /// <param name="maxExtraApertureCount">A reference to a variable to store the maximum number of extra apertures</param>
     void getCompressionSchemaDetails(unsigned &maxMatID, float &maxWidth, float &maxLength, float &maxLapSize, 
                                      unsigned char &maxBarSpacingCount, float &maxBarSpacing,
                                      unsigned char &maxDrawingLength, unsigned char &maxExtraApertureCount);
@@ -174,7 +185,7 @@ public:
     /// Sets the output error stream to an arbitrary ostream
     /// </summary>
     /// <param name="stream">The ostream to write to. Defaults to stdcerr</param>
-    void setErrorStream(std::ostream &stream = std::cerr);
+    //void setErrorStream(std::ostream &stream = std::cerr);
 
 private:
     // A session object for use during the lifetime of the DatabaseManager object.
@@ -185,16 +196,16 @@ private:
     std::string database;
 
     // A pointer to the output error stream to write to. Defaults to stdcerr
-    std::ostream *errStream = &std::cerr;
+    //std::ostream *errStream = &std::cerr;
 
     // Flag indicating whether or not the database is currently connected.
     bool isConnected;
 
     // Logs an error, e, to the errStream. If safe is set to false, the error will terminate the program.
-    void logError(const mysqlx::Error &e, unsigned lineNumber = -1, bool safe = true);
+    //void logError(const mysqlx::Error &e, unsigned lineNumber = -1, bool safe = true);
 
     // Returns a string representation of the current time
-    std::string timestamp() const;
+    //std::string timestamp() const;
 };
 
 

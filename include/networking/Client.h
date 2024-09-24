@@ -1,12 +1,6 @@
 //
 // Created by matthew on 12/05/2020.
 //
-/// \defgroup networking Networking
-/// Networking test
-
-
-
-
 #ifndef DATABASE_CLIENT_CLIENT_H
 #define DATABASE_CLIENT_CLIENT_H
 
@@ -25,7 +19,7 @@
 #define CLIENT_APPLICATION_ID "e89163c2-86fd-4675-ad9e-0d0e7632b9a8"
 #define REDIRECT_URL "http://localhost:5000/login/authorize"
 
-/// <summary> \ingroup networking
+/// <summary> 
 /// ClientResponseHandler
 /// A pure virtual class for setting up any response handling for the client.
 /// </summary>
@@ -40,7 +34,7 @@ public:
     virtual void onMessageReceived(void*&&message, unsigned messageSize) = 0;
 };
 
-/// <summary> \ingroup networking
+/// <summary> 
 /// Client
 /// Controls the client's networking. 
 /// </summary>
@@ -51,10 +45,25 @@ public:
     /// Enum of all connection statuses.
     /// </summary>
     enum class ConnectionStatus {
+        /// <summary>
+        /// The client successfully connected
+        /// </summary>
         SUCCESS,
+        /// <summary>
+        /// The client is not connected.
+        /// </summary>
         NO_CONNECTION,
+        /// <summary>
+        /// The client could not verify the server.
+        /// </summary>
         CREDS_EXCHANGE_FAILED,
+        /// <summary>
+        /// The JSON web token was invalid.
+        /// </summary>
         INVALID_JWT,
+        /// <summary>
+        /// The repeat token was invalid.
+        /// </summary>
         INVALID_REPEAT_TOKEN
     };
 
@@ -145,6 +154,12 @@ public:
     /// </summary>
     void heartbeat();
 
+    /// <summary>
+    /// Checks whether the client is allowed full access to features.
+    /// </summary>
+    /// <returns>True if the client has full access, false otherwise.</returns>
+    bool hasFullAccess() const;
+
 private:
     // The RSA key for establishing a secure and authenticated connection with the server
     RSAKeyPair clientKey;
@@ -180,8 +195,10 @@ private:
 
     // Internal function to manage the client loop
     void clientLoop();
+
+    // Stores the clients access level
+    ClientAccess access;
 };
 
 
-/** @}*/
 #endif //DATABASE_CLIENT_CLIENT_H

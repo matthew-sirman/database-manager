@@ -1,4 +1,6 @@
-<svg width="13032.000000000004" height="9416" xmlns="http://www.w3.org/2000/svg">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
+<svg width="13032" height="9416" xmlns="http://www.w3.org/2000/svg">
  <!-- Created with Method Draw - http://github.com/duopixel/Method-Draw/ -->
 
  <g>
@@ -8,7 +10,7 @@
  <g>
   <title>Layer 1</title>
   <g id="general_details">
-   <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="null" x="380" y="1130" id="label_general_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">General Details</text>
+   <text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="1" x="380" y="1130" id="label_general_details" font-size="150" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">General Details</text>
    <g id="general_details_fields">
     <rect id="field_template_number" height="280" width="2300" y="1230.00101" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>
     <rect id="field_manufacturer" height="280" width="2300" y="1509.99966" x="1830" fill-opacity="0" stroke-width="10" stroke="#000000" fill="none"/>

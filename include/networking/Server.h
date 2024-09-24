@@ -20,6 +20,7 @@
 #include "TCPSocket.h"
 #include "../database/DatabaseManager.h"
 #include "../database/Drawing.h"
+#include "../database/Logger.h"
 #include "../../guard.h"
 
 #define CLIENT_APPLICATION_ID "e89163c2-86fd-4675-ad9e-0d0e7632b9a8"
@@ -28,7 +29,7 @@ static std::string getNonBlockingInput();
 
 class Server;
 
-/// <summary>\ingroup networking
+/// <summary>
 /// ClientHandle
 /// Keeps track of individual clients through handles.
 /// </summary>
@@ -45,7 +46,7 @@ private:
     unsigned clientID;
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// ClientData
 /// Stores all data relevant to a client's connection.
 /// </summary>
@@ -72,6 +73,12 @@ struct ClientData {
     /// </summary>
     ClientHandle handle;
 
+    /// <summary>
+    /// The level of access the client has.
+    /// </summary>
+    ClientAccess access;
+
+
 private:
     TCPSocket clientSocket;
     AESKey clientSessionKey;
@@ -79,7 +86,7 @@ private:
     uint64 clientAuthNonce;
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// ServerRequestHandler
 /// Pure virtual class to help with server request handling.
 /// </summary>
@@ -96,7 +103,7 @@ public:
     virtual void onMessageReceived(Server &caller, const ClientHandle &clientHandle, void*&& message, unsigned messageSize) = 0;
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// TCP Server class
 ///</summary>
 class Server {
@@ -191,12 +198,10 @@ public:
     void setRequestHandler(ServerRequestHandler &handler);
 
     /// <summary>
-    /// Sets output streams for logs, changelogs and errors.
+    /// Sets error stream for guards.
     /// </summary>
-    /// <param name="log">A stream to write logs to.</param>
-    /// <param name="changelog">A stream to write changelogs to.</param>
     /// <param name="errStream">A stream to write errors to.</param>
-    void setLoggingStream(std::ostream *log = &std::cout, std::ostream *changelog = nullptr, std::ostream *errStream = &std::cerr);
+    void setLoggingStream(std::ostream *errStream = &std::cerr);
 
     /// <summary>
     /// Writes a message to the changelog, with the client that requested the change.
@@ -204,12 +209,6 @@ public:
     /// <param name="clientHandle">The handle of the client that requested the change.</param>
     /// <param name="message">The message to log to the changelog.</param>
     void changelogMessage(const ClientHandle &clientHandle, const std::string &message);
-
-    /// <summary>
-    /// Gets the current time, formatted as a string.
-    /// </summary>
-    /// <returns></returns>
-    std::string timestamp() const;
 
     /// <summary>
     /// Sets how many loops are completed by the server loop before sending another heartbeat.
@@ -244,7 +243,7 @@ private:
 
     std::unordered_map<unsigned, ClientData *> handleMap;
 
-    std::map<uint256, std::string> repeatTokenMap;
+    std::map<uint256, std::pair<std::string, ClientAccess>> repeatTokenMap;
 
     std::queue<std::pair<unsigned, NetworkMessage *>> sendQueue;
     std::mutex sendQueueMutex;

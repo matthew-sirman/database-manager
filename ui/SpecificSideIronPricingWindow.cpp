@@ -15,19 +15,20 @@ SpecificSideIronPricingWindow::SpecificSideIronPricingWindow(Client* client, QWi
 	QDoubleValidator* validator = new QDoubleValidator(0, std::numeric_limits<double>::max(), 2);
 	sideIronComboBox = ui->sideIronComboBox;
 
-	DrawingComponentManager<SideIron>::addCallback([this]() { sideIronSource.updateSource(); });
+	DrawingComponentManager<SideIron>::addCallback([this]() {
+		sideIronSource.updateSource();
+		this->setUpdateRequired();
+		});
 	sideIronSource.updateSource();
 
 	connect(updateButton, &QPushButton::clicked, [client, this]() {
 		SideIron* s = &DrawingComponentManager<SideIron>::getComponentByHandle(sideIronComboBox->itemData(sideIronComboBox->currentIndex()).toInt());
 		AddSpecificSideIronPriceWindow* window = new AddSpecificSideIronPriceWindow(client, s, ComponentInsert::PriceMode::UPDATE);
-		connect(window, &AddSpecificSideIronPriceWindow::updateParent, this, &SpecificSideIronPricingWindow::update);
 		window->show();
 		});
 	connect(removeButton, &QPushButton::clicked, [client, this]() {
 		SideIron* s = &DrawingComponentManager<SideIron>::getComponentByHandle(sideIronComboBox->itemData(sideIronComboBox->currentIndex()).toInt());
 		AddSpecificSideIronPriceWindow* window = new AddSpecificSideIronPriceWindow(client, s, ComponentInsert::PriceMode::REMOVE);
-		connect(window, &AddSpecificSideIronPriceWindow::updateParent, this, &SpecificSideIronPricingWindow::update);
 		window->show();
 		});
 	connect(sideIronComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index) {

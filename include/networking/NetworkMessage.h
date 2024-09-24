@@ -24,60 +24,129 @@
  * Data of size Message Size
  */
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum of all message protocols.
 /// </summary>
 enum class MessageProtocol {
+    /// <summary>
+    /// A message containing a RSA public key.
+    /// </summary>
     KEY_MESSAGE,
+    /// <summary>
+    /// A message encrypted with Rivest-Shamir-Adleman encryption, an asymetric encryption method.
+    /// </summary>
     RSA_MESSAGE,
+    /// <summary>
+    /// A message encrypted with Advanced Encrpytion Standard, a symmetric encryption method.
+    /// </summary>
     AES_MESSAGE,
+    /// <summary>
+    /// An unencrypted message
+    /// </summary>
     RAW_MESSAGE,
+    /// <summary>
+    /// This message indiates a connection response.
+    /// </summary>
     CONNECTION_RESPONSE_MESSAGE,
+    /// <summary>
+    /// This message indiates a disconnection.
+    /// </summary>
     DISCONNECT_MESSAGE,
+    /// <summary>
+    /// This message was a heartbeat.
+    /// </summary>
     HEARTBEAT
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum of heartbeat options.
 /// </summary>
 enum class HeartbeatMode {
+    /// <summary>
+    /// A reuqest for a heartbeat.
+    /// </summary>
     REQUEST,
+    /// <summary>
+    /// A response to the request, aknowledging the heartbeat.
+    /// </summary>
     RESPONSE
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum of how the client is connecting.
 /// </summary>
 enum class AuthMode {
+    /// <summary>
+    /// Authenticate using JSON Web Token's
+    /// </summary>
     JWT,
+    /// <summary>
+    /// Authenticate using a repeat token provided by the server.
+    /// </summary>
     REPEAT_TOKEN
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum for connection reponse.
 /// </summary>
 enum class ConnectionResponse {
+    /// <summary>
+    /// The connection succeeded as a limited user.
+    /// </summary>
     SUCCESS,
+    /// <summary>
+    /// The connection succeeded as an admin user.
+    /// </summary>
+    SUCCESS_ADMIN,
+    /// <summary>
+    /// The connection failed.
+    /// </summary>
     FAILED
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum for disconnections.
 /// </summary>
 enum class DisconnectCode {
+    /// <summary>
+    /// The client has disconnected.
+    /// </summary>
     CLIENT_EXIT
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// Enum for reporting decoding status.
 /// </summary>
 enum class DecodeStatus {
+    /// <summary>
+    /// The message has been decoded.
+    /// </summary>
     DECODED,
+    /// <summary>
+    /// The message is being decoded.
+    /// </summary>
     DECODING,
+    /// <summary>
+    /// The message failed to decode.
+    /// </summary>
     DECODE_ERROR
 };
 
-/// <summary>\ingroup networking
+/// <summary>
+/// Indicates whether or not this client has full access to features.
+/// </summary>
+enum class ClientAccess {
+    /// <summary>
+    /// The client has full access.
+    /// </summary>
+    FULL,
+    /// <summary>
+    /// The client has limited access.
+    /// </summary>
+    LIMITED
+};
+
+/// <summary>
 /// NetworkMessage
 /// An individual network message.
 /// </summary>
@@ -170,8 +239,17 @@ protected:
     /// Enum of the messages status.
     /// </summary>
     enum NetworkMessageFlag {
+        /// <summary>
+        /// The message is dirty.
+        /// </summary>
         MESSAGE_DIRTY = 0x01u,
+        /// <summary>
+        /// The message is currently being decoded.
+        /// </summary>
         MESSAGE_DECODING = 0x02u,
+        /// <summary>
+        /// Decoding the message resulted in an error.
+        /// </summary>
         MESSAGE_ERROR = 0x04u
     };
 
@@ -201,7 +279,7 @@ protected:
     uint32 readLeft = 0;
 };
 
-/// <summary>\ingroup networking
+/// <summary>
 /// EncryptedNetworkMessage inherts NetworkMessage.
 /// A network message that has been encrypted.
 /// </summary>

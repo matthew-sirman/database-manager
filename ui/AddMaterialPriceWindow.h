@@ -28,20 +28,18 @@ public:
     /// Opens a dialog to allow a new material price to be added to the database.
     /// </summary>
     /// <param name="client">The network client to send the new material price to the database through.</param>
-    /// <param name="caller">The pricing window that called for the new material, to update the prices shown.</param>
     /// <param name="handle">The handle of the material the price will be attached to.</param>
     /// <param name="parent">The parent of this widget.</param>
-    explicit AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, QWidget* parent = nullptr); // New
+    explicit AddMaterialPriceWindow(Client* client, int handle, QWidget* parent = nullptr); // New
     /// <summary>
     /// Opens a dialog to allow a material price to be changed or removed from the database.
     /// </summary>
     /// <param name="client">The network client to send the new material price to the database through.</param>
-    /// <param name="caller">The pricing window that called for the new material, to update the prices shown.</param>
     /// <param name="handle">The handle of the material the price will be attached to.</param>
     /// <param name="priceMode">Indicates whether this dialog is to edit or remove.</param>
     /// <param name="pricing">The current price of the material.</param>
     /// <param name="parent">The parent of this widget.</param>
-    explicit AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, ComponentInsert::PriceMode priceMode, Material::MaterialPrice pricing, QWidget* parent = nullptr); // Update and Remove
+    explicit AddMaterialPriceWindow(Client* client, int handle, ComponentInsert::PriceMode priceMode, Material::MaterialPrice pricing, QWidget* parent = nullptr); // Update and Remove
 private:
     Ui::AddMaterialPriceWindow* ui = nullptr;
 

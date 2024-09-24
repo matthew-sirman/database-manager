@@ -17,6 +17,7 @@
 #include <regex>
 #include <stdio.h>
 #include <string.h>
+#include <QBuffer>
 
 #include <filesystem>
 
@@ -79,6 +80,8 @@ private:
     QLineEdit *subtotal_lineEdit, *labour_cost_lineEdit, *totalTimeEdit, *total_lineEdit, *sales_total, *sales_increase, *extraBox, *extraTimeEdit;
 
     void updateTotals() const;
+
+    static QPdfDocument *getDoc(const QString &path, const QSize &size);
 };
 
 

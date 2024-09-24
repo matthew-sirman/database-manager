@@ -18,3 +18,7 @@
 !*.h
 !*.cpp
 !*.ui
+!.gitignore
+!cmake
+!cmake/
+!*.cmake

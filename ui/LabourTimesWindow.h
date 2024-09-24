@@ -43,8 +43,8 @@ public:
     /// <summary>
     /// Adds a callback to be called when the index is changed on the combo box.
     /// </summary>
-    /// <param name=""></param>
-    void setComboboxCallback(std::function<void(DynamicComboBox*)>);
+    /// <param name="callback">The callback to be triggered on index change.</param>
+    void setComboboxCallback(std::function<void(DynamicComboBox*)> callback);
 
     /// <summary>
     /// Sets the window to update its details on next paint event.

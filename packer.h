@@ -13,7 +13,17 @@
 
 #ifdef _MSC_VER
 // #define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__; __pragma(pack(pop))
+
+
+/// \def PACK_START
+/// Tells the compiler to save the state of packing, then start densely packing members of structures, with no padding between.
+
+/*!
+    \brief Tells the compiler to save the state of packing, then start densely packing members of structures, with no padding between.
+*/
 #define PACK_START __pragma(pack(push, 1))
+/// \def PACK_END
+/// Tells the compiler to stop packing densely, and return to the previously saved state of packing.
 #define PACK_END ; __pragma(pack(pop));
 #endif
 

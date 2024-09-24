@@ -12,6 +12,7 @@
 #include <QTableWidgetItem>
 #include <QInputDialog>
 #include <QKeyEvent>
+#include <QLibrary>
 #include <regex>
 #include <QShortcut>
 #include <memory>
@@ -19,6 +20,7 @@
 #include "../include/networking/Client.h"
 #include "../include/database/DatabaseQuery.h"
 #include "../include/database/DatabaseResponseHandler.h"
+#include "widgets/DrawingSearchResultsModel.h"
 #include "widgets/AddDrawingPageWidget.h"
 #include "widgets/DrawingViewWidget.h"
 #include "AddApertureWindow.h"
@@ -118,6 +120,8 @@ private:
     std::unordered_map<unsigned, const Drawing *> drawingInserts;
 
     std::string nextAutomaticDrawingNumber, nextManualDrawingNumber;
+
+    QLibrary *pricing;
 
 private slots:
     void searchButtonPressed();

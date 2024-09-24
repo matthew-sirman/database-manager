@@ -6,10 +6,9 @@
 #define DATABASE_MANAGER_DATABASERESPONSEHANDLER_H
 
 #include "DatabaseQuery.h"
-#include "DrawingSearchResultsModel.h"
 #include "../networking/Client.h"
 
-/// <summary>\ingroup database
+/// <summary>
 /// DatabaseResponseHandler
 /// This object is bound to the Client object for the application. Any message received from the server
 /// (after the initial key exchanges and connection messages) will be forwarded to the bound ClientResponseHandler
@@ -30,11 +29,10 @@ public:
     void onMessageReceived(void*&& message, unsigned int messageSize) override;
 
     /// <summary>
-    /// Setter for the search results model. When the handler receives certain responses, it can forward the response
-    /// to the search results model.
+    /// Sets a function to move a buffer into to, with the results from a search.
     /// </summary>
-    /// <param name="model">The active search results model to forward messages to.</param>
-    void setSearchResultsModel(DrawingSearchResultsModel *model);
+    /// <param name="func">The function to be ran with the buffer.</param>
+    void setPopulateResultsModel(std::function<void(void*&&)> func);
 
     /// <summary>
     /// Setter for the drawing received callback. This callback (if set) will be invoked when the client receives
@@ -99,7 +97,9 @@ private:
     static RequestType getDeserialiseType(void *data);
 
     // A pointer to the results model to write to when receiving a drawing search query
-    DrawingSearchResultsModel *resultsModel = nullptr;
+    //DrawingSearchResultsModel *resultsModel = nullptr;
+
+    std::function<void(void*&&)> populateResultsModel = nullptr;
 
     // Callback invoked when a drawing object is received
     std::function<void(DrawingRequest &)> drawingReceivedCallback = nullptr;

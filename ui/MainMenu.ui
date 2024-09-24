@@ -37,10 +37,10 @@
            </sizepolicy>
           </property>
           <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
+           <enum>QFrame::Shape::StyledPanel</enum>
           </property>
           <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
+           <enum>QFrame::Shadow::Raised</enum>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
@@ -165,7 +165,7 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
@@ -292,7 +292,7 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
@@ -508,7 +508,7 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
@@ -539,10 +539,10 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                    <property name="sizeAdjustPolicy">
-                    <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+                    <enum>QComboBox::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
                    </property>
                   </widget>
                  </item>
@@ -943,7 +943,7 @@ QLabel[hovering=true] {
                  <item row="1" column="0" colspan="6">
                   <widget class="Line" name="overlapsSideIronsDividerLine">
                    <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                    <enum>Qt::Orientation::Horizontal</enum>
                    </property>
                   </widget>
                  </item>
@@ -1086,14 +1086,14 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="4">
                   <spacer name="machinePageSpacer">
                    <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                    <enum>Qt::Orientation::Horizontal</enum>
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
@@ -1115,7 +1115,7 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
@@ -1149,7 +1149,7 @@ QLabel[hovering=true] {
                     <bool>true</bool>
                    </property>
                    <property name="insertPolicy">
-                    <enum>QComboBox::NoInsert</enum>
+                    <enum>QComboBox::InsertPolicy::NoInsert</enum>
                    </property>
                   </widget>
                  </item>
@@ -1209,17 +1209,17 @@ color: rgb(70, 70, 70);
        <widget class="QLabel" name="authorLabel">
         <property name="text">
          <string>Created By Matthew Sirman 2020
-&amp; Alistair Sirman 2023</string>
+&amp; Alistair Sirman 2024</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
         </property>
        </widget>
       </item>
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -1235,7 +1235,7 @@ color: rgb(70, 70, 70);
          <string>Logged in as: </string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -1266,30 +1266,8 @@ color: rgb(70, 70, 70);
     <addaction name="drawingMenu_addDrawingAction"/>
     <addaction name="drawingMenu_addManualDrawingAction"/>
    </widget>
-   <widget class="QMenu" name="componentsMenu">
-    <property name="title">
-     <string>Components</string>
-    </property>
-    <addaction name="componentsMenu_addApertureAction"/>
-    <addaction name="componentsMenu_addMachineAction"/>
-    <addaction name="componentsMenu_addSideIronAction"/>
-    <addaction name="componentsMenu_addMaterialAction"/>
-   </widget>
-   <widget class="QMenu" name="pricingMenu">
-    <property name="title">
-     <string>Prices</string>
-    </property>
-    <addaction name="pricingMenu_materialPricesAction"/>
-    <addaction name="pricingMenu_sideIronPricesAction"/>
-    <addaction name="pricingMenu_SpecificSideIronPricesAction"/>
-    <addaction name="pricingMenu_extraPricesAction"/>
-    <addaction name="pricingMenu_labourTimes"/>
-    <addaction name="pricingMenu_powderCoatingPrices"/>
-   </widget>
    <addaction name="fileMenu"/>
    <addaction name="drawingMenu"/>
-   <addaction name="componentsMenu"/>
-   <addaction name="pricingMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="drawingMenu_addDrawingAction">

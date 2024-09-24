@@ -14,7 +14,10 @@ ExtraPricingWindow::ExtraPricingWindow(Client* client, QWidget* parent)
     extraPricingScroll = ui->extraPricingScroll;
     extraPriceComboBox = ui->extraPriceComboBox;
 
-    DrawingComponentManager<ExtraPrice>::addCallback([this]() { extraPriceSource.updateSource(); });
+    DrawingComponentManager<ExtraPrice>::addCallback([this]() {
+        extraPriceSource.updateSource();
+        this->setUpdateRequired();
+        });
     extraPriceSource.updateSource();
 
     connect(extraPriceComboBox, qOverload<int>(&DynamicComboBox::currentIndexChanged), [this, client](int index) {
@@ -86,12 +89,6 @@ void ExtraPricingWindow::update(Client* client) {
 
             connect(edit, &QPushButton::clicked, [client, this, extraPrice, priceTextbox, amountTextbox]() mutable {
                 AddExtraPriceWindow* window = new AddExtraPriceWindow(client, extraPrice);
-                connect(window, &AddExtraPriceWindow::updateParent, this, [this, priceTextbox, amountTextbox](QString val1, std::optional<QString> val2) {
-                    priceTextbox->setText(val1);
-                    if (val2.has_value() && amountTextbox != nullptr) {
-                        amountTextbox->setText(val2.value());
-                    }
-                    });
                 window->show();
                 });
 

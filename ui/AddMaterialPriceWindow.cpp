@@ -3,7 +3,7 @@
 #include "MaterialPricingWindow.h"
 
 // adding a price
-AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, QWidget* parent)
+AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, int handle, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddMaterialPriceWindow()) {
 	ui->setupUi(this);
 	this->setWindowModality(Qt::WindowModality::ApplicationModal);
@@ -56,7 +56,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		}
 	}
 
-	connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, caller, client, this, priceTypeComboBox, handle]() {
+	connect(this, &QDialog::accepted, [this, widthEdit, lengthEdit, priceEdit, client, priceTypeComboBox, handle]() {
 		materialSource.updateSource();
 		if (DrawingComponentManager<Material>::validComponentHandle(materialNameComboBox->currentIndex() && widthEdit->text().size() > 0 && priceEdit->text().size() > 0)) {
 
@@ -101,12 +101,9 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 			insert.serialise(buffer);
 			client->addMessageToSendQueue(buffer, bufferSize);
 
-			//caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
-			//caller->updateSource();
-			//caller->update(client);
 		}
 		else {
-			QMessageBox* box = new QMessageBox(caller);
+			QMessageBox* box = new QMessageBox(this);
 			box->setText("Invalid inputs, check that all fields are filled in correctly.");
 			box->exec();
 		}
@@ -116,7 +113,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 
 
 // updating or removing a price
-AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWindow* caller, int handle, ComponentInsert::PriceMode priceMode, Material::MaterialPrice pricing, QWidget* parent)
+AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, int handle, ComponentInsert::PriceMode priceMode, Material::MaterialPrice pricing, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddMaterialPriceWindow()) {
 
 	ui->setupUi(this);
@@ -187,7 +184,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		this->setWindowTitle("Edit Material Price");
 		ui->AddPriceTitleLabel->setText("Edit Material Price");
 
-		connect(this, &QDialog::accepted, [widthEdit, lengthEdit, priceEdit, pricing, handle, caller, client, priceTypeComboBox]() {
+		connect(this, &QDialog::accepted, [this, widthEdit, lengthEdit, priceEdit, pricing, handle, client, priceTypeComboBox]() {
 			if (widthEdit->text().size() > 0 && priceEdit->text().size() > 0) {
 				ComponentInsert insert;
 
@@ -230,12 +227,9 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 				insert.serialise(buffer);
 				client->addMessageToSendQueue(buffer, bufferSize);
 
-				//caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
-				//caller->updateSource();
-				//caller->update(client);
 			}
 			else {
-				QMessageBox* box = new QMessageBox(caller);
+				QMessageBox* box = new QMessageBox(this);
 				box->setText("Invalid inputs, check that all fields are filled in correctly.");
 				box->exec();
 			}
@@ -256,7 +250,7 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 		lengthEdit->setDisabled(true);
 		priceEdit->setDisabled(true);
 		ui->priceTypeComboBox->setDisabled(true);
-		connect(this, &QDialog::accepted, [client, caller, handle, pricing, widthEdit, lengthEdit, priceEdit]() {
+		connect(this, &QDialog::accepted, [this, client, handle, pricing, widthEdit, lengthEdit, priceEdit]() {
 			if (widthEdit->text().size() > 0 && priceEdit->text().size() > 0) {
 				ComponentInsert insert;
 
@@ -275,12 +269,9 @@ AddMaterialPriceWindow::AddMaterialPriceWindow(Client* client, MaterialPricingWi
 				insert.serialise(buffer);
 				client->addMessageToSendQueue(buffer, bufferSize);
 
-				//caller->setComboboxCallback([handle, caller, client](DynamicComboBox* comboBox) {comboBox->setCurrentIndex(comboBox->findData(handle)); caller->update(client); });
-				//caller->updateSource();
-				//caller->update(client);
 			}
 			else {
-				QMessageBox* box = new QMessageBox(caller);
+				QMessageBox* box = new QMessageBox(this);
 				box->setText("Invalid inputs, check that all fields are filled in correctly.");
 				box->exec();
 			}

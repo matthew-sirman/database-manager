@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1 Tiny//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-tiny.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" width="13032" height="9416" viewbox="0 0 13698 9581 ">
-	<g>
+<!--<svg xmlns="http://www.w3.org/2000/svg" width="13698" height="9581" viewbox="0 0 13698 9581">-->
+<svg xmlns="http://www.w3.org/2000/svg" width="13032" height="9416" viewbox="0 0 13032 9416">
+    <g>
 		<title>background</title>
 		<rect fill="none" id="canvas_background" height="9853" width="13700" y="-1" x="-1"></rect>
 	</g>
 	<g>
 		<title>Layer 1</title>
 		<g id="general_details">
-			<text fill="#000000" stroke="#000000" stroke-width="1" stroke-opacity="0" fill-opacity="1" x="380" y="1130" font-family="Roboto" id="label_general_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">General Details</text>
+			<text fill="#000000" stroke="#000000" stroke-width="1" stroke-opacity="0" fill-opacity="1" x="380" y="1130" font-family="Segoe UI Light" id="label_general_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">General Details</text>
 			<rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="1230" width="3800" height="1960" id="general_details_target_region"></rect>
 		</g>
 		<g id="manufacturing_details">
-			<text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="0" x="380" y="3700" font-family="Roboto" id="label_manufacturing_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">Manufacturing Details</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" stroke-opacity="0" x="380" y="3700" font-family="Segoe UI Light" id="label_manufacturing_details" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">Manufacturing Details</text>
 			<rect fill="none" stroke="#000000" stroke-width="10" stroke-opacity="0" fill-opacity="0" x="330" y="3800" width="3800" height="4000" id="manufacturing_details_target_region"></rect>
 		</g>
 		<rect opacity="0" id="drawing_target_region" height="7060.0281" width="8432" y="977.04765" x="4600" fill-opacity="0" stroke-opacity="null" stroke-width="10" stroke="#000000" fill="#000000"></rect>
 		<g id="title_section">
 			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="0" y="0" width="4430.00275" height="400" id="svg_1"></rect>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="321.00131" y="250" id="svg_2" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">ALL DIMENSIONS IN MM UNLESS OTHERWISE STATED</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="321.00131" y="250" id="svg_2" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">ALL DIMENSIONS IN MM UNLESS OTHERWISE STATED</text>
 			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="4430.00287" y="0" width="2950.0041" height="400" id="svg_3"></rect>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="4801.00427" y="250" id="svg_4" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REMOVE ALL BURR AND FLASH</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="4801.00427" y="250" id="svg_4" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REMOVE ALL BURR AND FLASH</text>
 			<rect stroke="#000000" fill-opacity="0" fill="#0fffff" stroke-width="10" x="7380" y="0" width="3060.00393" height="400" id="svg_5"></rect>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="7810.98351" y="250" id="svg_6" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DO NOT SCALE DRAWING</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7810.98351" y="250" id="svg_6" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DO NOT SCALE DRAWING</text>
 			<rect stroke="#000000" id="svg_7" height="800" width="2592" x="10440" fill-opacity="0" stroke-width="10" fill="#0fffff"></rect>
 			<ellipse ry="200" rx="200" id="svg_9" cy="400" cx="11070" fill-opacity="0" stroke-width="10" stroke="#000000" fill="#0fffff"></ellipse>
 			<ellipse ry="100" rx="100" id="svg_8" cy="400" cx="11070" fill-opacity="0" stroke-width="10" fill="#0fffff" stroke="#000000"></ellipse>
@@ -50,15 +51,15 @@
 			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8816" width="700" height="200" id="svg_79"></rect>
 			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7900" y="8816" width="1400" height="200" id="svg_83"></rect>
 			<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="12500" y="8316" width="532" height="499.9945" id="svg_88"></rect>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="219.99616" y="9373.16966" id="svg_89" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REV.</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="979.98291" y="9373.16966" id="svg_90" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="1859.96843" y="9373.16966" id="svg_91" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">BY</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="2406.63252" y="9373" id="svg_92" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">CHANGE DESCRIPTION</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="7266.5971" y="8973" id="svg_94" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DRN. BY</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="8369.93098" y="8973" id="svg_95" font-family="Roboto" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="7226.63264" y="8426.6267" id="svg_96" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">TITLE</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="10219.95198" y="8439.95997" id="svg_97" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">DRAWING NUMBER</text>
-			<text fill="#000000" stroke="#000000" stroke-width="0" x="12526.60774" y="8426.6267" id="svg_98" font-family="Roboto" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">REV</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="219.99616" y="9373.16966" id="svg_89" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">REV.</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="979.98291" y="9373.16966" id="svg_90" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="1859.96843" y="9373.16966" id="svg_91" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">BY</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="2406.63252" y="9373" id="svg_92" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">CHANGE DESCRIPTION</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7266.5971" y="8973" id="svg_94" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DRN. BY</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="8369.93098" y="8973" id="svg_95" font-family="Segoe UI Light" font-size="150" text-anchor="start" xml:space="preserve" font-weight="100">DATE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="7226.63264" y="8426.6267" id="svg_96" font-family="Segoe UI Light" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">TITLE</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="10219.95198" y="8439.95997" id="svg_97" font-family="Segoe UI Light" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">DRAWING NUMBER</text>
+			<text fill="#000000" stroke="#000000" stroke-width="0" x="12526.60774" y="8426.6267" id="svg_98" font-family="Segoe UI Light" font-size="100" text-anchor="start" xml:space="preserve" font-weight="100">REV</text>
 			<g id="base_details">
 				<rect fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="7200" y="8316" width="3000" height="500" id="field_title"></rect>
 				<rect stroke-opacity="0" fill="none" stroke="#000000" stroke-width="10" fill-opacity="0" x="9901" y="8816" width="3132" height="600" id="field_scs_details"></rect>

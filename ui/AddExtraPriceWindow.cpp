@@ -2,7 +2,6 @@
 #include "../build/ui_AddExtraPriceWindow.h"
 #include "ExtraPricingWindow.h"
 
-// TODO: check this works
 AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
 										 ExtraPrice& price, QWidget* parent)
 	: QDialog(parent), ui(new Ui::AddExtraPriceWindow()) {
@@ -81,24 +80,22 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
     connect(this, &QDialog::accepted, [this, extraPrice, values, client]() {
         ComponentInsert insert;
 
-        ComponentInsert::ExtraPriceData* priceData = nullptr;
         switch (extraPrice.type) {
             //price then amount
             case ExtraPriceType::SIDE_IRON_NUTS: case ExtraPriceType::SIDE_IRON_SCREWS:
-                priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt());
+                insert.setComponentData<ComponentInsert::ExtraPriceData>({extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, values[1]->text().toInt()});
                 break;
             //price then surface area
             case ExtraPriceType::TACKYBACK_GLUE: case ExtraPriceType::PRIMER:
-                priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), values[1]->text().toFloat(), std::nullopt);
+                insert.setComponentData<ComponentInsert::ExtraPriceData>({extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), values[1]->text().toFloat(), std::nullopt});
                 break;
             //price
             case (ExtraPriceType::LABOUR):
-                priceData = new ComponentInsert::ExtraPriceData(extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, std::nullopt);
+               insert.setComponentData<ComponentInsert::ExtraPriceData>({extraPrice.componentID(), extraPrice.type, values[0]->text().toFloat(), std::nullopt, std::nullopt});
                 break;
             default:
                 return;
         }
-        insert.setComponentData<ComponentInsert::ExtraPriceData>(*priceData);
 
 
         // somehow changes from whatever you set here to 70
@@ -107,6 +104,5 @@ AddExtraPriceWindow::AddExtraPriceWindow(Client* client,
         void* buffer = alloca(bufferSize);
         insert.serialise(buffer);
         client->addMessageToSendQueue(buffer, bufferSize);
-        emit updateParent(values[0]->text(),extraPrice.type != ExtraPriceType::LABOUR ? std::make_optional(values[1]->text()) : std::nullopt);
             });
 }

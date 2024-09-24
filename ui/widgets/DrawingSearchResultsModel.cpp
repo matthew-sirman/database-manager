@@ -2,7 +2,7 @@
 // Created by matthew on 13/07/2020.
 //
 
-#include "../../include/database/DrawingSearchResultsModel.h"
+#include "ui/widgets/DrawingSearchResultsModel.h"
 
 int qIntVectorID = qRegisterMetaType<QVector<int>>();
 
