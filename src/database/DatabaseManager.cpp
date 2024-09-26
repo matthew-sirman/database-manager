@@ -9,7 +9,7 @@ DatabaseManager::DatabaseManager(const std::string &database,
                                  const std::string &user,
                                  const std::string &password,
                                  const std::string &host)
-    : sess(host, 33060, user, password) {
+   : sess(host, 33060, user, password) {
   this->username = user;
   this->password = password;
   this->database = database;
@@ -670,15 +670,16 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
   }
 }
 
-mysqlx::RowResult DatabaseManager::sourceTable(const std::string &tableName,
+mysqlx::RowResult DatabaseManager::sourceTable(
+    const std::string &tableName,
                                                const std::string &orderBy) {
   // Wrapped in a try statement to catch any MySQL errors.
   try {
-    return sess
+            return sess
         .sql("SELECT * FROM " + database + "." + tableName +
              (orderBy.empty() ? "" : " ORDER BY " + orderBy))
-        .execute();
-  } catch (mysqlx::Error &e) {
+                .execute();
+    } catch (mysqlx::Error &e) {
     // If there was an error, print it to the console.
     // This is not considered a fatal error; if there was an error we just
     // return an empty row set

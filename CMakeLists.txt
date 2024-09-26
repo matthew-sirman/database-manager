@@ -12,13 +12,12 @@ endif()
 set(CMAKE_PREFIX_PATH "C:\\Libraries\\Qt\\6.7.2\\msvc2019_64")
 set(QT_PLUGIN_PATH "C:\\Libraries\\Qt\\6.7.2\\msvc2019_64\\plugins")
 
-#find_package(OpenSSL REQUIRED)
-
-add_compile_definitions(CONCPP_BUILD_STATIC)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Pdf Core Gui PdfWidgets SvgWidgets Xml)
+add_compile_definitions(CONCPP_BUILD_STATIC)
 set(mysql-concpp_DIR "C:/Libraries/mysql-connector-c++-9.0.0-winx64")
-#set(mysql-concpp_DIR "C:/Libraries/mysql-connector-cpp")
 find_package(mysql-concpp REQUIRED)
+
+
 set(pricing-package_DIR "C:/Users/Alistair.Sirman/Manager/pricing-package")
 find_package(pricing-package REQUIRED)
 
@@ -26,8 +25,9 @@ set(ZLIB_INCLUDE_DIR "C:\\Libraries\\zlib\\include")
 set(ZLIB_LIBRARY "C:\\Libraries\\zlib\\zlib.lib")
 set(CURL_INCLUDE_DIRS "C:\\Libraries\\curl\\include")
 set(CURL_LIBRARY "C:\\Libraries\\curl\\libcurl.lib")
-# set(MYSQL_INCLUDE_DIRS "C:\\Libraries\\mysql-connector-cpp\\include")
-# set(MYSQL_LIBRARY "C:/Libraries/mysql-connector-cpp/lib64/debug/vs14/mysqlcppconn-static.lib")
+#set(MYSQL_INCLUDE_DIRS "C:\\Libraries\\mysql-connector-cpp\\include")
+#set(MYSQL_LIBRARY "C:/Libraries/mysql-connector-cpp/mysqlcppconn8.lib")
+#set(MYSQL_LIBRARY "C:/Libraries/mysql-connector-cpp/Release/mysqlcppconn8-static.lib")
 set(JSON_INCLUDE_DIRS "C:/Libraries/json/include")
 set(ENCRYPT_LIBRARY "C:/Libraries/Encrypt/encrypt.lib")
 set(ENCRYPT_LIBRARY_D "C:/Libraries/Encrypt/encrypt_d.lib")
@@ -62,17 +62,17 @@ set(COMPONENT_WINDOWS ui/AddApertureWindow.ui ui/AddApertureWindow.cpp ui/AddApe
 set(BASE src/networking/Server.cpp include/networking/Server.h src/networking/Client.cpp include/networking/Client.h guard.h src/networking/NetworkMessage.cpp include/networking/NetworkMessage.h src/networking/TCPSocket.cpp include/networking/TCPSocket.h src/database/DatabaseManager.cpp include/database/DatabaseManager.h src/database/Drawing.cpp include/database/Drawing.h src/database/DatabaseRequestHandler.cpp include/database/DatabaseRequestHandler.h src/database/DatabaseQuery.cpp include/database/DatabaseQuery.h include/database/drawingComponents.h src/database/drawingComponents.cpp include/database/RequestType.h src/database/DatabaseResponseHandler.cpp include/database/DatabaseResponseHandler.h include/database/ComboboxDataSource.h src/database/ComboboxDataSource.cpp include/database/DataSource.h packer.h include/database/componentFilters.h src/database/componentFilters.cpp include/util/format.h include/util/DataSerialiser.h include/database/Logger.h src/database/Logger.cpp include/database/ExtraPriceManager.h)
 set(QT_RESOURCES res/qtresources.qrc res/resources.rc)
 
-add_executable(${PROJECT_NAME} ${EXTRA_ADD_EXECUTABLE_ARGS} ${COMPONENT_WINDOWS} ${WIDGETS} ${PROJECT_UI} ${QT_RESOURCES} main.cpp)
 
 add_library(${PROJECT_NAME}_core STATIC ${BASE})# include/database/DrawingComponentManager.h)
 target_compile_definitions(${PROJECT_NAME}_core PRIVATE BUILDING_LIB)
-target_link_libraries(${PROJECT_NAME}_core mysql::concpp-xdevapi-static ${CURL_LIBRARY})
+target_link_libraries(${PROJECT_NAME}_core mysql::concpp-static ${CURL_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_core optimized ${ENCRYPT_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_core debug ${ENCRYPT_LIBRARY_D})
 target_compile_definitions(${PROJECT_NAME}_core PRIVATE CORE_DLL_EXPORT)
 
 include_directories(${PROJECT_NAME} ${JSON_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS} ${pricing_package_INCLUDE_DIR} ${MYSQL_CONCPP_INCLUDE_DIR})
 
+add_executable(${PROJECT_NAME} ${EXTRA_ADD_EXECUTABLE_ARGS} ${COMPONENT_WINDOWS} ${WIDGETS} ${PROJECT_UI} ${QT_RESOURCES} main.cpp)
 
 #if (MSVC)
 
@@ -85,7 +85,7 @@ include_directories(${PROJECT_NAME} ${JSON_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS} ${
 #)
 
 #target_link_libraries(${PROJECT_NAME} Dnsapi ${MYSQL_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Pdf Qt5::PdfWidgets Qt5::Svg ${ZLIB_LIBRARIES} ${CURL_LIBRARY})
-target_link_libraries(${PROJECT_NAME} Dnsapi ${ZLIB_LIBRARIES} ${CURL_LIBRARY} Qt6::Widgets Qt6::Svg Qt6::Core Qt6::Pdf Qt6::Gui Qt6::PdfWidgets Qt6::SvgWidgets Qt6::Xml mysql::concpp-xdevapi-static ${pricing_package_LIB} ${PROJECT_NAME}_core)
+target_link_libraries(${PROJECT_NAME} Dnsapi ${ZLIB_LIBRARIES} ${CURL_LIBRARY} Qt6::Widgets Qt6::Svg Qt6::Core Qt6::Pdf Qt6::Gui Qt6::PdfWidgets Qt6::SvgWidgets Qt6::Xml mysql::concpp-static ${pricing_package_LIB} ${PROJECT_NAME}_core)
 #target_link_libraries(${PROJECT_NAME}_core ${CURL_LIBRARY} Qt5::Core Qt5::Widgets Qt5::Pdf Qt5::Svg)
 
 #else()
@@ -135,3 +135,7 @@ add_custom_target(BuildLib ALL
     COMMAND ${CMAKE_COMMAND} -E echo "Library is located at: $<TARGET_FILE:${PROJECT_NAME}_core>"
     DEPENDS ${PROJECT_NAME}_core
 )
+include(CPack)
+if(NOT CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-DNDEBUG)  # Disable debug-related behavior in release builds
+endif()

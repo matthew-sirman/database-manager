@@ -582,6 +582,12 @@ int main(int argc, char *argv[]) {
         mode = HELP;
         break;
       }
+      // --no-corruption is because mysqlx connector keeps throwing inexplicable heap corruptions
+      // so as a temporary measure, they are being ignored.
+      if (strcmp(argv[i], "--no-corruption") == 0) {
+        HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+        std::cout << "WARNING: BOOTED WIHTOUT HEAP CORRUPTION." << std::endl;
+      }
 
       // If they used the flag "--setup" then they want to setup the server.
       if (strcmp(argv[i], "--setup") == 0) {

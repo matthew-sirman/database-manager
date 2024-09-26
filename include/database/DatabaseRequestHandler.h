@@ -10,6 +10,7 @@
 
 #include "../../packer.h"
 #include <map>
+#include <mysqlx/devapi/result.h>
 
 /// <summary>
 /// DatabaseRequestHandler

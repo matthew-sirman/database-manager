@@ -8,6 +8,7 @@
 #include <mysqlx/xdevapi.h>
 
 #include <vector>
+#include <memory>
 
 #include "DatabaseQuery.h"
 #include "Drawing.h"
