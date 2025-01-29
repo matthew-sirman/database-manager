@@ -3,6 +3,7 @@
 //
 
 #include "../../include/database/DatabaseResponseHandler.h"
+#include "../../include/database/DrawingComponentManager.h"
 
 void DatabaseResponseHandler::onMessageReceived(void *&&message,
                                                 unsigned int messageSize) {

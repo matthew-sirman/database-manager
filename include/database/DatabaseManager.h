@@ -13,6 +13,7 @@
 #include "DatabaseQuery.h"
 #include "Drawing.h"
 #include "Logger.h"
+#include "DrawingComponentManager.h"
 
 #include "../util/format.h"
 
@@ -95,7 +96,7 @@ public:
     /// <param name="tableName">The string name of the table we wish to source.</param>
     /// <param name="orderBy">An optional string to order the results from the query.</param>
     /// <returns>The rows from the table.</returns>
-    mysqlx::RowResult sourceTable(const std::string& tableName, const std::string& orderBy = std::string());
+    mysqlx::SqlResult sourceTable(const std::string& tableName, const std::string& orderBy = std::string());
 
     /// <summary>
     /// Sources multiple tables that are right joined together.
@@ -105,7 +106,7 @@ public:
     /// <param name="common">The name of the field to join upon</param>
     /// <param name="orderBy">An ordering for the returned table</param>
     /// <returns>The rows from the combined table</returns>
-    mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy = std::string());
+    mysqlx::SqlResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, const std::string& common, const std::string& orderBy = std::string());
     
     /// <summary>
     /// Sources multiple tables that are right joined together.
@@ -115,7 +116,7 @@ public:
     /// <param name="commons">A pair of strings, joining the left table on the first common and the second table on the second's.</param>
     /// <param name="orderBy">An ordering for the returned table</param>
     /// <returns>The rows from the combined table</returns>
-    mysqlx::RowResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy = std::string());
+    mysqlx::SqlResult sourceMultipleTable(const std::string& leftTable, const std::string& rightTable, std::tuple<std::string, std::string> commons, const std::string& orderBy = std::string());
 
     /// <summary>
     /// Inserts a drawing into the database based upon the passed in DrawingInsert object, which contains

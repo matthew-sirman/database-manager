@@ -7,6 +7,7 @@
 
 #include "DatabaseQuery.h"
 #include "../networking/Client.h"
+#include "DrawingComponentManager.h"
 
 /// <summary>
 /// DatabaseResponseHandler

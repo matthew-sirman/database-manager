@@ -7,6 +7,7 @@
 
 #include "DatabaseQuery.h"
 #include "../networking/Server.h"
+#include "DrawingComponentManager.h"
 
 #include "../../packer.h"
 #include <map>
@@ -325,7 +326,7 @@ private:
 	/// <typeparam name="T">The type for which to create the source data.</typeparam>
 	/// <param name="sourceRows">The row sources from the correct MySQL table.</param>
 	template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
-	void createSourceData(mysqlx::RowResult sourceRows) const;
+	void createSourceData(mysqlx::SqlResult sourceRows) const;
 
 	/// <summary>
 	/// Constructs one or more data elements of a given type from a single MySQL row.
@@ -342,7 +343,7 @@ private:
 	/// <param name="sizeValue">The amount of space the element(s) added will occupy in a buffer, so we know how big of a buffer to 
 	/// construct.</param>
 	template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
-	void constructDataElements(mysqlx::RowResult &sourceRow, unsigned &handle, std::vector<T> &elements, unsigned &sizeValue) const;
+	void constructDataElements(mysqlx::SqlResult sourceRow, unsigned &handle, std::vector<T> &elements, unsigned &sizeValue) const;
 
 	/// <summary>
 	/// Writes a single element to the buffer.
@@ -368,7 +369,7 @@ private:
 
 // Creates all the source data for a given set of rows
 template<typename T> requires std::is_base_of_v<DatabaseRequestHandler::TableSourceData, T>
-void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) const {
+void DatabaseRequestHandler::createSourceData(mysqlx::SqlResult sourceRows) const {
 	// We statically assert that this is being used on a valid type. If there is an attempt to call this function on a type which does not derive
 	// from TableSourceData, there will be a compiler error.
 	static_assert(std::is_base_of<TableSourceData, T>::value, "Create Source Data can only be called with templates deriving TableSourceData.");
@@ -388,7 +389,7 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 
 	// We loop through each row in the source
 		// For each, we construct the data element(s). This is added to the elements list from inside this function.
-	constructDataElements<T>(sourceRows, handle, elements, bufferSize);
+	constructDataElements<T>(std::move(sourceRows), handle, elements, bufferSize);
 
 	// Next we create the source data buffer with the size we have calculated.
 	void *sourceBuffer = malloc(bufferSize);

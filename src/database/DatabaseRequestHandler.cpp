@@ -17,8 +17,6 @@ void DatabaseRequestHandler::onMessageReceived(Server &caller,
                                                const ClientHandle &clientHandle,
                                                void *&&message,
                                                unsigned int messageSize) {
-  Logger::log("Message Type: " +
-              std::to_string(static_cast<int>(getDeserialiseType(message))));
   switch (getDeserialiseType(message)) {
     case RequestType::REPEAT_TOKEN_REQUEST:
       caller.sendRepeatToken(clientHandle,
@@ -628,10 +626,11 @@ void DatabaseRequestHandler::setCompressionSchemaDirty() { schemaDirty = true; }
 /// to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &productRow, unsigned &handle,
+    mysqlx::SqlResult productRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::ProductData> &elements,
     unsigned &sizeValue) const {
-  for (mysqlx::Row row : productRow.fetchAll()) {
+  std::vector<mysqlx::Row> rows = productRow.fetchAll();
+  for (mysqlx::Row row : rows) {
     if (!row.isNull()) {
       ProductData data;
       data.handle = handle++;
@@ -681,7 +680,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &apertureRow, unsigned &handle,
+    mysqlx::SqlResult apertureRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::ApertureData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : apertureRow.fetchAll()) {
@@ -760,9 +759,10 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &stripRow, unsigned &handle,
+    mysqlx::SqlResult stripRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::BackingStripData> &elements,
     unsigned &sizeValue) const {
+  // std::vector<mysqlx::Row> rows = stripRow.fetchAll();
   for (mysqlx::Row row : stripRow.fetchAll()) {
     if (row.isNull()) {
       std::cout << "Null" << std::endl;
@@ -811,7 +811,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &extraPriceRow, unsigned &handle,
+    mysqlx::SqlResult extraPriceRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::ExtraPriceData> &elements,
     unsigned &sizeValue) const {
   ExtraPriceData data;
@@ -823,48 +823,27 @@ void DatabaseRequestHandler::constructDataElements(
     data = *(new ExtraPriceData);
 
     data.handle = handle++;
+    sizeValue += sizeof(unsigned);
     data.id = row[0].get<unsigned int>();
+    sizeValue += sizeof(unsigned);
     data.type = ExtraPrice::getType.at(row[1].get<std::string>());
+    sizeValue += sizeof(ExtraPriceType);
     data.price = row[2].get<float>();
+    sizeValue += sizeof(float);
+    sizeValue++;
     if (row[3].isNull())
       data.amount = std::nullopt;
-    else
+    else {
       data.amount = std::make_optional(row[3].get<unsigned>());
+      sizeValue += sizeof(unsigned);
+    }
+    sizeValue++;
     if (row[4].isNull())
       data.squareMetres = std::nullopt;
-    else
+    else {
       data.squareMetres = std::make_optional(row[4].get<float>());
-
-    // if (row[1].get<std::string>() == "side_iron_nuts") {
-    //   data.type = ExtraPriceType::SIDE_IRON_NUTS;
-    //   data.amount = row[3].get<unsigned>();
-    //   data.squareMetres = std::nullopt;
-    //   sizeValue += sizeof(unsigned);
-    // } else if (row[1].get<std::string>() == "side_iron_screws") {
-    //   data.type = ExtraPriceType::SIDE_IRON_SCREWS;
-    //   data.amount = row[3].get<unsigned>();
-    //   data.squareMetres = std::nullopt;
-    //   sizeValue += sizeof(unsigned);
-    // } else if (row[1].get<std::string>() == "glue") {
-    //   data.type = ExtraPriceType::TACKYBACK_GLUE;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = row[4].get<float>();
-    //   sizeValue += sizeof(float);
-    // } else if (row[1].get<std::string>() == "labour") {
-    //   data.type = ExtraPriceType::LABOUR;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = std::nullopt;
-    // } else if (row[1].get<std::string>() == "primer") {
-    //   data.type = ExtraPriceType::PRIMER;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = row[4].get<float>();
-    //   sizeValue += sizeof(float);
-    // }
-    // sizeValue += sizeof(ExtraPriceType) + sizeof(float) + sizeof(unsigned) *
-    // 2;
-    sizeValue += sizeof(ExtraPriceType) + sizeof(unsigned) + sizeof(float) +
-                 (data.amount.has_value() ? sizeof(unsigned) : 0) +
-                 (data.squareMetres.has_value() ? sizeof(float) : 0);
+      sizeValue += sizeof(float);
+    }
 
     elements.push_back(data);
   }
@@ -916,7 +895,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &labourTimeRow, unsigned &handle,
+    mysqlx::SqlResult labourTimeRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::LabourTimeData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : labourTimeRow.fetchAll()) {
@@ -934,7 +913,7 @@ void DatabaseRequestHandler::constructDataElements(
     sizeValue +=
         sizeof(unsigned) * 3 + sizeof(data.job.size()) + data.job.size();
 
-    elements.push_back(data);
+    elements.push_back(std::move(data));
   }
 }
 
@@ -975,7 +954,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// store the amount of bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &apertureShapeRow, unsigned &handle,
+    mysqlx::SqlResult apertureShapeRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::ApertureShapeData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : apertureShapeRow.fetchAll()) {
@@ -1029,7 +1008,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// all of these, to be incremented.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &strapRow, unsigned &handle,
+    mysqlx::SqlResult strapRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::StrapData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : strapRow.fetchAll()) {
@@ -1083,7 +1062,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &materialRow, unsigned &handle,
+    mysqlx::SqlResult materialRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::MaterialData> &elements,
     unsigned &sizeValue) const {
   std::map<unsigned, DatabaseRequestHandler::MaterialData> material_ids;
@@ -1179,7 +1158,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// store the amount of bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &sideIronPriceRow, unsigned &handle,
+    mysqlx::SqlResult sideIronPriceRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::SideIronPriceData> &elements,
     unsigned &sizeValue) const {
   // for (mysqlx::Row row : sideIronPriceRow) {
@@ -1264,7 +1243,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &powderCoatingRow, unsigned &handle,
+    mysqlx::SqlResult powderCoatingRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::PowderCoatingPriceData> &elements,
     unsigned &sizeValue) const {
   // for (mysqlx::Row row : powderCoatingRow) {
@@ -1321,7 +1300,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// bytes will be needed to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &sideIronRow, unsigned &handle,
+    mysqlx::SqlResult sideIronRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::SideIronData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : sideIronRow.fetchAll()) {
@@ -1423,7 +1402,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 /// to serialise the elements.</param>
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &machineRow, unsigned &handle,
+    mysqlx::SqlResult machineRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::MachineData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : machineRow.fetchAll()) {
@@ -1484,7 +1463,7 @@ RequestType DatabaseRequestHandler::getRequestType<
 
 template <>
 void DatabaseRequestHandler::constructDataElements(
-    mysqlx::RowResult &machineDeckRow, unsigned &handle,
+    mysqlx::SqlResult machineDeckRow, unsigned &handle,
     std::vector<DatabaseRequestHandler::MachineDeckData> &elements,
     unsigned &sizeValue) const {
   for (mysqlx::Row row : machineDeckRow.fetchAll()) {

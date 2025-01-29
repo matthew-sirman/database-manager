@@ -346,6 +346,8 @@ std::vector<std::filesystem::path> DrawingViewWidget::punchProgramPathForDrawing
 
     std::vector<std::filesystem::path> out;
     path /= folder;
+    if (!std::filesystem::is_directory(path))
+        return {};
     for (const auto& entry : std::filesystem::directory_iterator(path)) {
         if (std::filesystem::is_regular_file(entry.path()) && std::regex_match(entry.path().filename().string(), std::regex(drawingNumber + ".*\\.pdf"))) {
             out.push_back(entry);

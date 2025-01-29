@@ -20,6 +20,7 @@
 #include <filesystem>
 
 #include "../../../include/database/Drawing.h"
+#include "DrawingComponentManager.h"
 
 
 /// <summary>

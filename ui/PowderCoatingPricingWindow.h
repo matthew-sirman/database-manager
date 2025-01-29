@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include "../include/database/DatabaseQuery.h"
 #include "../include/networking/Client.h"
+#include "../include/database/DrawingComponentManager.h"
 
 namespace Ui {
 	class PowderCoatingPricingWindow;

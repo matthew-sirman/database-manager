@@ -670,7 +670,7 @@ Drawing *DatabaseManager::executeDrawingQuery(const DrawingRequest &query) {
   }
 }
 
-mysqlx::RowResult DatabaseManager::sourceTable(
+mysqlx::SqlResult DatabaseManager::sourceTable(
     const std::string &tableName,
                                                const std::string &orderBy) {
   // Wrapped in a try statement to catch any MySQL errors.
@@ -684,11 +684,11 @@ mysqlx::RowResult DatabaseManager::sourceTable(
     // This is not considered a fatal error; if there was an error we just
     // return an empty row set
     Logger::logError(e.what(), __LINE__, __FILE__);
-    return mysqlx::RowResult();
+    return {};
   }
 }
 
-mysqlx::RowResult DatabaseManager::sourceMultipleTable(
+mysqlx::SqlResult DatabaseManager::sourceMultipleTable(
     const std::string &leftTable, const std::string &rightTable,
     std::tuple<std::string, std::string> commons, const std::string &orderBy) {
   // Wrapped in a try statement to catch any MySQL errors.
@@ -705,11 +705,11 @@ mysqlx::RowResult DatabaseManager::sourceMultipleTable(
     // This is not considered a fatal error; if there was an error we just
     // return an empty row set
     Logger::logError(e.what(), __LINE__, __FILE__);
-    return mysqlx::RowResult();
+    return {};
   }
 }
 
-mysqlx::RowResult DatabaseManager::sourceMultipleTable(
+mysqlx::SqlResult DatabaseManager::sourceMultipleTable(
     const std::string &leftTable, const std::string &rightTable,
     const std::string &common, const std::string &orderBy) {
   return sourceMultipleTable(leftTable, rightTable, {common, common});
@@ -1044,7 +1044,8 @@ std::string DatabaseManager::nextManualDrawingNumber() {
         "WHERE drawing_number LIKE 'M%' "
         "ORDER BY CAST(SUBSTRING(drawing_number, 2) AS UNSIGNED) DESC LIMIT 1;";
 
-    mysqlx::Row row = sess.sql(sqlQuery).execute().fetchOne();
+    mysqlx::SqlResult test = sess.sql(sqlQuery).execute();
+    mysqlx::Row row = test.fetchOne();
 
     if (!row.isNull()) {
       std::string latest = row[0].get<std::string>();

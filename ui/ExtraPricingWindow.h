@@ -5,6 +5,7 @@
 #include "../include/database/ExtraPriceManager.h"
 #include "../include/networking/Client.h"
 #include "widgets/DynamicComboBox.h"
+#include "../include/database/DrawingComponentManager.h"
 #include "AddExtraPriceWindow.h"
 
 #include <QDialog>

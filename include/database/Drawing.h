@@ -9,6 +9,7 @@
 #include <numeric>
 #include <regex>
 #include <sstream>
+#include <cmath>
 
 #include "../../packer.h"
 #include "drawingComponents.h"

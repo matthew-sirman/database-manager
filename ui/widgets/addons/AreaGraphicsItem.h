@@ -20,6 +20,7 @@
 #include "../Inspector.h"
 #include "../DimensionLine.h"
 #include "../../../include/database/Drawing.h"
+#include "../../../include/database/DrawingComponentManager.h"
 
 /// <summary>
 /// AreaGraphicsItem inherits QGraphicsItem \n

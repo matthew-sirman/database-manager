@@ -157,7 +157,7 @@ MessageProtocol NetworkMessage::protocol() const {
     return _protocol;
 }
 
-EncryptedNetworkMessage::EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey) {
+__declspec(no_sanitize_address) EncryptedNetworkMessage::EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey) {
     if (messageSize > MAX_MESSAGE_LENGTH) {
         std::cerr << "ERROR: Attempted to create a message longer than the maximum allowable message length (" << MAX_MESSAGE_LENGTH << ")." << std::endl;
         return;

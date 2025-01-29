@@ -1,0 +1,7 @@
+{
+    "keyPath": "@INSTALL_DIR@/Client/Local/client",
+    "repeatTokenPath": "@INSTALL_DIR@/Client/Local/client/repeat.tok",
+    "serverAddress": "localhost",
+    "serverPort": 10000,
+    "serverSignaturePath": "@INSTALL_DIR@/Client/Local/client/signature"
+}

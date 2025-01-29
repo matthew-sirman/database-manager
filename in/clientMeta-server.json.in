@@ -1,0 +1,7 @@
+{
+    "keyPath": "@INSTALL_DIR@/Client/Server/client/keys",
+    "repeatTokenPath": "@INSTALL_DIR@/Client/Server/client/repeat.tok",
+    "serverAddress": "dbserver.scs.local",
+    "serverPort": 10000,
+    "serverSignaturePath": "@INSTALL_DIR@/Client/Server/client/signature"
+}

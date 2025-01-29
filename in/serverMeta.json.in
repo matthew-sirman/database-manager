@@ -1,0 +1,9 @@
+{
+  "keyPath": "@INSTALL_DIR@/Server/server/keys",
+  "serverPort": 10000,
+  "logFile": "@INSTALL_DIR@/Server/server/logs/log.txt",
+  "changelogFile": "@INSTALL_DIR@/Server/server/logs/changelog.txt",
+  "errorFile": "@INSTALL_DIR@/Server/server/logs/error.txt",
+  "databasePasswordPath": "@INSTALL_DIR@/Server/server/database",
+  "backupPath": "@INSTALL_DIR@/Server/server/backups"
+}

@@ -1,7 +1,9 @@
 #include "AreaGraphicsItem.h"
 
+template<>
 const QBrush AreaGraphicsItem<Drawing::BlankSpace>::brush(QColor(200, 200, 200, 127));
 
+template<>
 void  AreaGraphicsItem<Drawing::BlankSpace>::populateInspector(Drawing::BlankSpace& b, Inspector* inspector) {
 	inspector->addFloatField("Width:", b.width, 1, 0);
 	inspector->addFloatField("Length:", b.length, 1, 0);
@@ -9,8 +11,10 @@ void  AreaGraphicsItem<Drawing::BlankSpace>::populateInspector(Drawing::BlankSpa
 	inspector->addFloatField("Y Position:", b.pos.y, 1, 0);
 };
 
+template<>
 const QBrush AreaGraphicsItem<Drawing::ImpactPad, Material, Aperture>::brush(QColor(255, 255, 0, 127));
 
+template<>
 void AreaGraphicsItem<Drawing::ImpactPad, Material, Aperture>::populateInspector(Drawing::ImpactPad& p, Inspector* inspector,
 	ComboboxComponentDataSource<Material>* materialSource, ComboboxComponentDataSource<Aperture>* apertureSource) {
 
@@ -45,8 +49,11 @@ void AreaGraphicsItem<Drawing::ImpactPad, Material, Aperture>::populateInspector
 	}, *apertureSource, currentAperture.handle() == 0 ? -1 : currentAperture.handle());
 };
 
+template<>
 const QBrush AreaGraphicsItem<Drawing::ExtraAperture, Aperture>::brush(QColor(141, 221, 247, 127));
 
+
+template<>
 void AreaGraphicsItem<Drawing::ExtraAperture, Aperture>::populateInspector(Drawing::ExtraAperture& e,
 	Inspector* inspector, ComboboxComponentDataSource<Aperture>* apertureSource) {
 			inspector->addFloatField("Width:", e.width, 1, 0);
@@ -71,8 +78,10 @@ void AreaGraphicsItem<Drawing::ExtraAperture, Aperture>::populateInspector(Drawi
                     : -1);
 };
 
+template<>
 const QBrush AreaGraphicsItem<Drawing::DamBar, Material>::brush(QColor(255, 50, 50, 127));
 
+template<>
 void AreaGraphicsItem<Drawing::DamBar, Material>::populateInspector(Drawing::DamBar& d,
 	Inspector* inspector, ComboboxComponentDataSource<Material>* materialSource) {
 	inspector->addFloatField("Width:", d.width, 1, 0);

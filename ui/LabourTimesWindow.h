@@ -6,6 +6,7 @@
 #include "../include/networking/Client.h"
 #include "widgets/DynamicComboBox.h"
 #include "AddLabourTimesWindow.h"
+#include "../include/database/DrawingComponentManager.h"
 
 #include <QDialog>
 #include <QLineEdit>

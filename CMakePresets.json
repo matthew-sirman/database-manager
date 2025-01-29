@@ -9,11 +9,19 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
-//        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_C_COMPILER": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.37.32822/bin/Hostx64/x64/cl.exe",
-        "CMAKE_CXX_COMPILER": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.37.32822/bin/Hostx64/x64/cl.exe"
-
-//        "CMAKE_CXX_COMPILER": "cl.exe"
+        //        "CMAKE_C_COMPILER": "cl.exe",
+//                "CMAKE_C_COMPILER": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.37.32822/bin/Hostx64/x64/cl.exe",
+//                "CMAKE_CXX_COMPILER": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.37.32822/bin/Hostx64/x64/cl.exe"
+        //        "CMAKE_CXX_COMPILER": "cl.exe"
+//        "CMAKE_C_COMPILER": "C:\\tools\\ghc-9.4.2\\mingw\\bin\\gcc.exe",
+//        "CMAKE_CXX_COMPILER": "C:\\tools\\ghc-9.4.2\\mingw\\bin\\g++.exe",
+        "CMAKE_TOOLCHAIN_FILE": "D:/Libraries/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      },
+      "environment": {
+        "CFLAGS": "/fsanitize=address",
+        "CXXFLAGS": "/fsanitize=address",
+        "ASAN_OPTIONS":"continue_on_error=1"
       },
       "condition": {
         "type": "equals",

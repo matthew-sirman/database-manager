@@ -1,5 +1,6 @@
 #include "GroupGraphicsItem.h"
 
+template<>
 QPainterPath GroupGraphicsItem<Drawing::CentreHole, Aperture>::calculateBounds(const Drawing::CentreHole &hole) const {
 	Aperture ap = hole.aperture();
 	bool longitudinal, rounded;
@@ -36,6 +37,7 @@ QPainterPath GroupGraphicsItem<Drawing::CentreHole, Aperture>::calculateBounds(c
 	return path;
 };
 
+template<>
 void GroupGraphicsItem<Drawing::CentreHole, Aperture>::populateInspector(Drawing::CentreHole &hole){
 	inspector->addFloatField("X Position:", hole.pos.x, 1, 0);
 	inspector->addFloatField("Y Position:", hole.pos.y, 1, 0);
@@ -56,10 +58,12 @@ void GroupGraphicsItem<Drawing::CentreHole, Aperture>::populateInspector(Drawing
     }, *apertureSource, hole.aperture().handle());
 }
 
+template<>
 void GroupGraphicsItem<Drawing::CentreHole, Aperture>::sync(const Drawing::CentreHole &a, Drawing::CentreHole &b) {
 	b.apertureID = a.apertureID;
 }
 
+template<>
 QPainterPath GroupGraphicsItem<Drawing::Deflector, Material>::calculateBounds(const Drawing::Deflector &deflector) const {
 	QPainterPath deflectorBounds;
 
@@ -79,6 +83,7 @@ QPainterPath GroupGraphicsItem<Drawing::Deflector, Material>::calculateBounds(co
 	return deflectorBounds;
 }
 
+template<>
 void GroupGraphicsItem<Drawing::Deflector, Material>::populateInspector(Drawing::Deflector &deflector) {
 	inspector->addFloatField("Size:", [this](float value) {
 		std::for_each(this->items.begin(), this->items.end(), [value](Drawing::Deflector &deflector) { deflector.size = value; });
@@ -99,11 +104,13 @@ void GroupGraphicsItem<Drawing::Deflector, Material>::populateInspector(Drawing:
 	}, *materialSource, deflector.materialHandle == 0 ? -1 : deflector.materialHandle);
 };
 
+template<>
 void GroupGraphicsItem<Drawing::Deflector, Material>::sync(const Drawing::Deflector &a, Drawing::Deflector &b) {
 	b.materialHandle = a.materialHandle;
 	b.size = a.size;
 }
 
+template<>
 QPainterPath GroupGraphicsItem<Drawing::Divertor, Material>::calculateBounds(const Drawing::Divertor &divertor) const {
 	QPainterPath divertorBounds;
 
@@ -143,6 +150,7 @@ QPainterPath GroupGraphicsItem<Drawing::Divertor, Material>::calculateBounds(con
 	return divertorBounds;
 };
 
+template<>
 void GroupGraphicsItem<Drawing::Divertor, Material>::populateInspector(Drawing::Divertor &divertor) {
 	inspector->addFloatField("Width:", [this](float value) {
 		std::for_each(items.begin(), items.end(), [value](Drawing::Divertor &divertor) { divertor.width = value; });
@@ -164,6 +172,7 @@ void GroupGraphicsItem<Drawing::Divertor, Material>::populateInspector(Drawing::
 	}, *materialSource, divertor.materialHandle == 0 ? -1 : divertor.materialHandle);
 }
 
+template<>
 void GroupGraphicsItem<Drawing::Divertor, Material>::sync(const Drawing::Divertor &a, Drawing::Divertor &b) {
 	b.width = a.width;
 	b.length = a.length;

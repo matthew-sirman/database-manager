@@ -11,7 +11,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QMessageBox>
-#include <PricingPackage.h>
+#include "../../pricing-package/include/PricingPackage.h"
 
 namespace Ui {
     class AddLabourTimesWindow;

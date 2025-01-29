@@ -295,7 +295,7 @@ struct EncryptedNetworkMessage : public NetworkMessage {
     /// <param name="messageData">Buffer holding the message.</param>
     /// <param name="messageSize">The size of the buffer.</param>
     /// <param name="encryptionKey">Key to encrypt the message.</param>
-    EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey);
+    __declspec(no_sanitize_address) EncryptedNetworkMessage(const void *messageData, uint32 messageSize, AESKey encryptionKey);
 
     /// <summary>
     /// Constructs a new EncryptedMessageObject using a string, and the encryption key.

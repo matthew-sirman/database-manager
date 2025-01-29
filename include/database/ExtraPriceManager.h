@@ -1,6 +1,9 @@
 #pragma once
 
 
+struct ExtraPrice;
+#include "RequestType.h"
+
 /// <summary>
 /// ExtraPriceTrait
 /// Defines a struct templated onto the enum ExtraPriceType. Each template

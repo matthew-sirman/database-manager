@@ -9,7 +9,7 @@
 #include <QBuffer>
 #include <filesystem>
 #include <regex>
-#include <PricingPackage.h>
+#include "../../pricing-package/include/PricingPackage.h"
 
 #include "include/database/DatabaseRequestHandler.h"
 #include "include/database/Logger.h"
@@ -48,7 +48,26 @@
 //extern template class __declspec(dllimport)
 //    ExtraPriceManager<ExtraPriceType::SHOT_BLASTING>;
 
-SETUP_MANAGERS
+// extern template class __attribute__((dllimport)) DrawingComponentManager<Strap>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<Aperture>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<ApertureShape>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<BackingStrip>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<ExtraPrice>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<LabourTime>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<Machine>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<MachineDeck>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<Material>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<PowderCoatingPrice>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<Product>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<SideIron>;
+// extern template class __attribute__((dllimport)) DrawingComponentManager<SideIronPrice>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::SIDE_IRON_NUTS>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::SIDE_IRON_SCREWS>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::TACKYBACK_GLUE>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::LABOUR>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::PRIMER>;
+// extern template class __attribute__((dllimport)) ExtraPriceManager<ExtraPriceType::SHOT_BLASTING>;
+// extern class __attribute__((dllimport)) Logger;
 
 enum RunMode { NO_MODE, SERVER, CLIENT, SETUP, ADD_USER, HELP };
 
@@ -104,7 +123,7 @@ std::string getPassword(const std::string &prompt) {
 uint256 getPasswordHash(const std::string &prompt) {
   std::string password = getPassword(prompt);
 
-  uint256 pwHash = sha256((const uint8 *)password.c_str(), password.size());
+  uint256 pwHash = sha256((const uint8 *) password.c_str(), password.size());
 
   memset(password.data(), 0, password.size());
 
@@ -115,7 +134,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
   metaFilePath = metaFilePath / "serverMeta.json";
   if (!std::filesystem::exists(metaFilePath)) {
     std::cerr << "Meta file path " << metaFilePath << " does not exist."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -130,7 +149,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
     metaFile.close();
   } catch (nlohmann::json::parse_error &) {
     std::cerr << "Failed to load " << metaFilePath
-              << ". Check the JSON is valid" << std::endl;
+        << ". Check the JSON is valid" << std::endl;
 
     metaFile.close();
     return;
@@ -142,7 +161,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
   }
   if (meta.find("databasePasswordPath") == meta.end()) {
     std::cerr << "Could not find 'databasePasswordPath' in meta file."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -153,8 +172,8 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
   std::string databasePassword = getPassword("Enter database password: ");
 
   std::cout << "Generating RSA key pairs for the server and signatures (this "
-               "may take up to a minute)..."
-            << std::endl;
+      "may take up to a minute)..."
+      << std::endl;
 
   // Generate the two keys for the server and the digital signature
   RSAKeyPair serverKeyPair = generateRSAKeyPair();
@@ -166,12 +185,12 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
       << "Enter one or more passwords to save the encryption key files with."
       << std::endl;
   std::cout << "Any one of these passwords will be needed to decrypt the key "
-               "file for future use."
-            << std::endl;
+      "file for future use."
+      << std::endl;
 
   // Hash the password to use as an AES key to secure the two keys
   uint256 pwHash = getPasswordHash(
-      "Enter a root password to secure the encryption keys under: ");
+    "Enter a root password to secure the encryption keys under: ");
   std::filesystem::create_directory(keyPath / "server");
   std::filesystem::create_directory(keyPath / "signature");
 
@@ -183,7 +202,7 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
   writePublicKey(digitalSignatureKeyPair.publicKey,
                  keyPath / "signature/signature.pub");
 
-  lockData((uint8 *)databasePassword.c_str(), databasePassword.size(),
+  lockData((uint8 *) databasePassword.c_str(), databasePassword.size(),
            databasePasswordPath / "encrypted_root.pass", pwHash);
 
   std::cout << "Keys saved successfully for user root." << std::endl;
@@ -198,12 +217,12 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
       // Get a username for this password
       std::string uname;
       std::cout << "Enter a username (lowercase letters only) to associate "
-                   "this password with: ";
+          "this password with: ";
       std::cin >> uname;
 
       if (!std::regex_match(uname, USERNAME_CHECK)) {
         std::cerr << "Invalid username. Use lowercase letters only."
-                  << std::endl;
+            << std::endl;
         continue;
       }
 
@@ -218,11 +237,11 @@ void setupServerKeys(std::filesystem::path metaFilePath) {
       lockPrivateKey(digitalSignatureKeyPair.privateKey,
                      keyPath / ("signature/signature_" + uname + ".pri"),
                      pwHash);
-      lockData((uint8 *)databasePassword.c_str(), databasePassword.size(),
+      lockData((uint8 *) databasePassword.c_str(), databasePassword.size(),
                databasePasswordPath / ("encrypted_" + uname + ".pass"), pwHash);
 
       std::cout << "Keys saved successfully for user " << uname << "."
-                << std::endl;
+          << std::endl;
     } else {
       break;
     }
@@ -234,7 +253,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
   metaFilePath = metaFilePath / "serverMeta.json";
   if (!std::filesystem::exists(metaFilePath)) {
     std::cerr << "Meta file path " << metaFilePath << " does not exist."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -249,7 +268,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
     metaFile.close();
   } catch (nlohmann::json::parse_error &) {
     std::cerr << "Failed to load " << metaFilePath
-              << ". Check the JSON is valid" << std::endl;
+        << ". Check the JSON is valid" << std::endl;
 
     metaFile.close();
     return;
@@ -261,7 +280,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
   }
   if (meta.find("databasePasswordPath") == meta.end()) {
     std::cerr << "Could not find 'databasePasswordPath' in meta file."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -276,7 +295,7 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
                                ("signature/signature_" + authUser + ".pri")) ||
       !std::filesystem::exists(keyPath / ("signature/signature.pub"))) {
     std::cerr << "There is no key file associated with user " << authUser << "."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -291,19 +310,19 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
   DigitalSignatureKeyPair digitalSignatureKeyPair;
 
   serverKeyPair.privateKey = unlockPrivateKey<32>(
-      keyPath / ("server/server_key_" + authUser + ".pri"), pwHash);
+    keyPath / ("server/server_key_" + authUser + ".pri"), pwHash);
   serverKeyPair.publicKey =
       readPublicKey<32>(keyPath / ("server/server_key.pub"));
   digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(
-      keyPath / ("signature/signature_" + authUser + ".pri"), pwHash);
+    keyPath / ("signature/signature_" + authUser + ".pri"), pwHash);
   digitalSignatureKeyPair.publicKey =
       readPublicKey<24>(keyPath / ("signature/signature.pub"));
   std::string databasePassword = unlockStringData(
-      databasePasswordPath / ("encrypted_" + authUser + ".pass"), pwHash);
+    databasePasswordPath / ("encrypted_" + authUser + ".pass"), pwHash);
 
   if (serverKeyPair.privateKey.n == serverKeyPair.publicKey.n &&
       digitalSignatureKeyPair.privateKey.n ==
-          digitalSignatureKeyPair.publicKey.n) {
+      digitalSignatureKeyPair.publicKey.n) {
     prompt.str(std::string());
     prompt << "Enter a password for new user " << newUser << ": ";
 
@@ -314,11 +333,11 @@ void addUser(const std::string &newUser, std::filesystem::path metaFilePath,
     lockPrivateKey(digitalSignatureKeyPair.privateKey,
                    keyPath / ("signature/signature_" + newUser + ".pri"),
                    pwHash);
-    lockData((uint8 *)databasePassword.c_str(), databasePassword.size(),
+    lockData((uint8 *) databasePassword.c_str(), databasePassword.size(),
              databasePasswordPath / ("encrypted_" + newUser + ".pass"), pwHash);
 
     std::cout << "Keys saved successfully for user " << newUser << "."
-              << std::endl;
+        << std::endl;
   } else {
     std::cerr << "Invalid password for user " << authUser << "." << std::endl;
     return;
@@ -330,7 +349,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
   metaFilePath = metaFilePath / "serverMeta.json";
   if (!std::filesystem::exists(metaFilePath)) {
     std::cerr << "Meta file path " << metaFilePath << " does not exist."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -345,7 +364,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
     metaFile.close();
   } catch (nlohmann::json::parse_error &) {
     std::cerr << "Failed to load " << metaFilePath
-              << ". Check the JSON is valid" << std::endl;
+        << ". Check the JSON is valid" << std::endl;
 
     metaFile.close();
     return;
@@ -357,7 +376,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
   }
   if (meta.find("databasePasswordPath") == meta.end()) {
     std::cerr << "Could not find 'databasePasswordPath' in meta file."
-              << std::endl;
+        << std::endl;
     return;
   }
   if (meta.find("serverPort") == meta.end()) {
@@ -382,7 +401,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
                                ("signature/signature_" + user + ".pri")) ||
       !std::filesystem::exists(keyPath / ("signature/signature.pub"))) {
     std::cerr << "There is no key file associated with user " << user << "."
-              << std::endl;
+        << std::endl;
     return;
   }
 
@@ -403,25 +422,25 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
   DigitalSignatureKeyPair digitalSignatureKeyPair;
 
   serverKeyPair.privateKey = unlockPrivateKey<32>(
-      keyPath / ("server/server_key_" + user + ".pri"), pwHash);
+    keyPath / ("server/server_key_" + user + ".pri"), pwHash);
   serverKeyPair.publicKey =
       readPublicKey<32>(keyPath / ("server/server_key.pub"));
   digitalSignatureKeyPair.privateKey = unlockPrivateKey<24>(
-      keyPath / ("signature/signature_" + user + ".pri"), pwHash);
+    keyPath / ("signature/signature_" + user + ".pri"), pwHash);
   digitalSignatureKeyPair.publicKey =
       readPublicKey<24>(keyPath / ("signature/signature.pub"));
   std::string databasePassword = unlockStringData(
-      databasePasswordPath / ("encrypted_" + user + ".pass"), pwHash);
+    databasePasswordPath / ("encrypted_" + user + ".pass"), pwHash);
 
   if (serverKeyPair.privateKey.n != serverKeyPair.publicKey.n ||
       digitalSignatureKeyPair.privateKey.n !=
-          digitalSignatureKeyPair.publicKey.n) {
+      digitalSignatureKeyPair.publicKey.n) {
     std::cerr << "Invalid password for user " << user << "." << std::endl;
     return;
   }
 
   std::ostream *errStream = &std::cerr, *changelogStream = nullptr,
-               *logStream = &std::cout;
+      *logStream = &std::cout;
 
   if (meta.find("logFile") != meta.end()) {
     logStream =
@@ -430,7 +449,7 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
   }
   if (meta.find("changelogFile") != meta.end()) {
     changelogStream = new std::ofstream(
-        meta["changelogFile"].get<std::string>(), std::ios::app);
+      meta["changelogFile"].get<std::string>(), std::ios::app);
     std::cout << "Logging changes to: " << meta["changelogFile"] << std::endl;
   }
   if (meta.find("errorFile") != meta.end()) {
@@ -463,7 +482,8 @@ void runServer(std::filesystem::path metaFilePath, const std::string &user,
   } else {
     std::string databasePassword_dev = getPassword("Dev Password: ");
     std::string test1 = "screen_mat_database_dev", test2 = "dev",
-                test3 = "scs.local";
+    // change to scs.local for non locally hosted mysql server
+        test3 = "localhost";
     //s.connectToDatabaseServer("screen_mat_database_dev", "dev",
     //                          databasePassword_dev, "scs.local");
     s.connectToDatabaseServer(test1, test2, databasePassword_dev, test3);
@@ -506,40 +526,40 @@ void printHelpMessage() {
   std::cout << "Flags: " << std::endl;
   std::cout << "  --server            - run the server." << std::endl;
   std::cout << "  --dev               - run the server on the dev database"
-            << std::endl;
+      << std::endl;
   std::cout << "  --client            - run a client instance." << std::endl;
   std::cout << "  --console           - runs client with console" << std::endl;
   std::cout << "  --setup             - set the server keys up and save them "
-               "in key files."
-            << std::endl;
+      "in key files."
+      << std::endl;
   std::cout << "                        NOTE: This will not start the server."
-            << std::endl;
+      << std::endl;
   std::cout << "  --add-user [USER]   - add a new admin user and password. "
-               "This user will be able to"
-            << std::endl;
+      "This user will be able to"
+      << std::endl;
   std::cout
       << "                        start the server and unlock the key files."
       << std::endl;
   std::cout << "                        NOTE: The --user flag will specify the "
-               "user to authenticate this new"
-            << std::endl;
+      "user to authenticate this new"
+      << std::endl;
   std::cout << "                        user with. Defaults to root."
-            << std::endl;
+      << std::endl;
   std::cout
       << "  --meta [PATH]       - provide an explicit path to the meta file."
       << std::endl;
   std::cout << "                        This path should contain "
-               "'clientMeta.json' for running the client"
-            << std::endl;
+      "'clientMeta.json' for running the client"
+      << std::endl;
   std::cout
       << "                        or 'serverMeta.json' for running the server."
       << std::endl;
   std::cout << "  --user [USER]       - provide a username to unlock the key "
-               "files with. If no"
-            << std::endl;
+      "files with. If no"
+      << std::endl;
   std::cout << "                        username is provided, it will load the "
-               "keys from the root file."
-            << std::endl;
+      "keys from the root file."
+      << std::endl;
   std::cout << "  --help (-h)         - prints this help message." << std::endl;
 }
 
@@ -595,9 +615,9 @@ int main(int argc, char *argv[]) {
           mode = SETUP;
         } else {
           std::cout << "Invalid arguments. Use --help for more information."
-                    << std::endl;
+              << std::endl;
           std::cerr << "ERROR: You can only use one mode at a time."
-                    << std::endl;
+              << std::endl;
           goto error;
         }
       }
@@ -608,9 +628,9 @@ int main(int argc, char *argv[]) {
           mode = SERVER;
         } else {
           std::cout << "Invalid arguments. Use --help for more information."
-                    << std::endl;
+              << std::endl;
           std::cerr << "ERROR: You can only use one mode at a time."
-                    << std::endl;
+              << std::endl;
           goto error;
         }
       }
@@ -626,9 +646,9 @@ int main(int argc, char *argv[]) {
           mode = CLIENT;
         } else {
           std::cout << "Invalid arguments. Use --help for more information."
-                    << std::endl;
+              << std::endl;
           std::cerr << "ERROR: You can only use one more at a time."
-                    << std::endl;
+              << std::endl;
           goto error;
         }
       }
@@ -650,9 +670,9 @@ int main(int argc, char *argv[]) {
           }
         } else {
           std::cout << "Invalid arguments. Use --help for more information."
-                    << std::endl;
+              << std::endl;
           std::cerr << "ERROR: You can only use one mode at a time."
-                    << std::endl;
+              << std::endl;
           goto error;
         }
       }
@@ -675,7 +695,7 @@ int main(int argc, char *argv[]) {
 
   if (dev && mode != SERVER) {
     std::cout << "Invalid arguments. Use --help for more information."
-              << std::endl;
+        << std::endl;
     std::cerr << "Only the server can be in dev mode." << std::endl;
     goto error;
   }
@@ -697,7 +717,7 @@ int main(int argc, char *argv[]) {
       break;
     case NO_MODE:
       std::cout << "Invalid arguments. Use --help for more information."
-                << std::endl;
+          << std::endl;
       std::cerr << "ERROR: No mode selected." << std::endl;
       goto error;
   }

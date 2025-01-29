@@ -1,0 +1,15 @@
+OutFile "Installer.exe"
+
+InstallDir "$PROGRAMFILES/Screen Mat Database/bin"
+RequestExecutionLevel admin
+
+Page directory
+Page instfiles
+
+Section "Install"
+    SetOutPath "$INSTDIR"    ; Set installation path
+
+    ; Copy the executable and DLLs
+    File /r "@RELEASE_BIN_DIR_W@\*.*"
+
+SectionEnd

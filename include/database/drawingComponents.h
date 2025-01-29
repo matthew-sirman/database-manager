@@ -17,7 +17,7 @@
 #include "../../guard.h"
 #include "../networking/NetworkMessage.h"
 #include "ComboboxDataSource.h"
-#include "RequestType.h"
+#include "ExtraPriceManager.h"
 
 //#ifdef CORE_DLL_EXPORT
 //#define CORE_API __declspec(dllexport)

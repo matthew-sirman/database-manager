@@ -22,3 +22,5 @@
 !cmake
 !cmake/
 !*.cmake
+!in/
+!in/*

@@ -3,6 +3,8 @@
 //
 
 #include "../../include/database/drawingComponents.h"
+#include "../../include/database/DrawingComponentManager.h"
+#include "../../include/database/RequestType.h"
 #include "../../include/database/ExtraPriceManager.h"
 
 void DrawingComponent::serialise(void *buffer) const {

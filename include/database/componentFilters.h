@@ -7,6 +7,7 @@
 
 #include "DataSource.h"
 #include "drawingComponents.h"
+#include "DrawingComponentManager.h"
 
 // Simple typedef for the correct type of filter object for the ComboboxDataSources
 typedef SourceFilter<std::vector<unsigned>::const_iterator> ComboboxSourceFilter;
