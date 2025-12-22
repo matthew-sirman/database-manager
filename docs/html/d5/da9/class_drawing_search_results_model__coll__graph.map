@@ -1,0 +1,13 @@
+<map id="DrawingSearchResultsModel" name="DrawingSearchResultsModel">
+<area shape="rect" id="Node000001" title="DrawingSearchResultsModel Displays the results of a search query to the database." alt="" coords="45,369,235,396"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,279,152,305"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,317,133,367,129,370,94,320"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="176,279,387,305"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="250,316,161,371,159,366,247,312"/>
+<area shape="rect" id="Node000004" href="$da/d14/struct_drawing_summary.html" title="DrawingSummary Summary data representing an incomplete set of information about a drawing." alt="" coords="218,188,344,215"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="284,230,284,278,278,278,278,230"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="242,97,321,124"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="284,140,284,187,278,187,278,140"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="218,5,344,48"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="284,64,284,97,278,97,278,64"/>
+</map>

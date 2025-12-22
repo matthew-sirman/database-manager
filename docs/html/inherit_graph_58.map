@@ -1,0 +1,9 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,56,78,83"/>
+<area shape="rect" id="Node000001" href="$d3/d3b/class_add_drawing_page_widget.html" title="A widget dedicated to adding a new drawing." alt="" coords="126,5,289,32"/>
+<area shape="poly" id="edge61_Node000000_Node000001" title=" " alt="" coords="92,51,161,30,162,35,94,56"/>
+<area shape="rect" id="Node000002" href="$d2/dfd/class_drawing_view_widget.html" title="DrawingViewWidget inherits QWidget A widget for viewing all information about a drawing." alt="" coords="138,56,277,83"/>
+<area shape="poly" id="edge62_Node000000_Node000002" title=" " alt="" coords="93,67,137,67,137,72,93,72"/>
+<area shape="rect" id="Node000003" href="$d9/d68/class_expanding_widget.html" title="ExpandingWidget inherits QWidget A simple widget that can minimised and maximised through functions,..." alt="" coords="146,107,269,133"/>
+<area shape="poly" id="edge63_Node000000_Node000003" title=" " alt="" coords="94,82,162,104,161,109,92,87"/>
+</map>

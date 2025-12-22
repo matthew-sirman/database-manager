@@ -537,6 +537,10 @@ void DrawingView::redrawScene() {
 
     if (graphicsScene && drawing) {
         double width = drawing->width(), length = drawing->length();
+        if (drawing->sideIron(Drawing::LEFT).type == SideIronType::B)
+            width -= 60;
+        if (drawing->sideIron(Drawing::RIGHT).type == SideIronType::B)
+            width -= 60;
 
         if (width != 0 && length != 0) {
             std::optional<Drawing::Lap> leftLap, rightLap, topLap, bottomLap;

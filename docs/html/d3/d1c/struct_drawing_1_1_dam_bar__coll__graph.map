@@ -1,0 +1,5 @@
+<map id="Drawing::DamBar" name="Drawing::DamBar">
+<area shape="rect" id="Node000001" title="DamBar A data structure contatining the information needed to represent a dam bar component of a draw..." alt="" coords="13,96,138,123"/>
+<area shape="rect" id="Node000002" href="$d1/df3/struct_drawing_1_1_coordinate.html" title="Coordinate Very primitive storage structure for a single floating point precision 2 dimensional coord..." alt="" coords="5,5,146,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="78,48,78,95,73,95,73,48"/>
+</map>

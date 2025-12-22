@@ -1,0 +1,7 @@
+<map id="ComponentInsert::MachineData" name="ComponentInsert::MachineData">
+<area shape="rect" id="Node000001" title="MachineData Object representation of the aperture data needed to insert a new machine." alt="" coords="5,204,212,231"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="69,97,148,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,139,111,204,106,204,106,139"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="46,5,171,48"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="111,64,111,97,106,97,106,64"/>
+</map>

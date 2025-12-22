@@ -1,0 +1,21 @@
+<map id="SourceFilter&lt; IType &gt;" name="SourceFilter&lt; IType &gt;">
+<area shape="rect" id="Node000001" title="SourceFilter Base type for an installable filter object on a DataSource." alt="" coords="5,208,153,235"/>
+<area shape="rect" id="Node000002" href="$d3/df1/class_autopress_aperture_filter.html" title="AutopressApertureFilter Filters out apertures that are too big for the autopresses." alt="" coords="212,5,370,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,192,106,158,130,117,161,77,199,42,221,30,223,35,202,46,165,80,135,120,111,160,94,195"/>
+<area shape="rect" id="Node000003" href="$de/d0b/class_bivitec_material_filter.html" title="BivitecMaterialFilter A filter to install on a material data source to filter to only materials used ..." alt="" coords="223,56,360,83"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="96,194,139,142,168,115,199,92,224,81,226,86,202,97,171,119,143,146,100,197"/>
+<area shape="rect" id="Node000004" href="$d1/d23/class_flex_bottom_material_filter.html" title="RubberScreenClothMaterialFilter A filter to install on a material data source to filter to only mater..." alt="" coords="210,107,373,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="109,197,151,169,200,143,231,131,232,136,202,148,154,174,112,201"/>
+<area shape="rect" id="Node000005" href="$db/da0/class_machine_model_filter.html" title="MachineModelFilter Filters a machine data source by a given manufacturer." alt="" coords="224,157,358,184"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="152,201,232,182,233,187,154,206"/>
+<area shape="rect" id="Node000006" href="$d7/dde/class_polyurethane_material_filter.html" title="RubberScreenClothMaterialFilter A filter to install on a material data source to filter to only mater..." alt="" coords="205,208,378,235"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="168,219,205,219,205,224,168,224"/>
+<area shape="rect" id="Node000007" href="$d8/d13/class_rubber_module_material_filter.html" title="BivitecMaterialFilter A filter to install on a material data source to filter to only materials used ..." alt="" coords="201,259,382,285"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="154,236,233,255,232,261,152,242"/>
+<area shape="rect" id="Node000008" href="$de/de1/class_rubber_screen_cloth_material_filter.html" title="RubberScreenClothMaterialFilter A filter to install on a material data source to filter to only mater..." alt="" coords="201,309,382,352"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="113,241,155,268,202,295,227,306,225,311,199,300,152,273,110,246"/>
+<area shape="rect" id="Node000009" href="$d8/dd9/class_side_iron_filter.html" title="SideIronFilter Filters a set of side irons to those of an (optional) given type and ab (optional) min..." alt="" coords="242,376,340,403"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="98,246,140,305,169,336,202,362,243,379,241,384,199,366,166,340,136,308,94,249"/>
+<area shape="rect" id="Node000010" href="$de/d9e/class_tacky_back_material_filter.html" title="RubberScreenClothMaterialFilter A filter to install on a material data source to filter to only mater..." alt="" coords="211,427,372,453"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="93,248,109,286,132,330,163,375,202,413,222,424,219,428,199,417,159,378,128,333,104,288,88,250"/>
+</map>

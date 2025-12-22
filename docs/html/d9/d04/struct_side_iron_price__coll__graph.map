@@ -1,0 +1,5 @@
+<map id="SideIronPrice" name="SideIronPrice">
+<area shape="rect" id="Node000001" title="SideIronPrice A class representing generic side iron prices, prices that are consistent across a rang..." alt="" coords="24,80,123,107"/>
+<area shape="rect" id="Node000002" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="5,5,142,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,48,76,80,71,80,71,48"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="MainMenu" name="MainMenu">
+<area shape="rect" id="Node000001" title="MainMenu Inherits QMainWindow The main menu of the manager, including search functionality,..." alt="" coords="18,80,99,107"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,112,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="61,48,61,80,56,80,56,48"/>
+</map>

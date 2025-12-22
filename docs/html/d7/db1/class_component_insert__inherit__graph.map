@@ -1,0 +1,5 @@
+<map id="ComponentInsert" name="ComponentInsert">
+<area shape="rect" id="Node000001" title="ComponentInsert Inherits from DatabaseQuery." alt="" coords="5,80,127,107"/>
+<area shape="rect" id="Node000002" href="$d0/db5/class_database_query.html" title="DatabaseQuery A base class for different types of queries to the database." alt="" coords="10,5,122,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="69,48,69,80,63,80,63,48"/>
+</map>

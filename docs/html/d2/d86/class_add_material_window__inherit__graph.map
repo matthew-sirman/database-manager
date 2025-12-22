@@ -1,0 +1,5 @@
+<map id="AddMaterialWindow" name="AddMaterialWindow">
+<area shape="rect" id="Node000001" title="AddMaterialWindow inherits QDialog Opens a new window in which a new material can be defined,..." alt="" coords="5,80,143,107"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="40,5,108,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,48,77,80,71,80,71,48"/>
+</map>

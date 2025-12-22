@@ -1,0 +1,35 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,385,74,412"/>
+<area shape="rect" id="Node000001" href="$da/db2/class_add_aperture_window.html" title="AddApertureWindow inherits QDialog Dialog that lets the user create a new aperture." alt="" coords="153,5,294,32"/>
+<area shape="poly" id="edge37_Node000000_Node000001" title=" " alt="" coords="41,370,50,293,66,196,89,103,103,67,120,42,135,31,152,23,154,28,137,35,124,46,108,70,94,105,71,197,55,294,46,370"/>
+<area shape="rect" id="Node000002" href="$d9/d73/class_add_comp_window.html" title="AddCompWindow inherits QDialog The window displayed to the user, controlled by AddComponentWindow." alt="" coords="160,56,286,83"/>
+<area shape="poly" id="edge38_Node000000_Node000002" title=" " alt="" coords="42,369,53,303,70,221,92,144,105,114,120,93,138,80,159,72,161,77,141,84,124,97,110,116,97,145,75,222,58,304,47,370"/>
+<area shape="rect" id="Node000003" href="$d0/db1/class_add_extra_price_window.html" title="AddExtraPriceWindow inherits QDialog A dialog to edit a specific extra price." alt="" coords="147,107,300,133"/>
+<area shape="poly" id="edge39_Node000000_Node000003" title=" " alt="" coords="39,369,43,320,56,260,80,197,98,169,120,143,145,128,148,132,123,147,102,172,85,200,61,261,49,321,44,370"/>
+<area shape="rect" id="Node000004" href="$da/d5a/class_add_labour_times_window.html" title="AddLabourTimesWindow inherits QDialog Opens a new dialog that allows edits to be made to any labour t..." alt="" coords="140,157,306,184"/>
+<area shape="poly" id="edge40_Node000000_Node000004" title=" " alt="" coords="41,370,49,330,63,283,86,235,102,213,120,194,138,182,141,186,123,198,106,217,91,238,68,285,54,331,47,371"/>
+<area shape="rect" id="Node000005" href="$d4/d30/class_add_machine_window.html" title="AddMachineWindow inherits QDialog Opens a new window in which a new machine can be defined,..." alt="" coords="153,208,294,235"/>
+<area shape="poly" id="edge41_Node000000_Node000005" title=" " alt="" coords="46,369,71,306,93,273,120,245,151,228,154,233,123,249,97,276,76,309,51,371"/>
+<area shape="rect" id="Node000006" href="$dc/d70/class_add_material_price_window.html" title="AddMaterialPriceWindow inherits QDialog Opens a new window in which a new material price can be defin..." alt="" coords="140,259,307,285"/>
+<area shape="poly" id="edge42_Node000000_Node000006" title=" " alt="" coords="53,370,81,331,99,312,120,295,144,284,146,288,123,300,103,316,85,335,58,373"/>
+<area shape="rect" id="Node000007" href="$d2/dfa/class_add_material_window.html" title="AddMaterialWindow inherits QDialog Opens a new window in which a new material can be defined,..." alt="" coords="155,309,292,336"/>
+<area shape="poly" id="edge43_Node000000_Node000007" title=" " alt="" coords="70,374,121,346,154,334,156,339,123,350,73,379"/>
+<area shape="rect" id="Node000008" href="$d9/d31/class_add_side_iron_price_window.html" title="AddSideIronPriceWindow inherits QDialog Opens a new window in which a new side iron price can be defi..." alt="" coords="139,360,308,387"/>
+<area shape="poly" id="edge44_Node000000_Node000008" title=" " alt="" coords="89,389,138,382,138,388,89,395"/>
+<area shape="rect" id="Node000009" href="$da/d64/class_add_side_iron_window.html" title="AddSideIronWindow inherits QDialog Opens a dialog where a new side iron can be defined,..." alt="" coords="154,411,293,437"/>
+<area shape="poly" id="edge45_Node000000_Node000009" title=" " alt="" coords="89,403,154,412,153,417,89,408"/>
+<area shape="rect" id="Node000010" href="$de/df7/class_add_specific_side_iron_price_window.html" title="AddSpecificSideIronPriceWindow inherits QDialog Opens a new window to edit or remove prices for speci..." alt="" coords="139,461,308,504"/>
+<area shape="poly" id="edge46_Node000000_Node000010" title=" " alt="" coords="74,419,123,447,150,458,148,463,120,452,71,423"/>
+<area shape="rect" id="Node000011" href="$d2/d1d/class_extra_pricing_window.html" title="ExtraPricingWindow inherits QDialog A dialog to help manage all extra prices." alt="" coords="154,528,293,555"/>
+<area shape="poly" id="edge47_Node000000_Node000011" title=" " alt="" coords="55,425,82,471,101,494,123,514,154,529,152,533,120,518,97,498,78,474,50,427"/>
+<area shape="rect" id="Node000012" href="$dc/d7c/class_labour_times_window.html" title="LabourTimesWindow inherits QDialog Opens a new window to view all labour times, and allow AddLabourTi..." alt="" coords="152,579,295,605"/>
+<area shape="poly" id="edge48_Node000000_Node000012" title=" " alt="" coords="49,426,59,459,73,496,95,533,123,565,153,580,150,585,120,569,90,537,69,499,54,461,44,428"/>
+<area shape="rect" id="Node000013" href="$d7/de2/class_material_pricing_window.html" title="MaterialPricingWindow inherits QDialog A window to view material prices and open AddMaterialPriceWind..." alt="" coords="146,629,300,656"/>
+<area shape="poly" id="edge49_Node000000_Node000013" title=" " alt="" coords="46,427,52,469,66,520,89,572,105,595,123,615,147,630,144,634,120,619,100,598,84,574,61,522,47,470,40,428"/>
+<area shape="rect" id="Node000014" href="$dc/d3f/class_powder_coating_pricing_window.html" title="PowderCoatingPricingWindow inherits QDialog A window to view and edit the powder coating prices." alt="" coords="125,680,322,707"/>
+<area shape="poly" id="edge50_Node000000_Node000014" title=" " alt="" coords="43,427,47,479,59,543,69,577,83,609,101,640,123,666,139,677,136,682,120,670,96,643,78,612,64,579,54,544,42,479,38,427"/>
+<area shape="rect" id="Node000015" href="$d2/d74/class_side_iron_pricing_window.html" title="SideIronPricingWindow inherits QDialog Opens a window that can be used to view and update generic sid..." alt="" coords="145,731,302,757"/>
+<area shape="poly" id="edge51_Node000000_Node000015" title=" " alt="" coords="47,427,57,497,74,584,96,665,109,696,124,717,146,732,144,736,120,721,105,698,91,667,68,585,52,498,42,428"/>
+<area shape="rect" id="Node000016" href="$d5/d45/class_specific_side_iron_pricing_window.html" title="SpecificSideIronPricingWindow inherits QDialog Opens a new window to view prices for specific side ir..." alt="" coords="122,781,325,808"/>
+<area shape="poly" id="edge52_Node000000_Node000016" title=" " alt="" coords="46,427,54,507,70,609,93,705,107,742,124,768,138,779,135,783,120,771,103,745,88,707,65,610,49,507,41,428"/>
+</map>

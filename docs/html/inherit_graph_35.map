@@ -1,0 +1,29 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="5,309,142,336"/>
+<area shape="rect" id="Node000001" href="$da/d37/struct_aperture.html" title="Aperture Represents an aperture tool." alt="" coords="225,5,295,32"/>
+<area shape="poly" id="edge20_Node000000_Node000001" title=" " alt="" coords="76,293,87,241,108,173,141,104,162,71,188,42,205,30,223,23,225,28,207,35,191,46,166,74,145,106,113,175,92,242,82,294"/>
+<area shape="rect" id="Node000002" href="$df/de2/struct_aperture_shape.html" title="ApertureShape An object representation of an aperture shape." alt="" coords="206,56,314,83"/>
+<area shape="poly" id="edge21_Node000000_Node000002" title=" " alt="" coords="79,293,93,249,115,196,146,141,166,115,188,93,206,81,209,85,191,97,170,119,151,144,120,198,98,251,84,295"/>
+<area shape="rect" id="Node000003" href="$d6/d4d/struct_backing_strip.html" title="BackingStrip Represents a backing strip for a drawing." alt="" coords="212,107,308,133"/>
+<area shape="poly" id="edge22_Node000000_Node000003" title=" " alt="" coords="84,294,123,220,152,179,188,143,210,130,213,135,191,147,156,182,127,222,88,296"/>
+<area shape="rect" id="Node000004" href="$d7/d90/struct_extra_price.html" title="ExtraPrice A class representing an extra price, a price not directly attributable to any general comp..." alt="" coords="219,157,301,184"/>
+<area shape="poly" id="edge23_Node000000_Node000004" title=" " alt="" coords="91,295,132,244,158,217,188,194,217,179,220,184,191,198,162,221,136,248,95,298"/>
+<area shape="rect" id="Node000005" href="$d6/d50/struct_labour_time.html" title="LabourTime A class representing the time of labour." alt="" coords="215,208,304,235"/>
+<area shape="poly" id="edge24_Node000000_Node000005" title=" " alt="" coords="103,298,143,271,188,244,215,233,217,238,191,249,146,275,106,302"/>
+<area shape="rect" id="Node000006" href="$dc/d8c/struct_machine.html" title="Machine A class representing a customer&#39;s machine on their." alt="" coords="225,259,295,285"/>
+<area shape="poly" id="edge25_Node000000_Node000006" title=" " alt="" coords="139,302,224,279,225,284,141,307"/>
+<area shape="rect" id="Node000007" href="$d8/d50/struct_machine_deck.html" title="MachineDeck A Class representing a deck of a specific machine for a customer." alt="" coords="209,309,310,336"/>
+<area shape="poly" id="edge26_Node000000_Node000007" title=" " alt="" coords="157,320,209,320,209,325,157,325"/>
+<area shape="rect" id="Node000008" href="$d3/d0a/struct_material.html" title="Material A class representing materials used for mats." alt="" coords="226,360,294,387"/>
+<area shape="poly" id="edge27_Node000000_Node000008" title=" " alt="" coords="141,338,227,362,225,367,140,343"/>
+<area shape="rect" id="Node000009" href="$da/dd8/struct_powder_coating_price.html" title="PowderCoatingPrice A class representing the price of powder coating." alt="" coords="190,411,330,437"/>
+<area shape="poly" id="edge28_Node000000_Node000009" title=" " alt="" coords="106,343,146,370,191,396,217,408,215,413,188,401,143,375,103,347"/>
+<area shape="rect" id="Node000010" href="$d9/dd8/struct_product.html" title="Product Represents a product type that a drawing may be of." alt="" coords="227,461,293,488"/>
+<area shape="poly" id="edge29_Node000000_Node000010" title=" " alt="" coords="95,347,136,398,162,424,191,447,227,464,225,469,188,452,158,428,132,401,91,351"/>
+<area shape="rect" id="Node000011" href="$d4/db2/struct_side_iron.html" title="SideIron A class representing a single side iron used for mats." alt="" coords="225,512,294,539"/>
+<area shape="poly" id="edge30_Node000000_Node000011" title=" " alt="" coords="88,349,127,423,156,463,191,498,208,508,226,515,224,520,205,513,188,502,152,467,123,426,84,352"/>
+<area shape="rect" id="Node000012" href="$d0/d39/struct_side_iron_price.html" title="SideIronPrice A class representing generic side iron prices, prices that are consistent across a rang..." alt="" coords="210,563,310,589"/>
+<area shape="poly" id="edge31_Node000000_Node000012" title=" " alt="" coords="84,351,98,394,120,447,151,502,170,526,191,549,211,561,208,566,188,553,166,530,146,504,115,449,93,396,79,352"/>
+<area shape="rect" id="Node000013" href="$da/dd9/struct_strap.html" title="Strap inherits DrawingComponent A rubber cover strap or wear tile liner." alt="" coords="234,613,286,640"/>
+<area shape="poly" id="edge32_Node000000_Node000013" title=" " alt="" coords="82,351,92,403,113,470,145,539,166,571,191,599,212,613,234,620,233,625,210,617,188,603,162,574,141,542,108,472,87,405,76,352"/>
+</map>

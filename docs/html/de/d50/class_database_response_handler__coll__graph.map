@@ -1,0 +1,5 @@
+<map id="DatabaseResponseHandler" name="DatabaseResponseHandler">
+<area shape="rect" id="Node000001" title="DatabaseResponseHandler This object is bound to the Client object for the application." alt="" coords="5,80,187,107"/>
+<area shape="rect" id="Node000002" href="$d8/d96/class_client_response_handler.html" title="ClientResponseHandler A pure virtual class for setting up any response handling for the client." alt="" coords="16,5,176,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,48,99,80,93,80,93,48"/>
+</map>

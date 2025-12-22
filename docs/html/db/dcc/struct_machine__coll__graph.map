@@ -1,0 +1,9 @@
+<map id="Machine" name="Machine">
+<area shape="rect" id="Node000001" title="Machine A class representing a customer&#39;s machine on their." alt="" coords="60,204,130,231"/>
+<area shape="rect" id="Node000002" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="5,97,142,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,139,95,203,90,204,76,140"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="166,97,245,124"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="184,136,110,205,106,201,180,132"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="143,5,268,48"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="208,64,208,97,203,97,203,64"/>
+</map>

@@ -390,8 +390,8 @@ void DatabaseRequestHandler::createSourceData(mysqlx::RowResult sourceRows) cons
 		// For each, we construct the data element(s). This is added to the elements list from inside this function.
 	constructDataElements<T>(sourceRows, handle, elements, bufferSize);
 
-	// Next we create the source data buffer with the size we have calculated.
-	void *sourceBuffer = malloc(bufferSize);
+	// Next we create the source data buffer with the size we have calculated. + size of extra networking paddings. Seems needed but not sure?
+	void *sourceBuffer = malloc(bufferSize + sizeof(uint64));
 
 	// We cast it to a byte buffer
 	unsigned char *buff = (unsigned char *)sourceBuffer;

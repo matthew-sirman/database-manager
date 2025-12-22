@@ -1,0 +1,5 @@
+<map id="Drawing::Deflector" name="Drawing::Deflector">
+<area shape="rect" id="Node000001" title="Deflector A data structure representing the information required to represent a single deflector on a..." alt="" coords="10,96,141,123"/>
+<area shape="rect" id="Node000002" href="$d1/df3/struct_drawing_1_1_coordinate.html" title="Coordinate Very primitive storage structure for a single floating point precision 2 dimensional coord..." alt="" coords="5,5,146,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="78,48,78,95,73,95,73,48"/>
+</map>

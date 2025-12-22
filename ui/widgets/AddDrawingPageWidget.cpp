@@ -631,7 +631,9 @@ void AddDrawingPageWidget::setupDrawingUpdateConnections() {
   });
 
   connect(ui->widthInput, qOverload<double>(&QDoubleSpinBox::valueChanged),
-          [this](double d) { drawing.setWidth((float)d); });
+          [this](double d) { 
+            drawing.setWidth((float)d);
+          });
   connect(ui->lengthInput, qOverload<double>(&QDoubleSpinBox::valueChanged),
           [this](double d) {
             drawing.setLength((float)d);

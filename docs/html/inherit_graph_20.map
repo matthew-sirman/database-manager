@@ -1,0 +1,15 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$d0/db5/class_database_query.html" title="DatabaseQuery A base class for different types of queries to the database." alt="" coords="5,132,118,159"/>
+<area shape="rect" id="Node000001" href="$de/d55/class_component_insert.html" title="ComponentInsert Inherits from DatabaseQuery." alt="" coords="182,5,303,32"/>
+<area shape="poly" id="edge2_Node000000_Node000001" title=" " alt="" coords="81,118,117,79,164,42,188,30,190,35,167,46,121,83,85,122"/>
+<area shape="rect" id="Node000002" href="$da/d15/class_database_backup.html" title="DatabaseBackup An object representing a user request to create a backup of the database in the form o..." alt="" coords="182,56,303,83"/>
+<area shape="poly" id="edge3_Node000000_Node000002" title=" " alt="" coords="101,122,165,92,195,81,197,86,167,97,103,127"/>
+<area shape="rect" id="Node000003" href="$d7/daa/class_database_search_query.html" title="DatabaseSearchQuery Inherits from DatabaseQuery." alt="" coords="166,107,319,133"/>
+<area shape="poly" id="edge4_Node000000_Node000003" title=" " alt="" coords="133,133,165,128,166,133,134,138"/>
+<area shape="rect" id="Node000004" href="$d6/d3f/class_drawing_insert.html" title="DrawingInsert Inherits from DatabaseQuery." alt="" coords="191,157,294,184"/>
+<area shape="poly" id="edge5_Node000000_Node000004" title=" " alt="" coords="134,153,191,161,191,166,133,158"/>
+<area shape="rect" id="Node000005" href="$d0/dfc/class_drawing_request.html" title="DrawingRequest Inherits from DatabaseQuery." alt="" coords="183,208,302,235"/>
+<area shape="poly" id="edge6_Node000000_Node000005" title=" " alt="" coords="103,164,167,194,197,205,195,210,165,198,101,169"/>
+<area shape="rect" id="Node000006" href="$d3/db2/class_next_drawing.html" title="NextDrawing A request object to obtain the name of the next drawing that should be added." alt="" coords="194,259,291,285"/>
+<area shape="poly" id="edge7_Node000000_Node000006" title=" " alt="" coords="85,169,121,208,167,244,194,257,192,262,164,249,117,211,81,172"/>
+</map>

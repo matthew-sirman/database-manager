@@ -1,0 +1,5 @@
+<map id="TackyBackMaterialFilter" name="TackyBackMaterialFilter">
+<area shape="rect" id="Node000001" title="RubberScreenClothMaterialFilter A filter to install on a material data source to filter to only mater..." alt="" coords="5,80,167,107"/>
+<area shape="rect" id="Node000002" href="$d1/dc8/class_source_filter.html" title="SourceFilter Base type for an installable filter object on a DataSource." alt="" coords="9,5,163,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,48,89,80,83,80,83,48"/>
+</map>

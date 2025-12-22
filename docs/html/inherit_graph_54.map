@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,123,115,149"/>
+<area shape="rect" id="Node000001" href="$dc/d65/class_add_lap_widget.html" title="A widget that displays a lap on the drawing." alt="" coords="184,5,290,32"/>
+<area shape="poly" id="edge53_Node000000_Node000001" title=" " alt="" coords="81,109,117,75,161,42,185,30,188,35,164,46,120,79,85,113"/>
+<area shape="rect" id="Node000002" href="$da/d6a/class_area_graphics_item.html" title="AreaGraphicsItem inherits QGraphicsItem &#160;AreaGraphicsItem displays and populates the Inspector for an..." alt="" coords="163,56,311,99"/>
+<area shape="poly" id="edge54_Node000000_Node000002" title=" " alt="" coords="116,115,169,97,171,102,118,120"/>
+<area shape="rect" id="Node000003" href="$dc/db5/class_dimension_line.html" title="DimensionLine inherits QGraphicsItem Draws a Labelled line, used for the width and length lines on th..." alt="" coords="183,123,290,149"/>
+<area shape="poly" id="edge55_Node000000_Node000003" title=" " alt="" coords="130,133,183,133,183,139,130,139"/>
+<area shape="rect" id="Node000004" href="$d5/ded/class_group_graphics_item.html" title="GroupGraphicsItem inherits QGraphicsItem This class is designed to link to a drawing and display any ..." alt="" coords="166,173,308,216"/>
+<area shape="poly" id="edge56_Node000000_Node000004" title=" " alt="" coords="118,152,171,170,169,175,116,157"/>
+<area shape="rect" id="Node000005" href="$de/db0/class_widget_dimension_line.html" title="WidgetDimensionLine inherits QGraphicsItem Similar to DimensionLine, but uses a proxy widget and has ..." alt="" coords="163,240,311,267"/>
+<area shape="poly" id="edge57_Node000000_Node000005" title=" " alt="" coords="85,159,120,193,164,226,188,237,185,242,161,230,117,197,81,163"/>
+</map>

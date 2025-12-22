@@ -1,0 +1,9 @@
+<map id="ClientData" name="ClientData">
+<area shape="rect" id="Node000001" title="ClientData Stores all data relevant to a client&#39;s connection." alt="" coords="82,188,166,215"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="28,97,108,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,138,85,163,107,186,103,189,80,165,70,140"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,131,48"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="71,64,71,97,65,97,65,64"/>
+<area shape="rect" id="Node000004" href="$d4/df8/struct_client_handle.html" title="ClientHandle Keeps track of individual clients through handles." alt="" coords="132,97,228,124"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="169,139,153,165,136,189,132,186,148,163,164,136"/>
+</map>

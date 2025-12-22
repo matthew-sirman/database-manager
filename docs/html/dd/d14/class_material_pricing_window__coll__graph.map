@@ -1,0 +1,5 @@
+<map id="MaterialPricingWindow" name="MaterialPricingWindow">
+<area shape="rect" id="Node000001" title="MaterialPricingWindow inherits QDialog A window to view material prices and open AddMaterialPriceWind..." alt="" coords="5,80,160,107"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="48,5,117,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,48,85,80,80,80,80,48"/>
+</map>

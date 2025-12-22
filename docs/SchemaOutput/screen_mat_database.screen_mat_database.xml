@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<database name="screen_mat_database" schema="screen_mat_database" type="MySQL - 8.0.17">
+   <tables>
+      <table catalog="screen_mat_database" name="aperture_shapes" numRows="8" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="aperture_shape_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="shape_id" foreignKey="aperture_shape_id_fk" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="shape" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="aperture_shape_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="aperture_shape_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="apertures" numRows="270" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="aperture_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="nibble_aperture_id" foreignKey="aperture_nibble_fk" implied="false" onDeleteCascade="true" table="apertures"/>
+            <child catalog="screen_mat_database" column="aperture_id" foreignKey="centre_holes_ibfk_2" implied="false" onDeleteCascade="true" table="centre_holes"/>
+            <child catalog="screen_mat_database" column="aperture_id" foreignKey="extra_apertures_ibfk_2" implied="false" onDeleteCascade="true" table="extra_apertures"/>
+            <child catalog="screen_mat_database" column="aperture_id" foreignKey="impact_pads_ibfk_3" implied="false" onDeleteCascade="true" table="impact_pads"/>
+            <child catalog="screen_mat_database" column="aperture_id" foreignKey="ma_link_to_aperture_id_fk" implied="false" onDeleteCascade="true" table="mat_aperture_link"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="base_width" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="base_length" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="quantity" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="shape_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_shape_id" foreignKey="aperture_shape_id_fk" implied="false" onDeleteCascade="true" table="aperture_shapes"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="nibble" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="nibble_aperture_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_id" foreignKey="aperture_nibble_fk" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <primaryKey column="aperture_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="aperture_id"/>
+         </index>
+         <index name="aperture_nibble_fk" unique="false">
+            <column ascending="true" name="nibble_aperture_id"/>
+         </index>
+         <index name="aperture_shape_id_fk" unique="false">
+            <column ascending="true" name="shape_id"/>
+         </index>
+         <index name="aperture_u" unique="true">
+            <column ascending="true" name="length"/>
+            <column ascending="true" name="width"/>
+            <column ascending="true" name="shape_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="backing_strips" numRows="5" remarks="" type="TABLE">
+         <column autoUpdated="false" defaultValue="0" digits="0" id="0" name="backing_strip_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+      </table>
+      <table catalog="screen_mat_database" name="bar_spacings" numRows="24037" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="bar_spacing_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="bar_spacings_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="bar_spacing" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="bar_width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="bar_index" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <primaryKey column="bar_spacing_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="bar_spacing_id"/>
+         </index>
+         <index name="bar_spacings_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="blank_spaces" numRows="100" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="blank_space_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="blank_spaces_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="blank_space_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="blank_space_id"/>
+         </index>
+         <index name="blank_spaces_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="centre_holes" numRows="1336" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="centre_hole_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="centre_holes_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="aperture_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_id" foreignKey="centre_holes_ibfk_2" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <primaryKey column="centre_hole_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="centre_hole_id"/>
+         </index>
+         <index name="centre_holes_aperture_id_fk" unique="false">
+            <column ascending="true" name="aperture_id"/>
+         </index>
+         <index name="mat_id" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="dam_bars" numRows="0" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="dam_bar_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="dam_bars_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="material_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="dam_bars_ibfk_1" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <primaryKey column="dam_bar_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="dam_bar_id"/>
+         </index>
+         <index name="dam_bars_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="dam_bars_material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="deflectors" numRows="62" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="deflector_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="deflectors_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="deflectors_ibfk_2" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="size" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="deflector_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="deflector_id"/>
+         </index>
+         <index name="mat_id" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="material_id" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="divertors" numRows="46" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="divertor_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="divertors_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="divertors_ibfk_2" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="mat_side" nullable="true" remarks="" size="5" type="enum('Left', 'Right')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="divertor_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="divertor_id"/>
+         </index>
+         <index name="mat_id" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="material_id" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="drawings" numRows="6702" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="bar_spacings_to_mat_id_fk" implied="false" onDeleteCascade="true" table="bar_spacings"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="blank_spaces_mat_id_fk" implied="false" onDeleteCascade="true" table="blank_spaces"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="centre_holes_ibfk_1" implied="false" onDeleteCascade="true" table="centre_holes"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="dam_bars_mat_id_fk" implied="false" onDeleteCascade="true" table="dam_bars"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="deflectors_ibfk_1" implied="false" onDeleteCascade="true" table="deflectors"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="divertors_ibfk_1" implied="false" onDeleteCascade="true" table="divertors"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="extra_apertures_ibfk_1" implied="false" onDeleteCascade="true" table="extra_apertures"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="impact_pads_ibfk_1" implied="false" onDeleteCascade="true" table="impact_pads"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="ma_link_to_mat_id_fk" implied="false" onDeleteCascade="true" table="mat_aperture_link"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="msi_link_to_mat_id_fk" implied="false" onDeleteCascade="true" table="mat_side_iron_link"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="overlaps_to_mat_id_fk" implied="false" onDeleteCascade="true" table="overlaps"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="punch_program_pdfs_ibfk_1" implied="false" onDeleteCascade="true" table="punch_program_pdfs"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="sidelaps_to_mat_id_fk" implied="false" onDeleteCascade="true" table="sidelaps"/>
+            <child catalog="screen_mat_database" column="mat_id" foreignKey="thickness_to_mat_id_fk" implied="false" onDeleteCascade="true" table="thickness"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="drawing_number" nullable="true" remarks="" size="5" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="product_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="product_id" foreignKey="mat_to_product_id_fk" implied="false" onDeleteCascade="true" table="products"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="template_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="template_id" foreignKey="mat_to_template_id_fk" implied="false" onDeleteCascade="true" table="machine_templates"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="tension_type" nullable="true" remarks="" size="4" type="enum('Side', 'End')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="drawing_date" nullable="true" remarks="" size="19" type="DATETIME" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="no_of_bars" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="rebated" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="backing_strips" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="hyperlink" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="notes" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="mat_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="drawing_number_u" unique="true">
+            <column ascending="true" name="drawing_number"/>
+         </index>
+         <index name="mat_to_product_id_fk" unique="false">
+            <column ascending="true" name="product_id"/>
+         </index>
+         <index name="mat_to_template_id_fk" unique="false">
+            <column ascending="true" name="template_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="drawings_backup" numRows="7303" remarks="" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="drawing_number" nullable="true" remarks="" size="65535" type="TEXT" typeCode="-1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="product_id" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="template_id" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="width" nullable="true" remarks="" size="22" type="DOUBLE" typeCode="8"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="length" nullable="true" remarks="" size="22" type="DOUBLE" typeCode="8"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="tension_type" nullable="true" remarks="" size="65535" type="TEXT" typeCode="-1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="drawing_date" nullable="true" remarks="" size="65535" type="TEXT" typeCode="-1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="no_of_bars" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="rebated" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="backing_strips" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="hyperlink" nullable="true" remarks="" size="65535" type="TEXT" typeCode="-1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="notes" nullable="true" remarks="" size="65535" type="TEXT" typeCode="-1"/>
+      </table>
+      <table catalog="screen_mat_database" name="extra_apertures" numRows="1" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="extra_aperture_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="extra_apertures_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="aperture_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_id" foreignKey="extra_apertures_ibfk_2" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="extra_aperture_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="extra_aperture_id"/>
+         </index>
+         <index name="extra_apertures_aperture_id_fk" unique="false">
+            <column ascending="true" name="aperture_id"/>
+         </index>
+         <index name="extra_apertures_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="extra_prices" numRows="5" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="price_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="type" nullable="false" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="price" nullable="false" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="amount" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="square_metres" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="price_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="price_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="impact_pads" numRows="86" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="impact_pad_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="impact_pads_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="impact_pads_ibfk_2" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="aperture_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_id" foreignKey="impact_pads_ibfk_3" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="aperture_direction" nullable="true" remarks="" size="14" type="enum('Nondirectional', 'Longitudinal', 'Transverse')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="x_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="y_coord" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="impact_pad_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="impact_pad_id"/>
+         </index>
+         <index name="aperture_id" unique="false">
+            <column ascending="true" name="aperture_id"/>
+         </index>
+         <index name="mat_id" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="material_id" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="labour_times" numRows="14" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="labour_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="labour" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="time" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <primaryKey column="labour_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="labour_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="machine_decks" numRows="9" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="deck_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="deck_id" foreignKey="machine_deck_fk" implied="false" onDeleteCascade="true" table="machine_templates"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="deck" nullable="true" remarks="" size="64" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="deck_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="deck_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="machine_templates" numRows="972" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="template_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="template_id" foreignKey="mat_to_template_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="machine_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="machine_id" foreignKey="machine_id_fk" implied="false" onDeleteCascade="true" table="machines"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="quantity_on_deck" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="position" nullable="true" remarks="" size="40" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="deck_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="deck_id" foreignKey="machine_deck_fk" implied="false" onDeleteCascade="true" table="machine_decks"/>
+         </column>
+         <primaryKey column="template_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="template_id"/>
+         </index>
+         <index name="machine_deck_fk" unique="false">
+            <column ascending="true" name="deck_id"/>
+         </index>
+         <index name="machine_id_fk" unique="false">
+            <column ascending="true" name="machine_id"/>
+         </index>
+         <index name="machine_template_u" unique="true">
+            <column ascending="true" name="machine_id"/>
+            <column ascending="true" name="quantity_on_deck"/>
+            <column ascending="true" name="position"/>
+            <column ascending="true" name="deck_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="machines" numRows="277" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="machine_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="machine_id" foreignKey="machine_id_fk" implied="false" onDeleteCascade="true" table="machine_templates"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="manufacturer" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="model" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="machine_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="machine_id"/>
+         </index>
+         <index name="machine_u" unique="true">
+            <column ascending="true" name="manufacturer"/>
+            <column ascending="true" name="model"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="mat_aperture_link" numRows="6658" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="ma_link_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="aperture_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="aperture_id" foreignKey="ma_link_to_aperture_id_fk" implied="false" onDeleteCascade="true" table="apertures"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="direction" nullable="true" remarks="" size="14" type="enum('Nondirectional', 'Longitudinal', 'Transverse')" typeCode="1"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="ma_link_to_aperture_id_fk" unique="false">
+            <column ascending="true" name="aperture_id"/>
+         </index>
+         <index name="ma_link_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="mat_backing_strip_link" numRows="388" remarks="" type="TABLE">
+         <column autoUpdated="false" defaultValue="0" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="backing_strip_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+      </table>
+      <table catalog="screen_mat_database" name="mat_side_iron_link" numRows="14984" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="msi_link_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="side_iron_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="side_iron_id" foreignKey="msi_link_to_side_iron_id_fk" implied="false" onDeleteCascade="true" table="side_irons"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="bar_width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="inverted" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="cut_down" nullable="false" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="side_iron_index" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="fixed_end" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="feed_end" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="hook_orientation" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="strap_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="strap_id" foreignKey="msi_link_to_strap_id_fk" implied="false" onDeleteCascade="false" table="straps"/>
+         </column>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="msi_link_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="msi_link_to_side_iron_id_fk" unique="false">
+            <column ascending="true" name="side_iron_id"/>
+         </index>
+         <index name="msi_link_to_strap_id_fk" unique="false">
+            <column ascending="true" name="strap_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="material_prices" numRows="51" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="material_price_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="pricing_to_material_id_fk" implied="false" onDeleteCascade="false" table="materials"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="length" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="price" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="pricing" nullable="true" remarks="" size="9" type="enum('running_m', 'square_m', 'sheet')" typeCode="1"/>
+         <primaryKey column="material_price_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="material_price_id"/>
+         </index>
+         <index name="material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="materials" numRows="34" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="material_id" foreignKey="dam_bars_ibfk_1" implied="false" onDeleteCascade="true" table="dam_bars"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="deflectors_ibfk_2" implied="false" onDeleteCascade="true" table="deflectors"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="divertors_ibfk_2" implied="false" onDeleteCascade="true" table="divertors"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="impact_pads_ibfk_2" implied="false" onDeleteCascade="true" table="impact_pads"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="pricing_to_material_id_fk" implied="false" onDeleteCascade="false" table="material_prices"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="overlap_to_material_id_fk" implied="false" onDeleteCascade="true" table="overlaps"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="material_id_fk" implied="false" onDeleteCascade="true" table="product_material_link"/>
+            <child catalog="screen_mat_database" column="material_id" foreignKey="sidelap_to_material_id_fk" implied="false" onDeleteCascade="true" table="sidelaps"/>
+            <child catalog="screen_mat_database" column="material_thickness_id" foreignKey="thickness_to_material_id_fk" implied="false" onDeleteCascade="true" table="thickness"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="material" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="hardness" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="thickness" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <primaryKey column="material_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="overlaps" numRows="2687" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="overlap_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="overlaps_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="mat_side" nullable="true" remarks="" size="5" type="enum('Left', 'Right')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="attachment_type" nullable="true" remarks="" size="8" type="enum('Bonded', 'Integral')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="material_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="overlap_to_material_id_fk" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <primaryKey column="overlap_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="overlap_id"/>
+         </index>
+         <index name="overlap_to_material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+         <index name="overlaps_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="powder_coating_prices" numRows="5" remarks="" type="TABLE">
+         <column autoUpdated="false" defaultValue="0" digits="0" id="0" name="coating_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="hook_price" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="strap_price" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+      </table>
+      <table catalog="screen_mat_database" name="product_material_link" numRows="0" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="material_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="material_id_fk" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="product_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="product_id" foreignKey="product_id_fk" implied="false" onDeleteCascade="true" table="products"/>
+         </column>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+         <index name="product_id_fk" unique="false">
+            <column ascending="true" name="product_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="products" numRows="7" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="product_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="product_id" foreignKey="mat_to_product_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+            <child catalog="screen_mat_database" column="product_id" foreignKey="product_id_fk" implied="false" onDeleteCascade="true" table="product_material_link"/>
+            <child catalog="screen_mat_database" column="product_id" foreignKey="side_iron_price_product_fk" implied="false" onDeleteCascade="true" table="side_iron_prices"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="product_name" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="product_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="product_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="punch_program_pdfs" numRows="35" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="punch_program_pdf_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="punch_program_pdfs_ibfk_1" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="hyperlink" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="punch_program_pdf_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="punch_program_pdf_id"/>
+         </index>
+         <index name="mat_id" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="side_iron_prices" numRows="18" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="side_iron_price_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="type" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="lower_length" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="upper_length" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="product_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="product_id" foreignKey="side_iron_price_product_fk" implied="false" onDeleteCascade="true" table="products"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="price" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <primaryKey column="side_iron_price_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="side_iron_price_id"/>
+         </index>
+         <index name="side_iron_price_product_fk" unique="false">
+            <column ascending="true" name="product_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="side_iron_types" numRows="5" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="side_iron_type_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="type" foreignKey="side_iron_type_fk" implied="false" onDeleteCascade="true" table="side_irons"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="type" nullable="true" remarks="" size="1" type="VARCHAR" typeCode="12"/>
+         <primaryKey column="side_iron_type_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="side_iron_type_id"/>
+         </index>
+         <index name="side_iron_type_u" unique="true">
+            <column ascending="true" name="type"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="side_irons" numRows="297" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="side_iron_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="side_iron_id" foreignKey="msi_link_to_side_iron_id_fk" implied="false" onDeleteCascade="true" table="mat_side_iron_link"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="type" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="side_iron_type_id" foreignKey="side_iron_type_fk" implied="false" onDeleteCascade="true" table="side_iron_types"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="length" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="drawing_number" nullable="true" remarks="" size="25" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="hyperlink" nullable="true" remarks="" size="255" type="VARCHAR" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="price" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="screws" nullable="true" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="extraflex" nullable="true" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <primaryKey column="side_iron_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="side_iron_id"/>
+         </index>
+         <index name="side_iron_drawing_number_u" unique="true">
+            <column ascending="true" name="drawing_number"/>
+         </index>
+         <index name="side_iron_type_fk" unique="false">
+            <column ascending="true" name="type"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="sidelaps" numRows="613" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="sidelap_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="sidelaps_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="width" nullable="true" remarks="" size="12" type="FLOAT" typeCode="7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="mat_side" nullable="true" remarks="" size="5" type="enum('Left', 'Right')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="attachment_type" nullable="true" remarks="" size="8" type="enum('Bonded', 'Integral')" typeCode="1"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="material_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="sidelap_to_material_id_fk" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <primaryKey column="sidelap_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="sidelap_id"/>
+         </index>
+         <index name="sidelap_to_material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+         <index name="sidelaps_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="straps" numRows="2" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="strap_id" nullable="false" remarks="" size="10" type="INT" typeCode="4">
+            <child catalog="screen_mat_database" column="strap_id" foreignKey="msi_link_to_strap_id_fk" implied="false" onDeleteCascade="false" table="mat_side_iron_link"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="material_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="is_wtl" nullable="false" remarks="" size="1" type="BIT" typeCode="-7"/>
+         <primaryKey column="strap_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="strap_id"/>
+         </index>
+         <index name="strap_to_material_id_fk" unique="false">
+            <column ascending="true" name="material_id"/>
+         </index>
+      </table>
+      <table catalog="screen_mat_database" name="thickness" numRows="7325" remarks="" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="thickness_id" nullable="false" remarks="" size="10" type="INT" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="mat_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="mat_id" foreignKey="thickness_to_mat_id_fk" implied="false" onDeleteCascade="true" table="drawings"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="material_thickness_id" nullable="true" remarks="" size="10" type="INT" typeCode="4">
+            <parent catalog="screen_mat_database" column="material_id" foreignKey="thickness_to_material_id_fk" implied="false" onDeleteCascade="true" table="materials"/>
+         </column>
+         <primaryKey column="thickness_id" sequenceNumberInPK="1"/>
+         <index name="PRIMARY" unique="true">
+            <column ascending="true" name="thickness_id"/>
+         </index>
+         <index name="thickness_to_mat_id_fk" unique="false">
+            <column ascending="true" name="mat_id"/>
+         </index>
+         <index name="thickness_to_material_id_fk" unique="false">
+            <column ascending="true" name="material_thickness_id"/>
+         </index>
+      </table>
+   </tables>
+</database>

@@ -877,7 +877,8 @@ Drawing::BuildWarning Drawing::checkDrawingValidity(unsigned exclusions) const {
     return INVALID_APERTURE;
   }
   if (std::accumulate(barSpacings.begin(), barSpacings.end(), 0.0f) !=
-          __width &&
+          (__width - 60 * (((int)(sideIron(LEFT).type == SideIronType::B)) + ((int)(sideIron(RIGHT).type == SideIronType::B))))
+          &&
       !(exclusions & INVALID_BAR_SPACINGS)) {
     return INVALID_BAR_SPACINGS;
   }

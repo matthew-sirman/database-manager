@@ -9,10 +9,10 @@ else()
 set(CMAKE_CXX_FLAGS -pthread)
 endif()
 
-set(CMAKE_PREFIX_PATH "C:\\Libraries\\Qt\\6.7.2\\msvc2019_64")
+# set(CMAKE_PREFIX_PATH "C:\\Libraries\\Qt\\6.7.2\\msvc2019_64")
 set(QT_PLUGIN_PATH "C:\\Libraries\\Qt\\6.7.2\\msvc2019_64\\plugins")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Svg Pdf Core Gui PdfWidgets SvgWidgets Xml)
+find_package(Qt6 COMPONENTS Widgets Svg Pdf Core Gui PdfWidgets SvgWidgets Xml REQUIRED)
 add_compile_definitions(CONCPP_BUILD_STATIC)
 set(mysql-concpp_DIR "C:/Libraries/mysql-connector-c++-9.0.0-winx64")
 find_package(mysql-concpp REQUIRED)
@@ -55,6 +55,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
 
 set(PROJECT_UI ui/MainMenu.ui ui/MainMenu.cpp ui/MainMenu.h)
 set(WIDGETS ui/widgets/DynamicComboBox.cpp ui/widgets/DynamicComboBox.h ui/widgets/ActivatorLabel.cpp ui/widgets/ActivatorLabel.h ui/widgets/AddDrawingPageWidget.ui ui/widgets/AddDrawingPageWidget.cpp ui/widgets/AddDrawingPageWidget.h ui/widgets/DrawingViewWidget.ui ui/widgets/DrawingViewWidget.cpp ui/widgets/DrawingViewWidget.h ui/widgets/DrawingView.cpp ui/widgets/DrawingView.h ui/widgets/DimensionLine.cpp ui/widgets/DimensionLine.h ui/widgets/AddLapWidget.cpp ui/widgets/AddLapWidget.h ui/widgets/ExpandingWidget.h ui/widgets/ExpandingWidget.cpp ui/widgets/Inspector.h ui/widgets/Inspector.cpp       ui/widgets/addons/AreaGraphicsItem.h ui/widgets/addons/AreaGraphicsItem.cpp ui/widgets/addons/GroupGraphicsItem.h ui/widgets/addons/GroupGraphicsItem.cpp ui/widgets/DrawingSearchResultsModel.cpp ui/widgets/DrawingSearchResultsModel.h include/database/DrawingPDFWriter.h src/database/DrawingPDFWriter.cpp ui/widgets/PdfView.h ui/widgets/PdfView.cpp)
@@ -100,7 +103,7 @@ if(ASAN_ENABLED)
     if(MSVC)
         target_link_options(${PROJECT_NAME} PUBLIC /NODEFAULTLIB:libcmt.lib)
     else()
-
+    
     endif()
 endif()
 

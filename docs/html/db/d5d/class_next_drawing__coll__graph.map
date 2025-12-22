@@ -1,0 +1,5 @@
+<map id="NextDrawing" name="NextDrawing">
+<area shape="rect" id="Node000001" title="NextDrawing A request object to obtain the name of the next drawing that should be added." alt="" coords="13,80,110,107"/>
+<area shape="rect" id="Node000002" href="$d0/db5/class_database_query.html" title="DatabaseQuery A base class for different types of queries to the database." alt="" coords="5,5,118,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="64,48,64,80,59,80,59,48"/>
+</map>

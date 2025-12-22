@@ -1,0 +1,5 @@
+<map id="BivitecMaterialFilter" name="BivitecMaterialFilter">
+<area shape="rect" id="Node000001" title="BivitecMaterialFilter A filter to install on a material data source to filter to only materials used ..." alt="" coords="14,80,151,107"/>
+<area shape="rect" id="Node000002" href="$d1/dc8/class_source_filter.html" title="SourceFilter Base type for an installable filter object on a DataSource." alt="" coords="5,5,160,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,48,85,80,80,80,80,48"/>
+</map>

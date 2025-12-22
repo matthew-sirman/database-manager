@@ -1,0 +1,5 @@
+<map id="NetworkMessage" name="NetworkMessage">
+<area shape="rect" id="Node000001" title="NetworkMessage An individual network message." alt="" coords="35,5,158,32"/>
+<area shape="rect" id="Node000002" href="$df/d06/struct_encrypted_network_message.html" title="EncryptedNetworkMessage inherts NetworkMessage." alt="" coords="5,80,188,107"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,48,99,80,94,80,94,48"/>
+</map>

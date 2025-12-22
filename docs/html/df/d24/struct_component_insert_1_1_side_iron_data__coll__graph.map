@@ -1,0 +1,7 @@
+<map id="ComponentInsert::SideIronData" name="ComponentInsert::SideIronData">
+<area shape="rect" id="Node000001" title="SideIronData Object representation of the aperture data needed to insert a new side iron." alt="" coords="5,188,211,215"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="68,97,148,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,140,111,187,105,187,105,140"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="45,5,171,48"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="111,64,111,97,105,97,105,64"/>
+</map>

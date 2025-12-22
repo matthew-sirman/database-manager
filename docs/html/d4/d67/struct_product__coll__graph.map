@@ -1,0 +1,9 @@
+<map id="Product" name="Product">
+<area shape="rect" id="Node000001" title="Product Represents a product type that a drawing may be of." alt="" coords="62,188,128,215"/>
+<area shape="rect" id="Node000002" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="5,97,142,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,139,94,187,89,188,77,140"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="166,97,245,124"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="180,136,112,190,109,185,176,132"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="143,5,268,48"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="208,64,208,97,203,97,203,64"/>
+</map>

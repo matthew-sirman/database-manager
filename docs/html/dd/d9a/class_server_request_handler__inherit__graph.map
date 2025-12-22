@@ -1,0 +1,5 @@
+<map id="ServerRequestHandler" name="ServerRequestHandler">
+<area shape="rect" id="Node000001" title="ServerRequestHandler Pure virtual class to help with server request handling." alt="" coords="14,5,168,32"/>
+<area shape="rect" id="Node000002" href="$dc/d46/class_database_request_handler.html" title="DatabaseRequestHandler Inherits from ServerRequestHandler." alt="" coords="5,80,177,107"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,48,94,80,88,80,88,48"/>
+</map>

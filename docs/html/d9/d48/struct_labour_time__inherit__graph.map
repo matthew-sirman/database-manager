@@ -1,0 +1,5 @@
+<map id="LabourTime" name="LabourTime">
+<area shape="rect" id="Node000001" title="LabourTime A class representing the time of labour." alt="" coords="29,80,118,107"/>
+<area shape="rect" id="Node000002" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="5,5,142,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,48,76,80,71,80,71,48"/>
+</map>

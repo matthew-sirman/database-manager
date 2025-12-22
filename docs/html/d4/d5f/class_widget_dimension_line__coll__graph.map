@@ -1,0 +1,5 @@
+<map id="WidgetDimensionLine" name="WidgetDimensionLine">
+<area shape="rect" id="Node000001" title="WidgetDimensionLine inherits QGraphicsItem Similar to DimensionLine, but uses a proxy widget and has ..." alt="" coords="5,80,154,107"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="25,5,134,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,48,82,80,77,80,77,48"/>
+</map>

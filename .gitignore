@@ -22,3 +22,8 @@
 !cmake
 !cmake/
 !*.cmake
+!docs
+!docs/*
+!docs/html/*
+!*.js
+!*.html

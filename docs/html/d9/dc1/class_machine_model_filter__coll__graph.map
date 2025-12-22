@@ -1,0 +1,5 @@
+<map id="MachineModelFilter" name="MachineModelFilter">
+<area shape="rect" id="Node000001" title="MachineModelFilter Filters a machine data source by a given manufacturer." alt="" coords="15,80,150,107"/>
+<area shape="rect" id="Node000002" href="$d1/dc8/class_source_filter.html" title="SourceFilter Base type for an installable filter object on a DataSource." alt="" coords="5,5,160,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,48,85,80,80,80,80,48"/>
+</map>

@@ -836,11 +836,12 @@ void DrawingPDFWriter::drawRubberScreenCloth(QPainter &painter,
     drawArrow(
         painter, leftWidthExtender.center(), rightWidthExtender.center(),
         (to_str(
-             drawing.width() +
+             drawing.width()) +
+         " o/h\n" + to_str(
+         drawing.width() -
              60 *
                  ((drawing.sideIron(Drawing::LEFT).type == SideIronType::B) +
-                  (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))) +
-         " o/h\n" + to_str(drawing.width()))
+                  (drawing.sideIron(Drawing::RIGHT).type == SideIronType::B))))
             .c_str(),
         DOUBLE_HEADED, false, QPen(), QPen(), 50.0, 30.0, 2);
   } else {

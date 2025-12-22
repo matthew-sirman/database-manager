@@ -1,0 +1,9 @@
+<map id="DatabaseBackup" name="DatabaseBackup">
+<area shape="rect" id="Node000001" title="DatabaseBackup An object representing a user request to create a backup of the database in the form o..." alt="" coords="22,188,144,215"/>
+<area shape="rect" id="Node000002" href="$d0/db5/class_database_query.html" title="DatabaseQuery A base class for different types of queries to the database." alt="" coords="5,97,118,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="71,139,82,187,77,188,65,140"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="142,97,221,124"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="158,137,99,189,95,185,154,133"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="119,5,244,48"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="184,64,184,97,179,97,179,64"/>
+</map>

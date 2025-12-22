@@ -1,0 +1,14 @@
+<map id="ExtraPrice" name="ExtraPrice">
+<area shape="rect" id="Node000001" title="ExtraPrice A class representing an extra price, a price not directly attributable to any general comp..." alt="" coords="670,72,752,99"/>
+<area shape="rect" id="Node000002" href="$dd/d44/struct_drawing_component.html" title="DrawingComponent Base class for each type of drawing component that is associated with an entire draw..." alt="" coords="396,5,533,32"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="542,34,646,61,670,69,669,74,645,67,540,39"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="390,56,539,115"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="554,83,669,83,669,88,554,88"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="180,111,259,137"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="274,113,389,94,390,100,275,118"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="364,139,565,181"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="275,134,284,136,364,148,364,153,283,141,274,140"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="5,103,131,145"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="146,121,179,121,179,127,146,127"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="556,131,645,104,668,97,670,102,646,109,557,136"/>
+</map>

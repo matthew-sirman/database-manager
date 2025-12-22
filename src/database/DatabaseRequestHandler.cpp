@@ -823,48 +823,30 @@ void DatabaseRequestHandler::constructDataElements(
     data = *(new ExtraPriceData);
 
     data.handle = handle++;
+    sizeValue += sizeof(unsigned);
     data.id = row[0].get<unsigned int>();
+    sizeValue += sizeof(unsigned);
     data.type = ExtraPrice::getType.at(row[1].get<std::string>());
+    sizeValue += sizeof(ExtraPriceType);
     data.price = row[2].get<float>();
-    if (row[3].isNull())
+    sizeValue += sizeof(float);
+    if (row[3].isNull()) {
       data.amount = std::nullopt;
-    else
+      sizeValue += sizeof(bool);
+    } else {
       data.amount = std::make_optional(row[3].get<unsigned>());
-    if (row[4].isNull())
+      sizeValue += sizeof(bool) + sizeof(unsigned);
+    }
+    if (row[4].isNull()) {
       data.squareMetres = std::nullopt;
-    else
+      sizeValue += sizeof(bool);
+    } else {
       data.squareMetres = std::make_optional(row[4].get<float>());
-
-    // if (row[1].get<std::string>() == "side_iron_nuts") {
-    //   data.type = ExtraPriceType::SIDE_IRON_NUTS;
-    //   data.amount = row[3].get<unsigned>();
-    //   data.squareMetres = std::nullopt;
-    //   sizeValue += sizeof(unsigned);
-    // } else if (row[1].get<std::string>() == "side_iron_screws") {
-    //   data.type = ExtraPriceType::SIDE_IRON_SCREWS;
-    //   data.amount = row[3].get<unsigned>();
-    //   data.squareMetres = std::nullopt;
-    //   sizeValue += sizeof(unsigned);
-    // } else if (row[1].get<std::string>() == "glue") {
-    //   data.type = ExtraPriceType::TACKYBACK_GLUE;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = row[4].get<float>();
-    //   sizeValue += sizeof(float);
-    // } else if (row[1].get<std::string>() == "labour") {
-    //   data.type = ExtraPriceType::LABOUR;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = std::nullopt;
-    // } else if (row[1].get<std::string>() == "primer") {
-    //   data.type = ExtraPriceType::PRIMER;
-    //   data.amount = std::nullopt;
-    //   data.squareMetres = row[4].get<float>();
-    //   sizeValue += sizeof(float);
-    // }
-    // sizeValue += sizeof(ExtraPriceType) + sizeof(float) + sizeof(unsigned) *
-    // 2;
-    sizeValue += sizeof(ExtraPriceType) + sizeof(unsigned) + sizeof(float) +
-                 (data.amount.has_value() ? sizeof(unsigned) : 0) +
-                 (data.squareMetres.has_value() ? sizeof(float) : 0);
+      sizeValue += sizeof(bool) + sizeof(float);
+    }
+    //sizeValue += sizeof(ExtraPriceType) + sizeof(unsigned) + sizeof(float) +
+    //             (data.amount.has_value() ? sizeof(unsigned) : 0) +
+    //             (data.squareMetres.has_value() ? sizeof(float) : 0);
 
     elements.push_back(data);
   }
